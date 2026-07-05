@@ -353,6 +353,7 @@ public static class GroupMapper
             group.IsPrivate,
             PersonMapper.ToSummary(group.Owner ?? new Person { Name = "Desconhecido" }),
             group.Members.Count,
+            group.Posts.Count,
             isMember,
             group.CreatedAt,
             group.ReviewedAt,

@@ -32,6 +32,21 @@ public sealed class GroupService(
         return groups.Select(g => GroupMapper.ToDto(g, isMember: false)).ToList();
     }
 
+    public async Task<IReadOnlyList<GroupDto>> GetExploreGroupsAsync(CancellationToken cancellationToken = default)
+    {
+        var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
+        var groups = await groupRepository.GetActiveForExploreAsync(cancellationToken);
+        var result = new List<GroupDto>();
+
+        foreach (var group in groups)
+        {
+            var isMember = group.Members.Any(m => m.PersonId == personId);
+            result.Add(GroupMapper.ToDto(group, isMember));
+        }
+
+        return result;
+    }
+
     public async Task<GroupDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);

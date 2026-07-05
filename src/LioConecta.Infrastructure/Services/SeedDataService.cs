@@ -16,6 +16,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             await EnsureRichProfilesAsync(cancellationToken);
             await EnsureComunicadosCatalogAsync(cancellationToken);
             await EnsureArchivedAtBackfillAsync(cancellationToken);
+            await EnsureGroupsCatalogAsync(cancellationToken);
             logger.LogDebug("Database already contains people; skipping seed.");
             return;
         }
@@ -213,7 +214,38 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
         db.Notifications.AddRange(notifications);
 
         await db.SaveChangesAsync(cancellationToken);
+        await EnsureGroupsCatalogAsync(cancellationToken);
         logger.LogInformation("Seed completed with {People} people.", people.Length);
+    }
+
+    private async Task EnsureGroupsCatalogAsync(CancellationToken cancellationToken)
+    {
+        var existingIds = await db.Groups
+            .Select(g => g.Id)
+            .ToListAsync(cancellationToken);
+        var existingIdSet = existingIds.ToHashSet();
+        var reviewedAt = DateTimeOffset.UtcNow.AddDays(-30);
+        var added = 0;
+
+        foreach (var entry in GroupCatalogSeed.Entries)
+        {
+            if (existingIdSet.Contains(entry.Id))
+            {
+                continue;
+            }
+
+            db.Groups.Add(GroupCatalogSeed.ToGroupEntity(entry, reviewedAt));
+            db.GroupMembers.AddRange(GroupCatalogSeed.ToMembers(entry));
+            added++;
+        }
+
+        if (added == 0)
+        {
+            return;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Seeded {Count} catalog groups.", added);
     }
 
     private async Task EnsureRichProfilesAsync(CancellationToken cancellationToken)

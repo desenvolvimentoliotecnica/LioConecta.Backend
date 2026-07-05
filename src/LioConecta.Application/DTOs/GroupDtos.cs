@@ -13,6 +13,7 @@ public sealed record GroupDto(
     bool IsPrivate,
     PersonSummaryDto Owner,
     int MemberCount,
+    int PostCount,
     bool IsMember,
     DateTimeOffset CreatedAt,
     DateTimeOffset? ReviewedAt,

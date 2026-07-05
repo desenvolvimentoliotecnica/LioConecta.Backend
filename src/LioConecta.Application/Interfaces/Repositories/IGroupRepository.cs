@@ -8,6 +8,8 @@ public interface IGroupRepository
 
     Task<IReadOnlyList<Group>> GetPendingApprovalAsync(CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Group>> GetActiveForExploreAsync(CancellationToken cancellationToken = default);
+
     Task<Group?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<Group?> GetByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default);

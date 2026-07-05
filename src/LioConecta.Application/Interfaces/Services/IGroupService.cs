@@ -8,6 +8,8 @@ public interface IGroupService
 
     Task<IReadOnlyList<GroupDto>> GetPendingApprovalAsync(CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<GroupDto>> GetExploreGroupsAsync(CancellationToken cancellationToken = default);
+
     Task<GroupDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<GroupDto> CreateAsync(CreateGroupRequest request, CancellationToken cancellationToken = default);

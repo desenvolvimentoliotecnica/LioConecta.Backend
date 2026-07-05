@@ -25,6 +25,14 @@ public sealed class GroupsController(
         return Ok(groups);
     }
 
+    [HttpGet("explore")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<GroupDto>>> Explore(CancellationToken cancellationToken)
+    {
+        var groups = await groupService.GetExploreGroupsAsync(cancellationToken);
+        return Ok(groups);
+    }
+
     [HttpGet("pending")]
     [Authorize(Policy = AuthPolicies.RequireAdmin)]
     [ProducesResponseType(StatusCodes.Status200OK)]

@@ -20,15 +20,25 @@ public sealed class GroupRepository(AppDbContext db) : IGroupRepository
             .ToListAsync(cancellationToken)
             .ContinueWith(t => (IReadOnlyList<Group>)t.Result, cancellationToken);
 
-    public Task<IReadOnlyList<Group>> GetPendingApprovalAsync(CancellationToken cancellationToken = default) =>
-        db.Groups
+    public async Task<IReadOnlyList<Group>> GetPendingApprovalAsync(CancellationToken cancellationToken = default) =>
+        await db.Groups
             .Include(g => g.Owner)
             .Include(g => g.Members)
             .AsNoTracking()
             .Where(g => g.Status == GroupStatus.PendingApproval)
             .OrderBy(g => g.CreatedAt)
-            .ToListAsync(cancellationToken)
-            .ContinueWith(t => (IReadOnlyList<Group>)t.Result, cancellationToken);
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<Group>> GetActiveForExploreAsync(CancellationToken cancellationToken = default) =>
+        await db.Groups
+            .Include(g => g.Owner)
+            .Include(g => g.Members)
+            .Include(g => g.Posts)
+            .AsNoTracking()
+            .Where(g => g.Status == GroupStatus.Active)
+            .OrderByDescending(g => g.Members.Count)
+            .ThenByDescending(g => g.CreatedAt)
+            .ToListAsync(cancellationToken);
 
     public Task<Group?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         db.Groups

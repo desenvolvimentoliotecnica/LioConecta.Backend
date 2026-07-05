@@ -93,6 +93,7 @@ public sealed class ComunicadosController(
         };
 
         dbContext.Comunicados.Add(comunicado);
+        dbContext.FeedPosts.Add(ComunicadoFeedMapper.CreateFeedPost(comunicado, now));
         await dbContext.SaveChangesAsync(cancellationToken);
 
         await dbContext.Entry(comunicado).Reference(c => c.Author).LoadAsync(cancellationToken);

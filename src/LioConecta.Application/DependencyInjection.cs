@@ -24,6 +24,8 @@ public static class DependencyInjection
         services.AddScoped<IMoodCheckService, MoodCheckService>();
         services.AddScoped<IAppSettingService, AppSettingService>();
         services.AddScoped<IPayslipService, PayslipService>();
+        services.AddScoped<IBenefitService, BenefitService>();
+        services.AddScoped<IPollClosureService, PollClosureService>();
 
         return services;
     }

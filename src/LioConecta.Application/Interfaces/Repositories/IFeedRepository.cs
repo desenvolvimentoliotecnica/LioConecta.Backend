@@ -34,4 +34,9 @@ public interface IFeedRepository
     Task<Celebration?> GetCelebrationByPostIdAsync(Guid postId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<FeedPost>> GetNewsPostsAsync(int limit, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Poll>> GetPollsPendingClosureNotificationAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<bool> TryMarkPollClosureNotifiedAsync(Guid pollId, CancellationToken cancellationToken = default);
 }

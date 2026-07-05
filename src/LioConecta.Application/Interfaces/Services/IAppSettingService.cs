@@ -6,6 +6,8 @@ public interface IAppSettingsProvider
 {
     string GetString(string key, string defaultValue = "");
 
+    bool TryGetString(string key, out string value);
+
     bool GetBool(string key, bool defaultValue = false);
 
     int GetInt(string key, int defaultValue = 0);

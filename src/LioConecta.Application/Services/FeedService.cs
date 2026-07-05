@@ -11,7 +11,8 @@ namespace LioConecta.Application.Services;
 public sealed class FeedService(
     IFeedRepository feedRepository,
     IAnalyticsRepository analyticsRepository,
-    ICurrentUserService currentUserService) : IFeedService
+    ICurrentUserService currentUserService,
+    INotificationService notificationService) : IFeedService
 {
     public async Task<PagedResult<FeedPostDto>> GetFeedAsync(
         CursorPageRequest request,
@@ -152,6 +153,8 @@ public sealed class FeedService(
         var savedPoll = await feedRepository.GetPollByPostIdAsync(postId, cancellationToken)
             ?? throw new InvalidOperationException($"Poll for post {postId} was not found after save.");
         var pollDto = FeedMapper.ToPollDto(savedPoll, authorId);
+
+        await notificationService.NotifyPollCreatedAsync(saved, savedPoll, cancellationToken);
 
         return FeedMapper.ToDto(saved, authorId, poll: pollDto);
     }

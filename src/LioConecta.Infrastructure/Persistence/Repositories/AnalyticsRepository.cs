@@ -103,6 +103,42 @@ public sealed class AnalyticsRepository(AppDbContext db) : IAnalyticsRepository
             m => m.CreatedAt >= from && m.CreatedAt <= to,
             cancellationToken);
 
+        var now = DateTimeOffset.UtcNow;
+
+        var pollsCreated = await db.Polls.CountAsync(
+            p => p.CreatedAt >= from && p.CreatedAt <= to,
+            cancellationToken);
+
+        var pollVotes = await db.PollVotes.CountAsync(
+            v => v.CreatedAt >= from && v.CreatedAt <= to,
+            cancellationToken);
+
+        var activePolls = await db.Polls.CountAsync(
+            p => p.EndsAt == null || p.EndsAt > now,
+            cancellationToken);
+
+        var pollsClosed = await db.Polls.CountAsync(
+            p => p.EndsAt != null && p.EndsAt >= from && p.EndsAt <= to && p.EndsAt <= now,
+            cancellationToken);
+
+        var uniquePollVoters = await db.PollVotes
+            .AsNoTracking()
+            .Where(v => v.CreatedAt >= from && v.CreatedAt <= to)
+            .Select(v => v.PersonId)
+            .Distinct()
+            .CountAsync(cancellationToken);
+
+        var pollParticipationRate = activePeople == 0
+            ? 0
+            : (int)Math.Round(uniquePollVoters * 100.0 / activePeople);
+
+        var pollAvgVotesPerPoll = pollsCreated == 0
+            ? 0
+            : (int)Math.Round(pollVotes * 1.0 / pollsCreated);
+
+        var pollActivityTrend = await BuildPollActivityTrendAsync(from, to, periodKey, cancellationToken);
+        var topPolls = await BuildTopPollsAsync(from, to, cancellationToken);
+
         var activityTrend = await BuildActivityTrendAsync(from, to, periodKey, cancellationToken);
         var serviceBreakdown = await BuildServiceBreakdownAsync(from, to, cancellationToken);
         var departmentEngagement = await BuildDepartmentEngagementAsync(from, to, cancellationToken);
@@ -124,6 +160,14 @@ public sealed class AnalyticsRepository(AppDbContext db) : IAnalyticsRepository
             serviceRequests,
             documents,
             moodChecks,
+            pollsCreated,
+            pollVotes,
+            activePolls,
+            pollsClosed,
+            pollParticipationRate,
+            pollAvgVotesPerPoll,
+            pollActivityTrend,
+            topPolls,
             activityTrend,
             serviceBreakdown,
             departmentEngagement,
@@ -295,6 +339,87 @@ public sealed class AnalyticsRepository(AppDbContext db) : IAnalyticsRepository
                 return new AnalyticsDepartmentDto(g.Key, total, Math.Clamp(engagement, 0, 100));
             })
             .OrderByDescending(d => d.Engagement)
+            .ToList();
+    }
+
+    private async Task<IReadOnlyList<AnalyticsTrendPointDto>> BuildPollActivityTrendAsync(
+        DateTimeOffset from,
+        DateTimeOffset to,
+        string periodKey,
+        CancellationToken cancellationToken)
+    {
+        var voteTimestamps = await db.PollVotes
+            .AsNoTracking()
+            .Where(v => v.CreatedAt >= from && v.CreatedAt <= to)
+            .Select(v => v.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        return periodKey switch
+        {
+            "7d" => BuildDailyTrend(voteTimestamps, from, 7, "ddd"),
+            "90d" => BuildMonthlyTrend(voteTimestamps, from, 3, "MMM"),
+            "12m" => BuildMonthlyTrend(voteTimestamps, from, 12, "MMM"),
+            _ => BuildWeeklyTrend(voteTimestamps, from, 4),
+        };
+    }
+
+    private async Task<IReadOnlyList<AnalyticsTopItemDto>> BuildTopPollsAsync(
+        DateTimeOffset from,
+        DateTimeOffset to,
+        CancellationToken cancellationToken)
+    {
+        var voteCounts = await db.PollVotes
+            .AsNoTracking()
+            .Where(v => v.CreatedAt >= from && v.CreatedAt <= to)
+            .Join(
+                db.PollOptions.AsNoTracking(),
+                vote => vote.PollOptionId,
+                option => option.Id,
+                (vote, option) => option.PollId)
+            .GroupBy(pollId => pollId)
+            .Select(g => new { PollId = g.Key, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .Take(5)
+            .ToListAsync(cancellationToken);
+
+        if (voteCounts.Count == 0)
+        {
+            var recentPolls = await db.Polls
+                .AsNoTracking()
+                .Include(p => p.Post)
+                .Where(p => p.CreatedAt >= from && p.CreatedAt <= to)
+                .OrderByDescending(p => p.CreatedAt)
+                .Take(5)
+                .ToListAsync(cancellationToken);
+
+            return recentPolls
+                .Select(p => new AnalyticsTopItemDto(
+                    p.Question,
+                    "Feed · Enquete",
+                    0,
+                    "/",
+                    "enquetes"))
+                .ToList();
+        }
+
+        var pollIds = voteCounts.Select(v => v.PollId).ToList();
+        var polls = await db.Polls
+            .AsNoTracking()
+            .Where(p => pollIds.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id, cancellationToken);
+
+        return voteCounts
+            .Where(v => polls.ContainsKey(v.PollId))
+            .Select(v =>
+            {
+                var poll = polls[v.PollId];
+                return new AnalyticsTopItemDto(
+                    poll.Question,
+                    "Feed · Enquete",
+                    v.Count,
+                    "/",
+                    "enquetes");
+            })
             .ToList();
     }
 

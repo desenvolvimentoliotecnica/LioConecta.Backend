@@ -85,6 +85,11 @@ public sealed class NotificationRepository(AppDbContext db) : INotificationRepos
             .Where(p => p.IsActive)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<Person>> GetAllPersonsAsync(CancellationToken cancellationToken = default) =>
+        await db.People
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
     public async Task AddRangeAsync(
         IReadOnlyList<Notification> notifications,
         CancellationToken cancellationToken = default)

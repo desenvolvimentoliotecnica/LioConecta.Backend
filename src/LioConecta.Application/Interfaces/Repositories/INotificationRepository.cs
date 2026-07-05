@@ -18,5 +18,7 @@ public interface INotificationRepository
 
     Task<IReadOnlyList<Person>> GetActivePersonsAsync(CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Person>> GetAllPersonsAsync(CancellationToken cancellationToken = default);
+
     Task AddRangeAsync(IReadOnlyList<Notification> notifications, CancellationToken cancellationToken = default);
 }

@@ -74,5 +74,6 @@ public static class AppSettingCatalog
         new(AppSettingKeys.MediaComunicadosAllowedContentTypes, "media", "Comunicados — tipos MIME permitidos",
             "Lista JSON de content-types aceitos no upload.", "json", false,
             "[\"image/jpeg\",\"image/png\",\"image/webp\"]", 3),
+        ..BenefitPortalSettingCatalog.ToAppSettingDefinitions(),
     ];
 }

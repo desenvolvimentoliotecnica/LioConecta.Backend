@@ -35,6 +35,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<ComunicadoHeroImage> ComunicadoHeroImages => Set<ComunicadoHeroImage>();
     public DbSet<Payslip> Payslips => Set<Payslip>();
     public DbSet<IncomeStatement> IncomeStatements => Set<IncomeStatement>();
+    public DbSet<EmployeeBenefit> EmployeeBenefits => Set<EmployeeBenefit>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -55,6 +56,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureAppSettings(modelBuilder);
         ConfigureComunicadoHeroImages(modelBuilder);
         ConfigurePayslips(modelBuilder);
+        ConfigureEmployeeBenefits(modelBuilder);
     }
 
     private static void ApplySnakeCaseTableNames(ModelBuilder modelBuilder)
@@ -497,6 +499,20 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasOne(i => i.Person)
                 .WithMany()
                 .HasForeignKey(i => i.PersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureEmployeeBenefits(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<EmployeeBenefit>(entity =>
+        {
+            entity.HasIndex(b => new { b.PersonId, b.BenefitKey }).IsUnique();
+            entity.HasIndex(b => b.Category);
+
+            entity.HasOne(b => b.Person)
+                .WithMany()
+                .HasForeignKey(b => b.PersonId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

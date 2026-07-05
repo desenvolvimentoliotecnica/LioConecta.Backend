@@ -1,4 +1,6 @@
 using LioConecta.Application;
+using LioConecta.Application.Interfaces.Services;
+using LioConecta.Application.Services;
 using LioConecta.Infrastructure;
 using LioConecta.Infrastructure.Configuration;
 using LioConecta.Workers.Jobs;
@@ -32,9 +34,11 @@ try
 
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(settingsProvider);
+    builder.Services.AddSingleton<INotificationBroadcaster, NoOpNotificationBroadcaster>();
 
     builder.Services.AddHostedService<TotvsSyncWorker>();
     builder.Services.AddHostedService<GraphSyncWorker>();
+    builder.Services.AddHostedService<PollClosureWorker>();
 
     var host = builder.Build();
     await host.RunAsync();

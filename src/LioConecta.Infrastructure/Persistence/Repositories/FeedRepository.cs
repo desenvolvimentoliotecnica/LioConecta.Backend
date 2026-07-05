@@ -153,4 +153,32 @@ public sealed class FeedRepository(AppDbContext db) : IFeedRepository
             .Take(Math.Clamp(limit, 1, 100))
             .ToListAsync(cancellationToken)
             .ContinueWith(t => (IReadOnlyList<FeedPost>)t.Result, cancellationToken);
+
+    public Task<IReadOnlyList<Poll>> GetPollsPendingClosureNotificationAsync(
+        CancellationToken cancellationToken = default) =>
+        db.Polls
+            .Include(p => p.Post)
+            .AsNoTracking()
+            .Where(p =>
+                p.EndsAt != null &&
+                p.EndsAt <= DateTimeOffset.UtcNow &&
+                p.ClosedNotificationSentAt == null)
+            .ToListAsync(cancellationToken)
+            .ContinueWith(t => (IReadOnlyList<Poll>)t.Result, cancellationToken);
+
+    public async Task<bool> TryMarkPollClosureNotifiedAsync(
+        Guid pollId,
+        CancellationToken cancellationToken = default)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var updated = await db.Polls
+            .Where(p => p.Id == pollId && p.ClosedNotificationSentAt == null)
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(p => p.ClosedNotificationSentAt, now)
+                    .SetProperty(p => p.UpdatedAt, now),
+                cancellationToken);
+
+        return updated > 0;
+    }
 }

@@ -47,6 +47,7 @@ try
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(settingsProvider);
     builder.Services.AddScoped<INotificationBroadcaster, SignalRNotificationBroadcaster>();
+    builder.Services.AddHostedService<PollClosureHostedService>();
 
     var authenticationBuilder = builder.Services.AddAuthentication(options =>
     {

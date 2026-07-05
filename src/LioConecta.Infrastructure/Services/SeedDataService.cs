@@ -18,6 +18,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             await EnsureArchivedAtBackfillAsync(cancellationToken);
             await EnsureGroupsCatalogAsync(cancellationToken);
             await EnsurePayslipsCatalogAsync(cancellationToken);
+            await EnsureBenefitsCatalogAsync(cancellationToken);
             await EnsurePollSeedAsync(cancellationToken);
             logger.LogDebug("Database already contains people; skipping seed.");
             return;
@@ -368,6 +369,25 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
 
         await db.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Seeded payslip catalog for Maria Silva.");
+    }
+
+    private async Task EnsureBenefitsCatalogAsync(CancellationToken cancellationToken)
+    {
+        var mariaId = SeedIds.MariaSilva;
+        var hasBenefits = await db.EmployeeBenefits.AnyAsync(b => b.PersonId == mariaId, cancellationToken);
+        if (hasBenefits)
+        {
+            return;
+        }
+
+        var seedTime = DateTimeOffset.UtcNow.AddDays(-30);
+        foreach (var benefit in BenefitCatalogSeed.BuildForPerson(mariaId, seedTime))
+        {
+            db.EmployeeBenefits.Add(benefit);
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Seeded benefits catalog for Maria Silva.");
     }
 
     private async Task EnsureArchivedAtBackfillAsync(CancellationToken cancellationToken)

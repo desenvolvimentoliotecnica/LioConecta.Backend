@@ -17,6 +17,18 @@ public sealed class AppSettingsProvider : IAppSettingsProvider
         return _values.TryGetValue(key, out var value) && !string.IsNullOrEmpty(value) ? value : defaultValue;
     }
 
+    public bool TryGetString(string key, out string value)
+    {
+        if (_values.TryGetValue(key, out var found))
+        {
+            value = found;
+            return true;
+        }
+
+        value = string.Empty;
+        return false;
+    }
+
     public bool GetBool(string key, bool defaultValue = false)
     {
         if (!_values.TryGetValue(key, out var raw) || string.IsNullOrWhiteSpace(raw))

@@ -45,23 +45,102 @@ public sealed class NotificationService(
         Comunicado comunicado,
         CancellationToken cancellationToken = default)
     {
-        var persons = await notificationRepository.GetActivePersonsAsync(cancellationToken);
+        var readerId = comunicado.Slug ?? comunicado.Id.ToString();
+        var href = $"/comunicados/leitura?id={Uri.EscapeDataString(readerId)}";
+        var title = "Novo comunicado oficial";
+        var body = comunicado.Title.Trim();
+
+        await BroadcastToAllActivePersonsAsync(
+            NotificationType.Comunicado,
+            title,
+            body,
+            href,
+            cancellationToken);
+    }
+
+    public Task NotifyPollCreatedAsync(
+        FeedPost post,
+        Poll poll,
+        CancellationToken cancellationToken = default)
+    {
+        var href = "/feed";
+        var title = "Nova enquete no feed";
+        var body = poll.Question.Trim();
+
+        return BroadcastToAllPersonsAsync(
+            NotificationType.Feed,
+            title,
+            body,
+            href,
+            cancellationToken);
+    }
+
+    public Task NotifyPollClosedAsync(
+        FeedPost post,
+        Poll poll,
+        CancellationToken cancellationToken = default)
+    {
+        var href = "/feed";
+        var title = "Enquete encerrada";
+        var body = poll.Question.Trim();
+
+        return BroadcastToAllPersonsAsync(
+            NotificationType.Feed,
+            title,
+            body,
+            href,
+            cancellationToken);
+    }
+
+    private Task BroadcastToAllActivePersonsAsync(
+        NotificationType type,
+        string title,
+        string body,
+        string href,
+        CancellationToken cancellationToken) =>
+        BroadcastAsync(
+            () => notificationRepository.GetActivePersonsAsync(cancellationToken),
+            type,
+            title,
+            body,
+            href,
+            cancellationToken);
+
+    private Task BroadcastToAllPersonsAsync(
+        NotificationType type,
+        string title,
+        string body,
+        string href,
+        CancellationToken cancellationToken) =>
+        BroadcastAsync(
+            () => notificationRepository.GetAllPersonsAsync(cancellationToken),
+            type,
+            title,
+            body,
+            href,
+            cancellationToken);
+
+    private async Task BroadcastAsync(
+        Func<Task<IReadOnlyList<Person>>> getPersons,
+        NotificationType type,
+        string title,
+        string body,
+        string href,
+        CancellationToken cancellationToken)
+    {
+        var persons = await getPersons();
         if (persons.Count == 0)
         {
             return;
         }
 
-        var readerId = comunicado.Slug ?? comunicado.Id.ToString();
-        var href = $"/comunicados/leitura?id={Uri.EscapeDataString(readerId)}";
-        var title = "Novo comunicado oficial";
-        var body = comunicado.Title.Trim();
         var now = DateTimeOffset.UtcNow;
 
         var notifications = persons.Select(person => new Notification
         {
             Id = Guid.NewGuid(),
             PersonId = person.Id,
-            Type = NotificationType.Comunicado,
+            Type = type,
             Title = title,
             Body = body,
             Href = href,

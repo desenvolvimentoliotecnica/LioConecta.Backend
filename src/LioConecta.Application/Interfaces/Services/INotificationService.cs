@@ -17,4 +17,8 @@ public interface INotificationService
     Task MarkAllAsReadAsync(CancellationToken cancellationToken = default);
 
     Task NotifyComunicadoCreatedAsync(Comunicado comunicado, CancellationToken cancellationToken = default);
+
+    Task NotifyPollCreatedAsync(FeedPost post, Poll poll, CancellationToken cancellationToken = default);
+
+    Task NotifyPollClosedAsync(FeedPost post, Poll poll, CancellationToken cancellationToken = default);
 }

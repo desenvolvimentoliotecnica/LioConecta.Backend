@@ -12,5 +12,7 @@ public class Poll : BaseEntity
 
     public DateTimeOffset? EndsAt { get; set; }
 
+    public DateTimeOffset? ClosedNotificationSentAt { get; set; }
+
     public ICollection<PollOption> Options { get; set; } = [];
 }

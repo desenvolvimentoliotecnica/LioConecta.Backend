@@ -1,3 +1,4 @@
+using LioConecta.Application.Common;
 using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Repositories;
 using LioConecta.Application.Interfaces.Services;
@@ -30,5 +31,13 @@ public sealed class AnalyticsService(
             UnreadNotifications: unread,
             MoodChecks: eventsByType.GetValueOrDefault("MoodCheckRecorded"),
             EventsByType: eventsByType);
+    }
+
+    public async Task<AnalyticsSnapshotDto> GetSnapshotAsync(
+        string? period,
+        CancellationToken cancellationToken = default)
+    {
+        var (from, to, periodKey) = AnalyticsPeriod.Resolve(period);
+        return await analyticsRepository.GetSnapshotAsync(from, to, periodKey, cancellationToken);
     }
 }

@@ -18,4 +18,14 @@ public sealed class AnalyticsController(IAnalyticsService analyticsService) : Co
         var dashboard = await analyticsService.GetDashboardAsync(cancellationToken);
         return Ok(dashboard);
     }
+
+    [HttpGet("snapshot")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<AnalyticsSnapshotDto>> GetSnapshot(
+        [FromQuery] string? period,
+        CancellationToken cancellationToken)
+    {
+        var snapshot = await analyticsService.GetSnapshotAsync(period, cancellationToken);
+        return Ok(snapshot);
+    }
 }

@@ -37,6 +37,33 @@ public static class EmailMessageMapper
             entity.UpdatedAt);
     }
 
+    public static string SerializeAttachments(IReadOnlyList<EmailAttachmentRecord>? attachments)
+    {
+        if (attachments is null || attachments.Count == 0)
+        {
+            return "[]";
+        }
+
+        return JsonSerializer.Serialize(attachments, JsonOptions);
+    }
+
+    public static IReadOnlyList<EmailAttachmentRecord> DeserializeAttachments(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return Array.Empty<EmailAttachmentRecord>();
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<EmailAttachmentRecord>>(json, JsonOptions) ?? [];
+        }
+        catch (JsonException)
+        {
+            return Array.Empty<EmailAttachmentRecord>();
+        }
+    }
+
     public static string SerializeAddresses(IReadOnlyList<string>? addresses)
     {
         if (addresses is null || addresses.Count == 0)

@@ -13,6 +13,7 @@ public sealed class WorkerTriggerService(
     IWorkerRunRecorder workerRunRecorder,
     ITotvsEmployeeSyncService totvsEmployeeSyncService,
     IGraphSyncService graphSyncService,
+    IGraphDirectorySyncService graphDirectorySyncService,
     IPollClosureService pollClosureService,
     ITimesheetSyncService timesheetSyncService,
     IPayslipSyncService payslipSyncService,
@@ -112,6 +113,11 @@ public sealed class WorkerTriggerService(
                     await graphSyncService.SyncDocumentsAsync(context, ct);
                     await graphSyncService.SyncCalendarAsync(context, ct);
                 },
+                cancellationToken),
+            WorkerKeys.GraphDirectorySync => workerRunRecorder.ExecuteAsync(
+                workerKey,
+                "manual",
+                async (context, ct) => _ = await graphDirectorySyncService.SyncDirectoryAsync(context, ct),
                 cancellationToken),
             WorkerKeys.PollClosure => workerRunRecorder.ExecuteAsync(
                 workerKey,

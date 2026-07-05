@@ -27,7 +27,7 @@ public sealed class SearchService(
 
         await Task.WhenAll(peopleTask, documentsTask, comunicadosTask);
 
-        var people = peopleTask.Result.Select(PersonMapper.ToSummary).ToList();
+        var people = peopleTask.Result.Select(p => PersonMapper.ToSummary(p)).ToList();
         var documents = documentsTask.Result.Select(DocumentMapper.ToDto).ToList();
         var comunicados = comunicadosTask.Result
             .Select(c => ComunicadoMapper.ToListItem(c, isRead: false))

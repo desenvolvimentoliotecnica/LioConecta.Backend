@@ -110,6 +110,9 @@ public static class DependencyInjection
         }
         else
         {
+            services.AddSingleton<GraphTokenProvider>();
+            services.AddTransient<GraphAuthDelegatingHandler>();
+
             services.AddHttpClient<ITotvsAdapter, TotvsAdapter>((sp, client) =>
             {
                 var options = sp.GetRequiredService<IOptions<TotvsOptions>>().Value;
@@ -124,10 +127,8 @@ public static class DependencyInjection
 
             services.AddHttpClient<IGraphAdapter, GraphAdapter>((sp, client) =>
             {
-                var options = sp.GetRequiredService<IOptions<GraphOptions>>().Value;
                 client.BaseAddress = new Uri("https://graph.microsoft.com/v1.0/");
-                _ = options;
-            });
+            }).AddHttpMessageHandler<GraphAuthDelegatingHandler>();
         }
 
         services.AddScoped<ITotvsRmTimesheetRepository, TotvsRmTimesheetRepository>();
@@ -148,9 +149,12 @@ public static class DependencyInjection
         services.AddScoped<IEmailQueueService, EmailQueueService>();
         services.AddScoped<IEmailDispatchService, EmailDispatchService>();
         services.AddScoped<IEmailAdminService, EmailAdminService>();
+        services.AddScoped<IEmailAttachmentService, EmailAttachmentService>();
+        services.AddScoped<IEmailSendService, EmailSendService>();
         services.AddScoped<ISmtpEmailSender, SmtpEmailSender>();
         services.AddScoped<ITotvsEmployeeSyncService, TotvsEmployeeSyncService>();
         services.AddScoped<IGraphSyncService, GraphSyncService>();
+        services.AddScoped<IGraphDirectorySyncService, GraphDirectorySyncService>();
         services.AddScoped<IWorkerRunRecorder, WorkerRunRecorder>();
         services.AddScoped<IWorkerTriggerService, WorkerTriggerService>();
 

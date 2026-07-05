@@ -67,6 +67,32 @@ public sealed record EmailRuntimeConfiguration(
     int DispatchBatchSize,
     int DispatchIntervalSeconds);
 
+public sealed record EmailAttachmentRecord(
+    string FileName,
+    string ContentType,
+    string StoragePath,
+    long SizeBytes);
+
+public sealed record EmailAttachmentUploadDto(
+    Guid Id,
+    string FileName,
+    long SizeBytes,
+    string ContentType);
+
+public sealed record SendEmailRequest(
+    IReadOnlyList<string>? To,
+    string? RecipientSlug,
+    string Subject,
+    string? BodyHtml,
+    IReadOnlyList<string>? Cc,
+    IReadOnlyList<string>? Bcc,
+    IReadOnlyList<Guid>? AttachmentIds,
+    string? Source);
+
+public sealed record SendEmailResponse(
+    Guid MessageId,
+    string Status);
+
 public sealed record EmailEnqueueRequest(
     IReadOnlyList<string> To,
     string Subject,
@@ -74,6 +100,7 @@ public sealed record EmailEnqueueRequest(
     string? BodyText = null,
     IReadOnlyList<string>? Cc = null,
     IReadOnlyList<string>? Bcc = null,
+    IReadOnlyList<EmailAttachmentRecord>? Attachments = null,
     string? TemplateKey = null,
     string? MetadataJson = null,
     short Priority = 0,
@@ -135,7 +162,8 @@ public sealed record SmtpSendRequest(
     IReadOnlyList<string> Bcc,
     string Subject,
     string? BodyHtml,
-    string? BodyText);
+    string? BodyText,
+    IReadOnlyList<EmailAttachmentRecord>? Attachments = null);
 
 public sealed record SmtpSendResult(
     bool Success,

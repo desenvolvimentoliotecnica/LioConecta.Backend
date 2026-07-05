@@ -26,9 +26,11 @@ public static class AppSettingKeys
     public const string GraphTenantId = "graph.tenant_id";
     public const string GraphClientId = "graph.client_id";
     public const string GraphClientSecret = "graph.client_secret";
+    public const string GraphDirectoryLastSyncUtc = "graph.directory_last_sync_utc";
 
     public const string WorkersTotvsSyncIntervalMinutes = "workers.totvs_sync_interval_minutes";
     public const string WorkersGraphSyncIntervalMinutes = "workers.graph_sync_interval_minutes";
+    public const string WorkersGraphDirectorySyncIntervalMinutes = "workers.graph_directory_sync_interval_minutes";
     public const string WorkersTotvsTimesheetSyncIntervalMinutes = "workers.totvs_timesheet_sync_interval_minutes";
     public const string WorkersTotvsTimesheetCacheTtlMinutes = "workers.totvs_timesheet_cache_ttl_minutes";
     public const string WorkersTotvsPayslipSyncIntervalMinutes = "workers.totvs_payslip_sync_interval_minutes";

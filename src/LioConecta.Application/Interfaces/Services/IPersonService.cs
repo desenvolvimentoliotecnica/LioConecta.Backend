@@ -12,6 +12,11 @@ public interface IPersonService
 
     Task<OrgChartDto> GetOrgChartAsync(CancellationToken cancellationToken = default);
 
+    Task<PersonDirectoryDto> GetDirectoryAsync(
+        string? query,
+        string? departmentId,
+        CancellationToken cancellationToken = default);
+
     Task<PersonProfileDto> UpdateOwnAboutAsync(string? aboutMe, CancellationToken cancellationToken = default);
 
     Task<PersonProfileDto> UpdateOwnSkillsAsync(

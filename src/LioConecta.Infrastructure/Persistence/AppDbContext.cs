@@ -48,6 +48,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<EmailConfiguration> EmailConfigurations => Set<EmailConfiguration>();
     public DbSet<EmailMessage> EmailMessages => Set<EmailMessage>();
 
+    public DbSet<EmailAttachmentStaging> EmailAttachmentStagings => Set<EmailAttachmentStaging>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ApplySnakeCaseTableNames(modelBuilder);
@@ -681,6 +683,20 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany()
                 .HasForeignKey(m => m.CreatedById)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<EmailAttachmentStaging>(entity =>
+        {
+            entity.ToTable("email_attachment_staging");
+            entity.Property(a => a.FileName).HasMaxLength(256);
+            entity.Property(a => a.ContentType).HasMaxLength(128);
+            entity.Property(a => a.StoragePath).HasMaxLength(512);
+            entity.HasIndex(a => new { a.CreatedById, a.IsConsumed, a.ExpiresAt });
+
+            entity.HasOne(a => a.CreatedBy)
+                .WithMany()
+                .HasForeignKey(a => a.CreatedById)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 

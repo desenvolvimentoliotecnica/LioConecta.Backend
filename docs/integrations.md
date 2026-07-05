@@ -57,6 +57,7 @@ Requer GLPI 10+ com API REST habilitada.
 
 | Operação | Worker / API |
 |----------|--------------|
+| `GetDirectoryUsersAsync` | Worker `graph-directory-sync` → tabela `people`, `GET /api/v1/people/directory` |
 | `GetDocumentsAsync` | GraphSyncWorker → módulo Documentos |
 | `GetCalendarEventsAsync` | GraphSyncWorker → Calendário |
 | `GetPlannerTasksAsync` | Activities API |
@@ -74,7 +75,9 @@ Requer GLPI 10+ com API REST habilitada.
 }
 ```
 
-Permissões Graph: `User.Read`, `Calendars.Read`, `Tasks.Read`, `Sites.Read.All`, `Presence.Read.All`.
+Permissões Graph: `User.Read.All` (diretório e organograma), `User.ReadBasic.All` (fotos, se aplicável), `User.Read`, `Calendars.Read`, `Tasks.Read`, `Sites.Read.All`, `Presence.Read.All`.
+
+**Worker `graph-directory-sync`:** sincroniza usuários `@liotecnica.com.br` do Entra ID para `people` (identidade primária). O worker `totvs-employee-sync` enriquece `EmployeeId`, `BirthDate` e `HireDate` sem sobrescrever dados Graph. Disparo manual: `POST /api/v1/admin/workers/graph-directory-sync/trigger`. Intervalo padrão: 60 min (`workers.graph_directory_sync_interval_minutes`).
 
 ## Resiliência
 

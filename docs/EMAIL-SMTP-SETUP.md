@@ -156,6 +156,8 @@ O seed preenche host/porta/usuário a partir de `EmailConfigurationDefaults` e c
 |---------|--------|
 | `Infrastructure/Seed/EmailConfigurationDefaults.cs` | Constantes Office 365 |
 | `Infrastructure/Services/EmailConfigurationService.cs` | CRUD + AES |
-| `Infrastructure/Services/SmtpEmailSender.cs` | MailKit / STARTTLS |
+| `Infrastructure/Services/SmtpEmailSender.cs` | MailKit / STARTTLS + anexos |
 | `Api/Controllers/AdminEmailController.cs` | Endpoints admin |
-| `FrontEnd/src/components/admin/EmailConfigPage.tsx` | UI de configuração |
+| `Api/Controllers/EmailController.cs` | `POST /email/send` e `POST /email/attachments` (usuários) |
+| `FrontEnd/src/components/email/` | Modal reutilizável + TipTap |
+| `FrontEnd/docs/email-compose-component.md` | Guia de integração do componente |

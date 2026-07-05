@@ -23,6 +23,8 @@ public class EmailMessage : BaseEntity
 
     public string? MetadataJson { get; set; }
 
+    public string? AttachmentsJson { get; set; }
+
     public short Priority { get; set; }
 
     public string? IdempotencyKey { get; set; }

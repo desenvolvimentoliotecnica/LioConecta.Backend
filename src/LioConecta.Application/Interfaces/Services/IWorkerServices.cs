@@ -54,6 +54,20 @@ public interface IGraphSyncService
         CancellationToken cancellationToken);
 }
 
+public interface IGraphDirectorySyncService
+{
+    Task<GraphDirectorySyncResult> SyncDirectoryAsync(
+        IWorkerRunContext? context,
+        CancellationToken cancellationToken);
+}
+
+public sealed record GraphDirectorySyncResult(
+    int Created,
+    int Updated,
+    int Deactivated,
+    int Fetched,
+    DateTimeOffset SyncedAtUtc);
+
 public interface IWorkerRunContext
 {
     Guid RunId { get; }

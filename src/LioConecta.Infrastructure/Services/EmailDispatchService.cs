@@ -161,7 +161,8 @@ public sealed class EmailDispatchService(
             EmailMessageMapper.DeserializeAddresses(message.BccAddressesJson),
             message.Subject,
             message.BodyHtml,
-            message.BodyText);
+            message.BodyText,
+            EmailMessageMapper.DeserializeAttachments(message.AttachmentsJson));
 
         return await smtpEmailSender.SendAsync(config, request, cancellationToken);
     }

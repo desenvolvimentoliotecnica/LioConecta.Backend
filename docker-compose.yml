@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: lioconecta
       POSTGRES_PASSWORD: lioconecta_dev
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - lioconecta_pgdata:/var/lib/postgresql/data
     healthcheck:

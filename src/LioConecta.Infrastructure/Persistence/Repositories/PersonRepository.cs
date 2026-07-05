@@ -26,19 +26,23 @@ public sealed class PersonRepository(AppDbContext db) : IPersonRepository
         CancellationToken cancellationToken = default)
     {
         var normalized = query.Trim();
-        if (string.IsNullOrWhiteSpace(normalized))
+        var queryable = db.People
+            .AsNoTracking()
+            .Include(p => p.Department)
+            .Where(p => p.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(normalized))
         {
-            return [];
+            var pattern = $"%{normalized}%";
+            queryable = queryable.Where(p =>
+                EF.Functions.ILike(p.Name, pattern) ||
+                EF.Functions.ILike(p.Email, pattern) ||
+                EF.Functions.ILike(p.Slug, pattern) ||
+                (p.Title != null && EF.Functions.ILike(p.Title, pattern)) ||
+                (p.Dept != null && EF.Functions.ILike(p.Dept, pattern)));
         }
 
-        var pattern = $"%{normalized}%";
-        return await db.People
-            .AsNoTracking()
-            .Where(p => p.IsActive &&
-                (EF.Functions.ILike(p.Name, pattern) ||
-                 EF.Functions.ILike(p.Email, pattern) ||
-                 EF.Functions.ILike(p.Slug, pattern) ||
-                 (p.Title != null && EF.Functions.ILike(p.Title, pattern))))
+        return await queryable
             .OrderBy(p => p.Name)
             .Take(Math.Clamp(limit, 1, 100))
             .ToListAsync(cancellationToken);

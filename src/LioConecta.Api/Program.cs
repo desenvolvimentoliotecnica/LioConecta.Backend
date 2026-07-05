@@ -85,16 +85,28 @@ try
 
     var allowedOrigins = configuration
         .GetSection("Cors:AllowedOrigins")
-        .Get<string[]>() ?? ["http://localhost:5173"];
+        .Get<string[]>() ?? ["http://localhost:5173", "http://localhost:5174"];
 
     builder.Services.AddCors(options =>
     {
         options.AddDefaultPolicy(policy =>
         {
-            policy.WithOrigins(allowedOrigins)
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials();
+            if (builder.Environment.IsDevelopment())
+            {
+                policy.SetIsOriginAllowed(origin =>
+                        Uri.TryCreate(origin, UriKind.Absolute, out var uri) &&
+                        uri.Host is "localhost" or "127.0.0.1")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            }
+            else
+            {
+                policy.WithOrigins(allowedOrigins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            }
         });
     });
 

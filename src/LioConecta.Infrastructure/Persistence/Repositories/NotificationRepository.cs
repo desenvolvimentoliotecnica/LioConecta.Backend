@@ -78,4 +78,23 @@ public sealed class NotificationRepository(AppDbContext db) : INotificationRepos
                     .SetProperty(n => n.UpdatedAt, now),
                 cancellationToken);
     }
+
+    public async Task<IReadOnlyList<Person>> GetActivePersonsAsync(CancellationToken cancellationToken = default) =>
+        await db.People
+            .AsNoTracking()
+            .Where(p => p.IsActive)
+            .ToListAsync(cancellationToken);
+
+    public async Task AddRangeAsync(
+        IReadOnlyList<Notification> notifications,
+        CancellationToken cancellationToken = default)
+    {
+        if (notifications.Count == 0)
+        {
+            return;
+        }
+
+        db.Notifications.AddRange(notifications);
+        await db.SaveChangesAsync(cancellationToken);
+    }
 }

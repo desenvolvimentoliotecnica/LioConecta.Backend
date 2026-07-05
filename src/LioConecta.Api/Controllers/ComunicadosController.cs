@@ -17,6 +17,7 @@ namespace LioConecta.Api.Controllers;
 [Authorize]
 public sealed class ComunicadosController(
     IComunicadoService comunicadoService,
+    INotificationService notificationService,
     AppDbContext dbContext,
     ICurrentUserService currentUserService) : ControllerBase
 {
@@ -73,12 +74,14 @@ public sealed class ComunicadosController(
     {
         var authorId = await currentUserService.GetPersonIdAsync(cancellationToken);
         var now = DateTimeOffset.UtcNow;
+        var comunicadoId = Guid.NewGuid();
 
         var comunicado = new Comunicado
         {
-            Id = Guid.NewGuid(),
+            Id = comunicadoId,
             Kind = request.Kind,
             Title = request.Title.Trim(),
+            Slug = SlugHelper.FromTitle(request.Title, comunicadoId),
             Excerpt = request.Excerpt?.Trim(),
             ContentJson = JsonSerializer.Serialize(request.Content ?? new Dictionary<string, object?>()),
             AuthorId = authorId,
@@ -93,6 +96,8 @@ public sealed class ComunicadosController(
         await dbContext.SaveChangesAsync(cancellationToken);
 
         await dbContext.Entry(comunicado).Reference(c => c.Author).LoadAsync(cancellationToken);
+
+        await notificationService.NotifyComunicadoCreatedAsync(comunicado, cancellationToken);
 
         var dto = ComunicadoMapper.ToDto(comunicado, isRead: false);
         return CreatedAtAction(nameof(GetById), new { id = comunicado.Id }, dto);

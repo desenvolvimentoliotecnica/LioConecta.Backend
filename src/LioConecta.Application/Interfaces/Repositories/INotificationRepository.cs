@@ -15,4 +15,8 @@ public interface INotificationRepository
     Task MarkAsReadAsync(Guid notificationId, Guid personId, CancellationToken cancellationToken = default);
 
     Task MarkAllAsReadAsync(Guid personId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Person>> GetActivePersonsAsync(CancellationToken cancellationToken = default);
+
+    Task AddRangeAsync(IReadOnlyList<Notification> notifications, CancellationToken cancellationToken = default);
 }

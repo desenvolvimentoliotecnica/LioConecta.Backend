@@ -1,5 +1,6 @@
 using LioConecta.Application.Common;
 using LioConecta.Application.DTOs;
+using LioConecta.Domain.Entities;
 
 namespace LioConecta.Application.Interfaces.Services;
 
@@ -14,4 +15,6 @@ public interface INotificationService
     Task MarkAsReadAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task MarkAllAsReadAsync(CancellationToken cancellationToken = default);
+
+    Task NotifyComunicadoCreatedAsync(Comunicado comunicado, CancellationToken cancellationToken = default);
 }

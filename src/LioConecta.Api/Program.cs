@@ -2,7 +2,9 @@ using LioConecta.Api.Auth;
 using LioConecta.Api.Authorization;
 using LioConecta.Api.Hubs;
 using LioConecta.Api.Middleware;
+using LioConecta.Api.Services;
 using LioConecta.Application;
+using LioConecta.Application.Interfaces.Services;
 using LioConecta.Domain.Enums;
 using LioConecta.Infrastructure;
 using LioConecta.Infrastructure.Persistence;
@@ -34,6 +36,7 @@ try
 
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(configuration);
+    builder.Services.AddScoped<INotificationBroadcaster, SignalRNotificationBroadcaster>();
 
     var authenticationBuilder = builder.Services.AddAuthentication(options =>
     {

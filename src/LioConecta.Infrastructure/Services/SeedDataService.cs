@@ -351,6 +351,17 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
 
     private async Task EnsurePayslipsCatalogAsync(CancellationToken cancellationToken)
     {
+        var legacy = await db.Payslips
+            .Where(p => p.Source == null || p.Source == "")
+            .ToListAsync(cancellationToken);
+
+        if (legacy.Count > 0)
+        {
+            db.Payslips.RemoveRange(legacy);
+            await db.SaveChangesAsync(cancellationToken);
+            logger.LogInformation("Removed {Count} legacy seed payslips.", legacy.Count);
+        }
+
         var mariaId = SeedIds.MariaSilva;
         var hasPayslips = await db.Payslips.AnyAsync(p => p.PersonId == mariaId, cancellationToken);
         if (hasPayslips)
@@ -358,22 +369,8 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             return;
         }
 
-        var seedTime = DateTimeOffset.UtcNow.AddDays(-30);
-        foreach (var payslip in PayslipCatalogSeed.BuildPayslips(mariaId, seedTime))
-        {
-            db.Payslips.Add(payslip);
-        }
-
-        var hasInforme = await db.IncomeStatements.AnyAsync(
-            i => i.PersonId == mariaId && i.Year == 2025,
-            cancellationToken);
-        if (!hasInforme)
-        {
-            db.IncomeStatements.Add(PayslipCatalogSeed.BuildIncomeStatement2025(mariaId, seedTime));
-        }
-
-        await db.SaveChangesAsync(cancellationToken);
-        logger.LogInformation("Seeded payslip catalog for Maria Silva.");
+        // Holerites passam a vir exclusivamente do sync TOTVS RM; não re-seedamos dados fictícios.
+        return;
     }
 
     private async Task EnsureBenefitsCatalogAsync(CancellationToken cancellationToken)

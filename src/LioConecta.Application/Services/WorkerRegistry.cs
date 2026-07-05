@@ -31,5 +31,11 @@ public static class WorkerRegistry
             "Atualiza cache de espelho de ponto consultando SQL Server TOTVS RM.",
             AppSettingKeys.WorkersTotvsTimesheetSyncIntervalMinutes,
             30),
+        new(
+            WorkerKeys.TotvsPayslipSync,
+            "Sync holerite TOTVS RM",
+            "Atualiza cache de contracheques consultando SQL Server TOTVS RM (PFFINANC/PEVENTO/PFPERFF).",
+            AppSettingKeys.WorkersTotvsPayslipSyncIntervalMinutes,
+            30),
     ];
 }

@@ -3,7 +3,11 @@ namespace LioConecta.Application.DTOs;
 public sealed record PayslipSummaryDto(
     string LatestCompetence,
     decimal LatestNetAmount,
-    int HistoryCount);
+    int HistoryCount,
+    string? AvailabilityStatus = null,
+    string? UserMessage = null,
+    string? DataSource = null,
+    DateTimeOffset? SyncedAt = null);
 
 public sealed record PayslipServiceDto(
     string Id,
@@ -20,7 +24,8 @@ public sealed record PayslipLineDto(
     string Code,
     string Label,
     decimal Amount,
-    decimal? Quantity);
+    decimal? Quantity,
+    string? Reference = null);
 
 public sealed record PayslipListItemDto(
     int Year,
@@ -28,7 +33,14 @@ public sealed record PayslipListItemDto(
     string Competence,
     decimal GrossAmount,
     decimal NetAmount,
-    DateTimeOffset PublishedAt);
+    DateTimeOffset PublishedAt,
+    string PaymentType = "FOLHA");
+
+public sealed record PayslipSyncResultDto(
+    int SyncedCount,
+    string AvailabilityStatus,
+    string? DataSource,
+    DateTimeOffset? SyncedAt);
 
 public sealed record PayslipDetailDto(
     int Year,

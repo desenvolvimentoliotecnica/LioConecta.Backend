@@ -31,6 +31,8 @@ public static class AppSettingKeys
     public const string WorkersGraphSyncIntervalMinutes = "workers.graph_sync_interval_minutes";
     public const string WorkersTotvsTimesheetSyncIntervalMinutes = "workers.totvs_timesheet_sync_interval_minutes";
     public const string WorkersTotvsTimesheetCacheTtlMinutes = "workers.totvs_timesheet_cache_ttl_minutes";
+    public const string WorkersTotvsPayslipSyncIntervalMinutes = "workers.totvs_payslip_sync_interval_minutes";
+    public const string WorkersTotvsPayslipCacheTtlMinutes = "workers.totvs_payslip_cache_ttl_minutes";
     public const string WorkersPollClosureIntervalMinutes = "workers.poll_closure_interval_minutes";
 
     public const string SerilogDefaultLevel = "serilog.default_level";
@@ -38,6 +40,10 @@ public static class AppSettingKeys
     public const string MediaComunicadosRootPath = "media.comunicados.root_path";
     public const string MediaComunicadosMaxSizeBytes = "media.comunicados.max_size_bytes";
     public const string MediaComunicadosAllowedContentTypes = "media.comunicados.allowed_content_types";
+
+    public const string MediaPostsRootPath = "media.posts.root_path";
+    public const string MediaPostsMaxSizeBytes = "media.posts.max_size_bytes";
+    public const string MediaPostsAllowedContentTypes = "media.posts.allowed_content_types";
 
     public const string ObservabilityOtelEnabled = "observability.otel.enabled";
     public const string ObservabilityOtelServiceName = "observability.otel.service_name";

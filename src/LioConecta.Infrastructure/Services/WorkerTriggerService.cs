@@ -14,7 +14,8 @@ public sealed class WorkerTriggerService(
     ITotvsEmployeeSyncService totvsEmployeeSyncService,
     IGraphSyncService graphSyncService,
     IPollClosureService pollClosureService,
-    ITimesheetSyncService timesheetSyncService) : IWorkerTriggerService
+    ITimesheetSyncService timesheetSyncService,
+    IPayslipSyncService payslipSyncService) : IWorkerTriggerService
 {
     public Task<IReadOnlyList<WorkerDefinitionDto>> ListWorkersAsync(CancellationToken cancellationToken)
     {
@@ -124,6 +125,11 @@ public sealed class WorkerTriggerService(
                 workerKey,
                 "manual",
                 async (context, ct) => _ = await timesheetSyncService.SyncAllActivePeopleAsync(context, ct),
+                cancellationToken),
+            WorkerKeys.TotvsPayslipSync => workerRunRecorder.ExecuteAsync(
+                workerKey,
+                "manual",
+                async (context, ct) => _ = await payslipSyncService.SyncAllActivePeopleAsync(context, ct),
                 cancellationToken),
             _ => throw new ArgumentException($"Unknown worker key: {workerKey}", nameof(workerKey))
         };

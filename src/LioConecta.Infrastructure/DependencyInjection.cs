@@ -130,6 +130,8 @@ public static class DependencyInjection
         }
 
         services.AddScoped<ITotvsRmTimesheetRepository, TotvsRmTimesheetRepository>();
+        services.AddScoped<ITotvsRmPayslipRepository, TotvsRmPayslipRepository>();
+        services.AddScoped<ITotvsRmEmployeeRepository, TotvsRmEmployeeRepository>();
         services.AddScoped<TotvsRmConnectionTester>();
     }
 
@@ -138,6 +140,7 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IAccessAuditRecorder, AccessAuditRecorder>();
         services.AddScoped<IComunicadoHeroImageService, ComunicadoHeroImageService>();
+        services.AddScoped<IPostMediaService, PostMediaService>();
         services.AddScoped<SeedDataService>();
         services.AddScoped<ITotvsRmConfigurationService, TotvsRmConfigurationService>();
         services.AddScoped<ITotvsEmployeeSyncService, TotvsEmployeeSyncService>();

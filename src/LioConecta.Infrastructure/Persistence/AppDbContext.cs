@@ -550,8 +550,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     {
         modelBuilder.Entity<Payslip>(entity =>
         {
-            entity.HasIndex(p => new { p.PersonId, p.Year, p.Month }).IsUnique();
+            entity.HasIndex(p => new { p.PersonId, p.Year, p.Month, p.PaymentType }).IsUnique();
             entity.HasIndex(p => p.PublishedAt);
+            entity.Property(p => p.PaymentType).HasMaxLength(20);
+            entity.Property(p => p.Source).HasMaxLength(50);
 
             entity.HasOne(p => p.Person)
                 .WithMany()

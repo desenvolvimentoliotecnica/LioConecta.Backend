@@ -58,6 +58,7 @@ try
         builder.Services.AddHostedService<GraphSyncWorker>();
         builder.Services.AddHostedService<PollClosureWorker>();
         builder.Services.AddHostedService<TotvsTimesheetSyncWorker>();
+        builder.Services.AddHostedService<TotvsPayslipSyncWorker>();
     }
 
     builder.Services.AddHostedService<ObservabilityRetentionHostedService>();
@@ -259,6 +260,13 @@ try
         RequestPath = "/media/comunicados",
     });
 
+    var postsMediaRoot = ResolvePostsMediaRoot(settingsProvider, app.Environment);
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(postsMediaRoot),
+        RequestPath = "/posts/medias",
+    });
+
     app.UseAuthentication();
     app.UseAuthorization();
 
@@ -362,6 +370,17 @@ static LogEventLevel ParseLogLevel(string value) =>
 static string ResolveComunicadoMediaRoot(IAppSettingsProvider settings, IWebHostEnvironment environment)
 {
     var configured = settings.GetString(AppSettingKeys.MediaComunicadosRootPath, "App_Data/media/comunicados");
+    var absolute = Path.IsPathRooted(configured)
+        ? configured
+        : Path.Combine(environment.ContentRootPath, configured);
+
+    Directory.CreateDirectory(absolute);
+    return absolute;
+}
+
+static string ResolvePostsMediaRoot(IAppSettingsProvider settings, IWebHostEnvironment environment)
+{
+    var configured = settings.GetString(AppSettingKeys.MediaPostsRootPath, "App_Data/posts/medias");
     var absolute = Path.IsPathRooted(configured)
         ? configured
         : Path.Combine(environment.ContentRootPath, configured);

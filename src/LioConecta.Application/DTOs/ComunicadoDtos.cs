@@ -4,6 +4,7 @@ namespace LioConecta.Application.DTOs;
 
 public sealed record ComunicadoDto(
     Guid Id,
+    string? Slug,
     ComunicadoKind Kind,
     string Title,
     string? Excerpt,
@@ -16,6 +17,7 @@ public sealed record ComunicadoDto(
 
 public sealed record ComunicadoListItemDto(
     Guid Id,
+    string? Slug,
     ComunicadoKind Kind,
     string Title,
     string? Excerpt,
@@ -23,4 +25,5 @@ public sealed record ComunicadoListItemDto(
     string? HeroImageUrl,
     bool IsMandatory,
     DateTimeOffset? PublishedAt,
+    DateTimeOffset? ArchivedAt,
     bool IsReadByViewer);

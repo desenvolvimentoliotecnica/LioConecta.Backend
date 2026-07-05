@@ -8,10 +8,13 @@ public interface IComunicadoRepository
 {
     Task<PagedResult<Comunicado>> GetPageAsync(
         ComunicadoKind? kind,
+        bool archivedOnly,
         CursorPageRequest request,
         CancellationToken cancellationToken = default);
 
     Task<Comunicado?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<Comunicado?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default);
 
     Task MarkAsReadAsync(Guid comunicadoId, Guid personId, CancellationToken cancellationToken = default);
 

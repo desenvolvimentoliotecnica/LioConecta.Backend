@@ -14,6 +14,8 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
         if (await db.People.AnyAsync(cancellationToken))
         {
             await EnsureRichProfilesAsync(cancellationToken);
+            await EnsureComunicadosCatalogAsync(cancellationToken);
+            await EnsureArchivedAtBackfillAsync(cancellationToken);
             logger.LogDebug("Database already contains people; skipping seed.");
             return;
         }
@@ -136,37 +138,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
                 tags: "[\"member\"]")
         };
 
-        var comunicados = new[]
-        {
-            new Comunicado
-            {
-                Id = SeedIds.ComunicadoSecurity,
-                Kind = ComunicadoKind.Urgente,
-                Title = "Campanha de segurança da informação",
-                Excerpt = "Reforce boas práticas de segurança digital em todas as áreas.",
-                ContentJson = "{\"body\":\"Atualize suas senhas e valide links antes de clicar.\"}",
-                AuthorId = SeedIds.JulioSchwartzman,
-                HeroImageUrl = "/bg-comunicado-security.png",
-                IsMandatory = true,
-                PublishedAt = now.AddDays(-10),
-                CreatedAt = now.AddDays(-10),
-                UpdatedAt = now.AddDays(-10)
-            },
-            new Comunicado
-            {
-                Id = SeedIds.ComunicadoBenefits,
-                Kind = ComunicadoKind.Oficial,
-                Title = "Novidades do programa de benefícios 2026",
-                Excerpt = "Confira as atualizações do plano de saúde e vale-refeição.",
-                ContentJson = "{\"body\":\"O RH publicou o guia completo de benefícios para 2026.\"}",
-                AuthorId = SeedIds.CarlosMendes,
-                HeroImageUrl = "/bg-benefits.png",
-                IsMandatory = false,
-                PublishedAt = now.AddDays(-5),
-                CreatedAt = now.AddDays(-5),
-                UpdatedAt = now.AddDays(-5)
-            }
-        };
+        var comunicados = ComunicadoCatalogSeed.CreateAll(seedTime).ToArray();
 
         var feedPosts = new[]
         {
@@ -257,6 +229,65 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
         maria.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Updated rich profile seed data for {Slug}.", maria.Slug);
+    }
+
+    private async Task EnsureComunicadosCatalogAsync(CancellationToken cancellationToken)
+    {
+        var existingSlugs = await db.Comunicados
+            .Where(c => c.Slug != null)
+            .Select(c => c.Slug!)
+            .ToListAsync(cancellationToken);
+
+        var existingSlugSet = existingSlugs.ToHashSet(StringComparer.Ordinal);
+        var seedTime = DateTimeOffset.UtcNow.AddDays(-30);
+        var added = 0;
+
+        foreach (var entry in ComunicadoCatalogSeed.Entries)
+        {
+            if (existingSlugSet.Contains(entry.Slug))
+            {
+                continue;
+            }
+
+            var existsById = await db.Comunicados.AnyAsync(c => c.Id == entry.Id, cancellationToken);
+            if (existsById)
+            {
+                continue;
+            }
+
+            db.Comunicados.Add(ComunicadoCatalogSeed.ToEntity(entry, seedTime));
+            added++;
+        }
+
+        if (added == 0)
+        {
+            return;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Seeded {Count} catalog comunicados.", added);
+    }
+
+    private async Task EnsureArchivedAtBackfillAsync(CancellationToken cancellationToken)
+    {
+        var pending = await db.Comunicados
+            .Where(c => c.ArchivedAt == null && c.Kind == ComunicadoKind.Arquivo)
+            .ToListAsync(cancellationToken);
+
+        if (pending.Count == 0)
+        {
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        foreach (var comunicado in pending)
+        {
+            comunicado.ArchivedAt = comunicado.PublishedAt ?? comunicado.CreatedAt;
+            comunicado.UpdatedAt = now;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Backfilled ArchivedAt for {Count} comunicados.", pending.Count);
     }
 
     private static Person CreatePerson(

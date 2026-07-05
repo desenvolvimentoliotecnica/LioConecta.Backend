@@ -9,6 +9,8 @@ public class Comunicado : BaseEntity
 
     public string Title { get; set; } = string.Empty;
 
+    public string? Slug { get; set; }
+
     public string? Excerpt { get; set; }
 
     public string ContentJson { get; set; } = "{}";
@@ -22,6 +24,8 @@ public class Comunicado : BaseEntity
     public bool IsMandatory { get; set; }
 
     public DateTimeOffset? PublishedAt { get; set; }
+
+    public DateTimeOffset? ArchivedAt { get; set; }
 
     public ICollection<ComunicadoRead> Reads { get; set; } = [];
 }

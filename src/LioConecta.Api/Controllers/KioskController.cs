@@ -45,6 +45,7 @@ public sealed class KioskController(
     {
         var result = await comunicadoService.ListAsync(
             kind,
+            archivedOnly: false,
             new CursorPageRequest { Cursor = cursor, Limit = limit },
             cancellationToken);
         return Ok(result);

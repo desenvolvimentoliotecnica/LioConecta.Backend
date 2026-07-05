@@ -10,6 +10,7 @@ public sealed class ComunicadoRepository(AppDbContext db) : IComunicadoRepositor
 {
     public async Task<PagedResult<Comunicado>> GetPageAsync(
         ComunicadoKind? kind,
+        bool archivedOnly,
         CursorPageRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -21,23 +22,48 @@ public sealed class ComunicadoRepository(AppDbContext db) : IComunicadoRepositor
             .AsNoTracking()
             .AsQueryable();
 
-        if (kind.HasValue)
+        if (archivedOnly)
         {
-            query = query.Where(c => c.Kind == kind.Value);
+            query = query.Where(c => c.ArchivedAt != null);
+        }
+        else if (kind.HasValue)
+        {
+            query = query.Where(c => c.Kind == kind.Value && c.ArchivedAt == null);
         }
 
         if (cursorCreatedAt.HasValue && cursorId.HasValue)
         {
-            query = query.Where(c =>
-                (c.PublishedAt ?? c.CreatedAt) < cursorCreatedAt.Value ||
-                ((c.PublishedAt ?? c.CreatedAt) == cursorCreatedAt.Value && c.Id.CompareTo(cursorId.Value) < 0));
+            if (archivedOnly)
+            {
+                query = query.Where(c =>
+                    c.ArchivedAt! < cursorCreatedAt.Value ||
+                    (c.ArchivedAt == cursorCreatedAt.Value && c.Id.CompareTo(cursorId.Value) < 0));
+            }
+            else
+            {
+                query = query.Where(c =>
+                    (c.PublishedAt ?? c.CreatedAt) < cursorCreatedAt.Value ||
+                    ((c.PublishedAt ?? c.CreatedAt) == cursorCreatedAt.Value && c.Id.CompareTo(cursorId.Value) < 0));
+            }
         }
 
-        var items = await query
-            .OrderByDescending(c => c.PublishedAt ?? c.CreatedAt)
-            .ThenByDescending(c => c.Id)
-            .Take(limit + 1)
-            .ToListAsync(cancellationToken);
+        List<Comunicado> items;
+        if (archivedOnly)
+        {
+            items = await query
+                .OrderByDescending(c => c.ArchivedAt)
+                .ThenByDescending(c => c.Id)
+                .Take(limit + 1)
+                .ToListAsync(cancellationToken);
+        }
+        else
+        {
+            items = await query
+                .OrderByDescending(c => c.PublishedAt ?? c.CreatedAt)
+                .ThenByDescending(c => c.Id)
+                .Take(limit + 1)
+                .ToListAsync(cancellationToken);
+        }
 
         var hasMore = items.Count > limit;
         if (hasMore)
@@ -46,9 +72,13 @@ public sealed class ComunicadoRepository(AppDbContext db) : IComunicadoRepositor
         }
 
         var last = items.Count > 0 ? items[^1] : null;
-        var nextCursor = hasMore && last is not null
-            ? CursorHelper.Encode(last.PublishedAt ?? last.CreatedAt, last.Id)
-            : null;
+        string? nextCursor = null;
+        if (hasMore && last is not null)
+        {
+            nextCursor = archivedOnly
+                ? CursorHelper.Encode(last.ArchivedAt ?? last.PublishedAt ?? last.CreatedAt, last.Id)
+                : CursorHelper.Encode(last.PublishedAt ?? last.CreatedAt, last.Id);
+        }
 
         return PagedResult<Comunicado>.FromItems(items, nextCursor, hasMore);
     }
@@ -58,6 +88,12 @@ public sealed class ComunicadoRepository(AppDbContext db) : IComunicadoRepositor
             .Include(c => c.Author)
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
+    public Task<Comunicado?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default) =>
+        db.Comunicados
+            .Include(c => c.Author)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Slug == slug, cancellationToken);
 
     public async Task MarkAsReadAsync(
         Guid comunicadoId,

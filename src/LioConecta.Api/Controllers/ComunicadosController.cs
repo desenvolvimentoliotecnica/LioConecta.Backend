@@ -26,10 +26,12 @@ public sealed class ComunicadosController(
         [FromQuery] ComunicadoKind? kind,
         [FromQuery] string? cursor,
         [FromQuery] int limit = 20,
+        [FromQuery] bool archived = false,
         CancellationToken cancellationToken = default)
     {
         var page = await comunicadoService.ListAsync(
             kind,
+            archived,
             new CursorPageRequest { Cursor = cursor, Limit = limit },
             cancellationToken);
 
@@ -42,6 +44,15 @@ public sealed class ComunicadosController(
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var comunicado = await comunicadoService.GetByIdAsync(id, cancellationToken);
+        return comunicado is null ? NotFound() : Ok(comunicado);
+    }
+
+    [HttpGet("slug/{slug}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetBySlug(string slug, CancellationToken cancellationToken)
+    {
+        var comunicado = await comunicadoService.GetBySlugAsync(slug, cancellationToken);
         return comunicado is null ? NotFound() : Ok(comunicado);
     }
 
@@ -80,6 +91,8 @@ public sealed class ComunicadosController(
 
         dbContext.Comunicados.Add(comunicado);
         await dbContext.SaveChangesAsync(cancellationToken);
+
+        await dbContext.Entry(comunicado).Reference(c => c.Author).LoadAsync(cancellationToken);
 
         var dto = ComunicadoMapper.ToDto(comunicado, isRead: false);
         return CreatedAtAction(nameof(GetById), new { id = comunicado.Id }, dto);

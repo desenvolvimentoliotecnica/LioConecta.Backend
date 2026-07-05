@@ -210,7 +210,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         {
             entity.HasIndex(c => c.Kind);
             entity.HasIndex(c => c.PublishedAt);
+            entity.HasIndex(c => c.ArchivedAt);
             entity.HasIndex(c => c.AuthorId);
+            entity.HasIndex(c => c.Slug).IsUnique();
+            entity.Property(c => c.Slug).HasMaxLength(120);
 
             entity.HasOne(c => c.Author)
                 .WithMany()

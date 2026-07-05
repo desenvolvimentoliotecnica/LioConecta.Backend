@@ -261,6 +261,7 @@ public static class ComunicadoMapper
     public static ComunicadoListItemDto ToListItem(Comunicado comunicado, bool isRead)
         => new(
             comunicado.Id,
+            comunicado.Slug,
             comunicado.Kind,
             comunicado.Title,
             comunicado.Excerpt,
@@ -268,11 +269,13 @@ public static class ComunicadoMapper
             comunicado.HeroImageUrl,
             comunicado.IsMandatory,
             comunicado.PublishedAt,
+            comunicado.ArchivedAt,
             isRead);
 
     public static ComunicadoDto ToDto(Comunicado comunicado, bool isRead)
         => new(
             comunicado.Id,
+            comunicado.Slug,
             comunicado.Kind,
             comunicado.Title,
             comunicado.Excerpt,

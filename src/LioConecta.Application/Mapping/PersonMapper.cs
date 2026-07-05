@@ -48,6 +48,76 @@ public static class JsonMapper
 
     public static string SerializeStringList(IReadOnlyList<string>? value)
         => JsonSerializer.Serialize(value ?? [], Options);
+
+    public static IReadOnlyList<PersonSkillDto> DeserializeSkills(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return [];
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return [];
+            }
+
+            var skills = new List<PersonSkillDto>();
+            foreach (var item in doc.RootElement.EnumerateArray())
+            {
+                if (item.ValueKind == JsonValueKind.String)
+                {
+                    var name = item.GetString();
+                    if (!string.IsNullOrWhiteSpace(name))
+                    {
+                        skills.Add(new PersonSkillDto(name, 3, 0));
+                    }
+
+                    continue;
+                }
+
+                if (item.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
+
+                var skillName = item.TryGetProperty("name", out var nameProp)
+                    ? nameProp.GetString()
+                    : item.TryGetProperty("Name", out var altNameProp)
+                        ? altNameProp.GetString()
+                        : null;
+
+                if (string.IsNullOrWhiteSpace(skillName))
+                {
+                    continue;
+                }
+
+                var level = item.TryGetProperty("level", out var levelProp)
+                    ? levelProp.GetInt32()
+                    : item.TryGetProperty("Level", out var altLevelProp)
+                        ? altLevelProp.GetInt32()
+                        : 3;
+
+                var endorsements = item.TryGetProperty("endorsements", out var endorsementsProp)
+                    ? endorsementsProp.GetInt32()
+                    : item.TryGetProperty("Endorsements", out var altEndorsementsProp)
+                        ? altEndorsementsProp.GetInt32()
+                        : 0;
+
+                skills.Add(new PersonSkillDto(skillName, level, endorsements));
+            }
+
+            return skills;
+        }
+        catch (JsonException)
+        {
+            return DeserializeStringList(json)
+                .Select(name => new PersonSkillDto(name, 3, 0))
+                .ToList();
+        }
+    }
 }
 
 public static class PersonMapper
@@ -61,6 +131,7 @@ public static class PersonMapper
             person.PhotoUrl,
             person.Department?.Name,
             person.Location,
+            person.Manager?.Slug,
             person.IsActive);
 
     public static MeDto ToMe(Person person, IReadOnlyList<UserRole> roles)
@@ -77,10 +148,29 @@ public static class PersonMapper
     public static PersonProfileDto ToProfile(Person person, ViewerContext viewerContext)
     {
         var showSensitive = viewerContext is ViewerContext.Self or ViewerContext.HR or ViewerContext.Admin;
+        var personalData = showSensitive
+            ? JsonMapper.DeserializeObjectDictionary(person.PersonalDataJson)
+            : null;
+
+        string? ReadPersonalString(string key)
+        {
+            if (personalData is null || !personalData.TryGetValue(key, out var value) || value is null)
+            {
+                return null;
+            }
+
+            return value switch
+            {
+                string text => text,
+                JsonElement element when element.ValueKind == JsonValueKind.String => element.GetString(),
+                _ => value.ToString()
+            };
+        }
 
         return new PersonProfileDto(
             person.Id,
             person.Slug,
+            person.OrgChartId,
             person.Name,
             person.Title,
             showSensitive ? person.Email : MaskEmail(person.Email),
@@ -89,12 +179,16 @@ public static class PersonMapper
             person.PhotoUrl,
             person.Department?.Name,
             person.Manager?.Name,
+            person.Manager?.Slug,
+            person.TeamsUpn,
+            ReadPersonalString("bio"),
+            ReadPersonalString("pronouns"),
             showSensitive ? person.BirthDate : null,
             person.HireDate,
             person.Status,
             JsonMapper.DeserializeStringList(person.TagsJson),
-            JsonMapper.DeserializeStringList(person.SkillsJson),
-            showSensitive ? JsonMapper.DeserializeStringDictionary(person.PersonalDataJson) : null,
+            JsonMapper.DeserializeSkills(person.SkillsJson),
+            personalData,
             viewerContext);
     }
 

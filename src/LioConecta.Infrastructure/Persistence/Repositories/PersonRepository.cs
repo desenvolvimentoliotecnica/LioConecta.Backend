@@ -29,6 +29,7 @@ public sealed class PersonRepository(AppDbContext db) : IPersonRepository
         var queryable = db.People
             .AsNoTracking()
             .Include(p => p.Department)
+            .Include(p => p.Manager)
             .Where(p => p.IsActive);
 
         if (!string.IsNullOrWhiteSpace(normalized))

@@ -10,6 +10,7 @@ namespace LioConecta.Application.Services;
 
 public sealed class FeedService(
     IFeedRepository feedRepository,
+    IAnalyticsRepository analyticsRepository,
     ICurrentUserService currentUserService) : IFeedService
 {
     public async Task<PagedResult<FeedPostDto>> GetFeedAsync(
@@ -91,6 +92,7 @@ public sealed class FeedService(
             if (string.Equals(existing.ReactionType, request.ReactionType, StringComparison.OrdinalIgnoreCase))
             {
                 await feedRepository.RemoveReactionAsync(existing, cancellationToken);
+                await TrackReactionEventAsync("FeedPostUnliked", personId, post.Id, request.ReactionType, cancellationToken);
                 return;
             }
 
@@ -104,6 +106,28 @@ public sealed class FeedService(
             PostId = post.Id,
             PersonId = personId,
             ReactionType = request.ReactionType,
+            CreatedAt = now,
+            UpdatedAt = now
+        }, cancellationToken);
+
+        await TrackReactionEventAsync("FeedPostLiked", personId, post.Id, request.ReactionType, cancellationToken);
+    }
+
+    private async Task TrackReactionEventAsync(
+        string eventType,
+        Guid personId,
+        Guid postId,
+        string reactionType,
+        CancellationToken cancellationToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+        await analyticsRepository.AddEventAsync(new AnalyticsEvent
+        {
+            Id = Guid.NewGuid(),
+            EventType = eventType,
+            PersonId = personId,
+            MetadataJson = $"{{\"postId\":\"{postId}\",\"reactionType\":\"{reactionType}\"}}",
+            OccurredAt = now,
             CreatedAt = now,
             UpdatedAt = now
         }, cancellationToken);

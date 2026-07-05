@@ -13,6 +13,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
     {
         if (await db.People.AnyAsync(cancellationToken))
         {
+            await EnsureRichProfilesAsync(cancellationToken);
             logger.LogDebug("Database already contains people; skipping seed.");
             return;
         }
@@ -96,7 +97,9 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
                 photoUrl: "/avatar-maria-silva.png",
                 birthDate: new DateOnly(1990, 11, 20),
                 hireDate: new DateOnly(2022, 3, 10),
-                tags: "[\"member\"]"),
+                tags: "[\"member\"]",
+                skillsJson: ProfileSeedContent.MariaSilvaSkillsJson,
+                personalDataJson: ProfileSeedContent.MariaSilvaPersonalDataJson),
             CreatePerson(
                 SeedIds.RicardoSouza,
                 "ricardo-souza",
@@ -241,6 +244,21 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
         logger.LogInformation("Seed completed with {People} people.", people.Length);
     }
 
+    private async Task EnsureRichProfilesAsync(CancellationToken cancellationToken)
+    {
+        var maria = await db.People.FirstOrDefaultAsync(p => p.Slug == "maria-silva", cancellationToken);
+        if (maria is null || !string.IsNullOrWhiteSpace(maria.PersonalDataJson))
+        {
+            return;
+        }
+
+        maria.PersonalDataJson = ProfileSeedContent.MariaSilvaPersonalDataJson;
+        maria.SkillsJson = ProfileSeedContent.MariaSilvaSkillsJson;
+        maria.UpdatedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Updated rich profile seed data for {Slug}.", maria.Slug);
+    }
+
     private static Person CreatePerson(
         Guid id,
         string slug,
@@ -257,7 +275,9 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
         string photoUrl,
         DateOnly birthDate,
         DateOnly hireDate,
-        string tags)
+        string tags,
+        string skillsJson = "[]",
+        string? personalDataJson = null)
     {
         var seedTime = DateTimeOffset.UtcNow.AddDays(-30);
         return new Person
@@ -279,7 +299,8 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             BirthDate = birthDate,
             HireDate = hireDate,
             TagsJson = tags,
-            SkillsJson = "[]",
+            SkillsJson = skillsJson,
+            PersonalDataJson = personalDataJson,
             Status = "active",
             IsActive = true,
             CreatedAt = seedTime,

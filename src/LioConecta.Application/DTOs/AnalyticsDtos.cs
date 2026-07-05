@@ -3,6 +3,7 @@ namespace LioConecta.Application.DTOs;
 public sealed record AnalyticsDashboardDto(
     int ActiveUsers,
     int FeedPosts,
+    int FeedReactions,
     int ServiceRequests,
     int UnreadNotifications,
     int MoodChecks,

@@ -20,11 +20,18 @@ public sealed record PersonSummaryDto(
     string? PhotoUrl,
     string? DepartmentName,
     string? Location,
+    string? ManagerSlug,
     bool IsActive);
+
+public sealed record PersonSkillDto(
+    string Name,
+    int Level,
+    int Endorsements);
 
 public sealed record PersonProfileDto(
     Guid Id,
     string Slug,
+    string? OrgChartId,
     string Name,
     string? Title,
     string Email,
@@ -33,12 +40,16 @@ public sealed record PersonProfileDto(
     string? PhotoUrl,
     string? DepartmentName,
     string? ManagerName,
+    string? ManagerSlug,
+    string? TeamsUpn,
+    string? Bio,
+    string? Pronouns,
     DateOnly? BirthDate,
     DateOnly? HireDate,
     string? Status,
     IReadOnlyList<string> Tags,
-    IReadOnlyList<string> Skills,
-    IReadOnlyDictionary<string, string>? PersonalData,
+    IReadOnlyList<PersonSkillDto> Skills,
+    IReadOnlyDictionary<string, object?>? PersonalData,
     ViewerContext ViewerContext);
 
 public sealed record OrgChartNodeDto(

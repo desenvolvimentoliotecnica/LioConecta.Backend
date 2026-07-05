@@ -24,6 +24,7 @@ public sealed class AnalyticsService(
         return new AnalyticsDashboardDto(
             ActiveUsers: events.Where(e => e.PersonId is not null).Select(e => e.PersonId).Distinct().Count(),
             FeedPosts: eventsByType.GetValueOrDefault("FeedPostCreated"),
+            FeedReactions: eventsByType.GetValueOrDefault("FeedPostLiked"),
             ServiceRequests: eventsByType.GetValueOrDefault("ServiceRequestCreated"),
             UnreadNotifications: unread,
             MoodChecks: eventsByType.GetValueOrDefault("MoodCheckRecorded"),

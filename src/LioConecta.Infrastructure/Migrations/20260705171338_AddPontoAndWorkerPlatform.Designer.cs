@@ -3,6 +3,7 @@ using System;
 using LioConecta.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LioConecta.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260705171338_AddPontoAndWorkerPlatform")]
+    partial class AddPontoAndWorkerPlatform
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1715,12 +1718,6 @@ namespace LioConecta.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
-
-                    b.Property<int>("TimesheetPeriodEndDay")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TimesheetPeriodStartDay")
-                        .HasColumnType("integer");
 
                     b.Property<bool>("TrustServerCertificate")
                         .HasColumnType("boolean");

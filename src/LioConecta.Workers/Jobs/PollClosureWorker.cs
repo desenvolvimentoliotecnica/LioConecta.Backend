@@ -1,38 +1,42 @@
+using LioConecta.Application.Common;
 using LioConecta.Application.Interfaces.Services;
 
 namespace LioConecta.Workers.Jobs;
 
-public sealed class PollClosureWorker : BackgroundService
+public sealed class PollClosureWorker(
+    IServiceProvider services,
+    ILogger<PollClosureWorker> logger,
+    IAppSettingsProvider settings) : BackgroundService
 {
-    private static readonly TimeSpan Interval = TimeSpan.FromMinutes(1);
-
-    private readonly IServiceProvider _services;
-    private readonly ILogger<PollClosureWorker> _logger;
-
-    public PollClosureWorker(IServiceProvider services, ILogger<PollClosureWorker> logger)
-    {
-        _services = services;
-        _logger = logger;
-    }
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Poll closure worker started (interval: {Interval})", Interval);
+        var intervalMinutes = settings.GetInt(AppSettingKeys.WorkersPollClosureIntervalMinutes, 1);
+        logger.LogInformation("Poll closure worker started (interval: {Interval} min)", intervalMinutes);
 
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                using var scope = _services.CreateScope();
+                using var scope = services.CreateScope();
+                var recorder = scope.ServiceProvider.GetRequiredService<IWorkerRunRecorder>();
                 var pollClosureService = scope.ServiceProvider.GetRequiredService<IPollClosureService>();
-                await pollClosureService.ProcessClosedPollsAsync(stoppingToken);
+
+                await recorder.ExecuteAsync(
+                    WorkerKeys.PollClosure,
+                    "scheduled",
+                    async (context, ct) =>
+                    {
+                        await pollClosureService.ProcessClosedPollsAsync(ct);
+                        await context.LogInfoAsync("Poll closure processing completed.", ct);
+                    },
+                    stoppingToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                _logger.LogError(ex, "Poll closure processing failed");
+                logger.LogError(ex, "Poll closure processing failed");
             }
 
-            await Task.Delay(Interval, stoppingToken);
+            await Task.Delay(TimeSpan.FromMinutes(intervalMinutes), stoppingToken);
         }
     }
 }

@@ -29,6 +29,7 @@
   <ItemGroup>
     <ProjectReference Include="..\LioConecta.Application\LioConecta.Application.csproj" />
     <ProjectReference Include="..\LioConecta.Infrastructure\LioConecta.Infrastructure.csproj" />
+    <ProjectReference Include="..\LioConecta.Workers\LioConecta.Workers.csproj" />
   </ItemGroup>
 
   <ItemGroup>

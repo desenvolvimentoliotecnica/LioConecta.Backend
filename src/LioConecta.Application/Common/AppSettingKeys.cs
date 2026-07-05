@@ -29,6 +29,9 @@ public static class AppSettingKeys
 
     public const string WorkersTotvsSyncIntervalMinutes = "workers.totvs_sync_interval_minutes";
     public const string WorkersGraphSyncIntervalMinutes = "workers.graph_sync_interval_minutes";
+    public const string WorkersTotvsTimesheetSyncIntervalMinutes = "workers.totvs_timesheet_sync_interval_minutes";
+    public const string WorkersTotvsTimesheetCacheTtlMinutes = "workers.totvs_timesheet_cache_ttl_minutes";
+    public const string WorkersPollClosureIntervalMinutes = "workers.poll_closure_interval_minutes";
 
     public const string SerilogDefaultLevel = "serilog.default_level";
 

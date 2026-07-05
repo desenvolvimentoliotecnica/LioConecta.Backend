@@ -41,7 +41,7 @@ public class HealthEndpointTests : IClassFixture<LioConectaWebApplicationFactory
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var json = await response.Content.ReadAsStringAsync();
-        Assert.Contains("maria-silva", json, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("leonardo-sabino-mendes", json, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

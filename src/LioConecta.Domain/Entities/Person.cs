@@ -22,6 +22,8 @@ public class Person : BaseEntity
 
     public string Email { get; set; } = string.Empty;
 
+    public string? EmployeeId { get; set; }
+
     public string? Phone { get; set; }
 
     public string? Location { get; set; }

@@ -21,6 +21,9 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             await EnsureBenefitsCatalogAsync(cancellationToken);
             await EnsureLeaveCatalogAsync(cancellationToken);
             await EnsurePollSeedAsync(cancellationToken);
+            await EnsureEmployeeIdsAsync(cancellationToken);
+            await EnsureDevTestUserProfileAsync(cancellationToken);
+            await EnsureTotvsRmConfigurationAsync(cancellationToken);
             logger.LogDebug("Database already contains people; skipping seed.");
             return;
         }
@@ -90,23 +93,24 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
                 tags: "[\"director\"]"),
             CreatePerson(
                 SeedIds.MariaSilva,
-                "maria-silva",
-                "Maria Silva",
-                "Gerente de Projetos",
-                "Produto",
+                "leonardo-sabino-mendes",
+                "Leonardo Sabino Mendes",
+                "Desenvolvedor Sr.",
+                "Sistemas",
                 SeedIds.DeptProduto,
-                "maria.silva@liotecnica.com.br",
+                "leonardo.mendes@liotecnica.com.br",
                 "(19) 32033",
-                "Campinas, SP · Produto",
-                "@Maria Silva",
+                "Campinas, SP · Sistemas",
+                "@Leonardo Sabino Mendes",
                 managerId: SeedIds.CarlosMendes,
                 orgChartId: "3",
-                photoUrl: "/avatar-maria-silva.png",
+                photoUrl: "/avatar-carlos-mendes.png",
                 birthDate: new DateOnly(1990, 11, 20),
                 hireDate: new DateOnly(2022, 3, 10),
                 tags: "[\"member\"]",
-                skillsJson: ProfileSeedContent.MariaSilvaSkillsJson,
-                personalDataJson: ProfileSeedContent.MariaSilvaPersonalDataJson),
+                skillsJson: ProfileSeedContent.LeonardoSabinoMendesSkillsJson,
+                personalDataJson: ProfileSeedContent.LeonardoSabinoMendesPersonalDataJson,
+                employeeId: "00000887"),
             CreatePerson(
                 SeedIds.RicardoSouza,
                 "ricardo-souza",
@@ -295,17 +299,17 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
 
     private async Task EnsureRichProfilesAsync(CancellationToken cancellationToken)
     {
-        var maria = await db.People.FirstOrDefaultAsync(p => p.Slug == "maria-silva", cancellationToken);
-        if (maria is null || !string.IsNullOrWhiteSpace(maria.PersonalDataJson))
+        var devUser = await db.People.FirstOrDefaultAsync(p => p.Id == SeedIds.MariaSilva, cancellationToken);
+        if (devUser is null || !string.IsNullOrWhiteSpace(devUser.PersonalDataJson))
         {
             return;
         }
 
-        maria.PersonalDataJson = ProfileSeedContent.MariaSilvaPersonalDataJson;
-        maria.SkillsJson = ProfileSeedContent.MariaSilvaSkillsJson;
-        maria.UpdatedAt = DateTimeOffset.UtcNow;
+        devUser.PersonalDataJson = ProfileSeedContent.LeonardoSabinoMendesPersonalDataJson;
+        devUser.SkillsJson = ProfileSeedContent.LeonardoSabinoMendesSkillsJson;
+        devUser.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
-        logger.LogInformation("Updated rich profile seed data for {Slug}.", maria.Slug);
+        logger.LogInformation("Updated rich profile seed data for {Slug}.", devUser.Slug);
     }
 
     private async Task EnsureComunicadosCatalogAsync(CancellationToken cancellationToken)
@@ -512,6 +516,121 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
         logger.LogInformation("Seeded sample poll for feed.");
     }
 
+    private async Task EnsureEmployeeIdsAsync(CancellationToken cancellationToken)
+    {
+        var devUser = await db.People.FirstOrDefaultAsync(p => p.Id == SeedIds.MariaSilva, cancellationToken);
+        if (devUser is null || !string.IsNullOrWhiteSpace(devUser.EmployeeId))
+        {
+            return;
+        }
+
+        devUser.EmployeeId = "00000887";
+        devUser.UpdatedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Seeded EmployeeId for {Slug}.", devUser.Slug);
+    }
+
+    private async Task EnsureDevTestUserProfileAsync(CancellationToken cancellationToken)
+    {
+        var devUser = await db.People.FirstOrDefaultAsync(p => p.Id == SeedIds.MariaSilva, cancellationToken);
+        if (devUser is null)
+        {
+            return;
+        }
+
+        var changed = false;
+
+        if (!string.Equals(devUser.Slug, "leonardo-sabino-mendes", StringComparison.Ordinal))
+        {
+            devUser.Slug = "leonardo-sabino-mendes";
+            changed = true;
+        }
+
+        if (!string.Equals(devUser.Name, "Leonardo Sabino Mendes", StringComparison.Ordinal))
+        {
+            devUser.Name = "Leonardo Sabino Mendes";
+            changed = true;
+        }
+
+        if (!string.Equals(devUser.Title, "Desenvolvedor Sr.", StringComparison.Ordinal))
+        {
+            devUser.Title = "Desenvolvedor Sr.";
+            changed = true;
+        }
+
+        if (!string.Equals(devUser.Dept, "Sistemas", StringComparison.Ordinal))
+        {
+            devUser.Dept = "Sistemas";
+            changed = true;
+        }
+
+        if (!string.Equals(devUser.Email, "leonardo.mendes@liotecnica.com.br", StringComparison.OrdinalIgnoreCase))
+        {
+            devUser.Email = "leonardo.mendes@liotecnica.com.br";
+            changed = true;
+        }
+
+        if (!string.Equals(devUser.EmployeeId, "00000887", StringComparison.Ordinal))
+        {
+            devUser.EmployeeId = "00000887";
+            changed = true;
+        }
+
+        if (!string.Equals(devUser.PhotoUrl, "/avatar-carlos-mendes.png", StringComparison.Ordinal))
+        {
+            devUser.PhotoUrl = "/avatar-carlos-mendes.png";
+            changed = true;
+        }
+
+        if (!string.Equals(devUser.Location, "Campinas, SP · Sistemas", StringComparison.Ordinal))
+        {
+            devUser.Location = "Campinas, SP · Sistemas";
+            changed = true;
+        }
+
+        if (!string.Equals(devUser.TeamsUpn, "@Leonardo Sabino Mendes", StringComparison.Ordinal))
+        {
+            devUser.TeamsUpn = "@Leonardo Sabino Mendes";
+            changed = true;
+        }
+
+        if (!changed)
+        {
+            return;
+        }
+
+        devUser.UpdatedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Aligned dev test user profile to Leonardo Sabino Mendes ({Slug}).", devUser.Slug);
+    }
+
+    private async Task EnsureTotvsRmConfigurationAsync(CancellationToken cancellationToken)
+    {
+        if (await db.TotvsRmConfigurations.AnyAsync(cancellationToken))
+        {
+            return;
+        }
+
+        db.TotvsRmConfigurations.Add(new TotvsRmConfiguration
+        {
+            Id = Guid.NewGuid(),
+            IsEnabled = false,
+            Server = string.Empty,
+            Port = 1433,
+            Database = string.Empty,
+            UserName = string.Empty,
+            PasswordProtected = null,
+            TrustServerCertificate = true,
+            TimesheetPeriodStartDay = 16,
+            TimesheetPeriodEndDay = 15,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        });
+
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Seeded default TOTVS RM configuration row.");
+    }
+
     private static Person CreatePerson(
         Guid id,
         string slug,
@@ -530,7 +649,8 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
         DateOnly hireDate,
         string tags,
         string skillsJson = "[]",
-        string? personalDataJson = null)
+        string? personalDataJson = null,
+        string? employeeId = null)
     {
         var seedTime = DateTimeOffset.UtcNow.AddDays(-30);
         return new Person
@@ -543,6 +663,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             Dept = dept,
             DepartmentId = departmentId,
             Email = email,
+            EmployeeId = employeeId,
             Phone = phone,
             Location = location,
             TeamsUpn = teamsUpn,

@@ -62,6 +62,12 @@ public static class AppSettingCatalog
             "Frequência do worker de sincronização TOTVS.", "integer", false, "30", 1),
         new(AppSettingKeys.WorkersGraphSyncIntervalMinutes, "workers", "Intervalo sync Graph (minutos)",
             "Frequência do worker de sincronização Graph.", "integer", false, "60", 2),
+        new(AppSettingKeys.WorkersTotvsTimesheetSyncIntervalMinutes, "workers", "Intervalo sync ponto TOTVS RM (minutos)",
+            "Frequência do worker de cache de espelho de ponto.", "integer", false, "30", 3),
+        new(AppSettingKeys.WorkersTotvsTimesheetCacheTtlMinutes, "workers", "TTL cache ponto TOTVS RM (minutos)",
+            "Tempo máximo antes de considerar o cache de ponto obsoleto.", "integer", false, "60", 4),
+        new(AppSettingKeys.WorkersPollClosureIntervalMinutes, "workers", "Intervalo encerramento enquetes (minutos)",
+            "Frequência do worker de notificação de enquetes encerradas.", "integer", false, "1", 5),
 
         new(AppSettingKeys.SerilogDefaultLevel, "serilog", "Nível mínimo de log",
             "Default Serilog (Information, Debug, Warning…).", "string", false, "Information", 1),

@@ -32,6 +32,11 @@ public static class DependencyInjection
         services.AddScoped<IObservabilityRetentionService, ObservabilityRetentionService>();
         services.AddScoped<IObservabilityQueryService, ObservabilityQueryService>();
 
+        services.AddScoped<TimesheetAggregationService>();
+        services.AddScoped<TimesheetMergeService>();
+        services.AddScoped<IPontoService, PontoService>();
+        services.AddScoped<ITimesheetSyncService, TimesheetSyncService>();
+
         return services;
     }
 }

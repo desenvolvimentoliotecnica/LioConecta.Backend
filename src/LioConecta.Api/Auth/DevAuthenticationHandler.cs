@@ -15,11 +15,11 @@ public sealed class DevAuthenticationHandler(
     {
         var claims = new List<Claim>
         {
-            new(ClaimTypes.Name, DevAuthDefaults.MariaSilvaName),
-            new(ClaimTypes.Email, DevAuthDefaults.MariaSilvaEmail),
-            new("preferred_username", DevAuthDefaults.MariaSilvaEmail),
-            new("oid", DevAuthDefaults.MariaSilvaObjectId.ToString()),
-            new("person_slug", DevAuthDefaults.MariaSilvaSlug),
+            new(ClaimTypes.Name, DevAuthDefaults.DevUserName),
+            new(ClaimTypes.Email, DevAuthDefaults.DevUserEmail),
+            new("preferred_username", DevAuthDefaults.DevUserEmail),
+            new("oid", DevAuthDefaults.DevUserObjectId.ToString()),
+            new("person_slug", DevAuthDefaults.DevUserSlug),
             new(ClaimTypes.Role, "Employee"),
             new(ClaimTypes.Role, "Admin"),
         };

@@ -14,6 +14,7 @@ using LioConecta.Infrastructure;
 using LioConecta.Infrastructure.Configuration;
 using LioConecta.Infrastructure.Persistence;
 using LioConecta.Infrastructure.Services;
+using LioConecta.Workers.Jobs;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -51,7 +52,14 @@ try
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(settingsProvider);
     builder.Services.AddScoped<INotificationBroadcaster, SignalRNotificationBroadcaster>();
-    builder.Services.AddHostedService<PollClosureHostedService>();
+    if (builder.Environment.IsDevelopment())
+    {
+        builder.Services.AddHostedService<TotvsSyncWorker>();
+        builder.Services.AddHostedService<GraphSyncWorker>();
+        builder.Services.AddHostedService<PollClosureWorker>();
+        builder.Services.AddHostedService<TotvsTimesheetSyncWorker>();
+    }
+
     builder.Services.AddHostedService<ObservabilityRetentionHostedService>();
 
     var authenticationBuilder = builder.Services.AddAuthentication(options =>

@@ -2,6 +2,46 @@ namespace LioConecta.Infrastructure.Seed;
 
 internal static class ProfileSeedContent
 {
+    internal const string LeonardoSabinoMendesSkillsJson =
+        """
+        [
+          {"name":".NET","level":5,"endorsements":12},
+          {"name":"React","level":4,"endorsements":9},
+          {"name":"Integrações","level":4,"endorsements":7},
+          {"name":"SQL Server","level":4,"endorsements":6}
+        ]
+        """;
+
+    internal const string LeonardoSabinoMendesPersonalDataJson =
+        """
+        {
+          "bio": "Leonardo Sabino Mendes atua em Sistemas na LioConecta, com foco em desenvolvimento e integrações.",
+          "aboutMe": "Sou Leonardo, desenvolvedor sênior na área de Sistemas. Trabalho na LioTécnica integrando soluções internas e TOTVS RM.",
+          "pronouns": "Ele/Dele",
+          "fullName": "Leonardo Sabino Mendes",
+          "birthDate": "20 de novembro de 1990",
+          "birthMonth": 11,
+          "birthDay": 20,
+          "visibility": "public",
+          "availability": {
+            "workModel": "Híbrido",
+            "schedule": "9h–18h",
+            "timezone": "America/Sao_Paulo",
+            "floor": "2º andar",
+            "room": "Sistemas · Sala 204"
+          },
+          "roleTenure": {
+            "years": 4,
+            "since": "mar de 2022",
+            "title": "Desenvolvedor Sr."
+          },
+          "languages": [
+            {"name": "Português", "level": "Nativo"},
+            {"name": "Inglês", "level": "Intermediário"}
+          ]
+        }
+        """;
+
     internal const string MariaSilvaSkillsJson =
         """
         [

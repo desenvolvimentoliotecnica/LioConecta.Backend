@@ -41,6 +41,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<EmployeeBenefit> EmployeeBenefits => Set<EmployeeBenefit>();
     public DbSet<EmployeeLeaveBalance> EmployeeLeaveBalances => Set<EmployeeLeaveBalance>();
     public DbSet<LeaveRecord> LeaveRecords => Set<LeaveRecord>();
+    public DbSet<TotvsRmConfiguration> TotvsRmConfigurations => Set<TotvsRmConfiguration>();
+    public DbSet<WorkerRun> WorkerRuns => Set<WorkerRun>();
+    public DbSet<WorkerRunLog> WorkerRunLogs => Set<WorkerRunLog>();
+    public DbSet<TimesheetPeriodCache> TimesheetPeriodCaches => Set<TimesheetPeriodCache>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -64,6 +68,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigurePayslips(modelBuilder);
         ConfigureEmployeeBenefits(modelBuilder);
         ConfigureEmployeeLeave(modelBuilder);
+        ConfigureTotvsRmConfiguration(modelBuilder);
+        ConfigureWorkerRuns(modelBuilder);
+        ConfigureTimesheetPeriodCache(modelBuilder);
     }
 
     private static void ApplySnakeCaseTableNames(ModelBuilder modelBuilder)
@@ -98,6 +105,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         entity.HasIndex(p => p.AzureAdObjectId);
         entity.HasIndex(p => p.DepartmentId);
         entity.HasIndex(p => p.ManagerId);
+        entity.HasIndex(p => p.EmployeeId);
+
+        entity.Property(p => p.EmployeeId).HasMaxLength(32);
 
         entity.HasOne(p => p.Department)
             .WithMany(d => d.Members)
@@ -594,6 +604,54 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasOne(r => r.Person)
                 .WithMany()
                 .HasForeignKey(r => r.PersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureTotvsRmConfiguration(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<TotvsRmConfiguration>(entity =>
+        {
+            entity.Property(c => c.Server).HasMaxLength(256);
+            entity.Property(c => c.Database).HasMaxLength(128);
+            entity.Property(c => c.UserName).HasMaxLength(128);
+        });
+    }
+
+    private static void ConfigureWorkerRuns(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<WorkerRun>(entity =>
+        {
+            entity.HasIndex(r => r.WorkerKey);
+            entity.HasIndex(r => r.StartedAtUtc);
+            entity.Property(r => r.WorkerKey).HasMaxLength(64);
+            entity.Property(r => r.Status).HasMaxLength(32);
+            entity.Property(r => r.TriggerSource).HasMaxLength(32);
+        });
+
+        modelBuilder.Entity<WorkerRunLog>(entity =>
+        {
+            entity.HasKey(l => l.Id);
+            entity.HasIndex(l => l.WorkerRunId);
+            entity.Property(l => l.Level).HasMaxLength(16);
+
+            entity.HasOne(l => l.WorkerRun)
+                .WithMany(r => r.Logs)
+                .HasForeignKey(l => l.WorkerRunId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureTimesheetPeriodCache(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<TimesheetPeriodCache>(entity =>
+        {
+            entity.HasIndex(c => new { c.PersonId, c.Year, c.Month }).IsUnique();
+            entity.Property(c => c.Source).HasMaxLength(32);
+
+            entity.HasOne(c => c.Person)
+                .WithMany()
+                .HasForeignKey(c => c.PersonId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

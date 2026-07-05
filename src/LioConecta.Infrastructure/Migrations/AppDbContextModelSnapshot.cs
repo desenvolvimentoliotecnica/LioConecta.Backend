@@ -128,11 +128,29 @@ namespace LioConecta.Infrastructure.Migrations
                     b.Property<Guid?>("ActorId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("DetailsJson")
                         .HasColumnType("text");
+
+                    b.Property<int?>("DurationMs")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("HttpMethod")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Path")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("StatusCode")
+                        .HasColumnType("integer");
 
                     b.Property<string>("TargetId")
                         .IsRequired()
@@ -141,6 +159,9 @@ namespace LioConecta.Infrastructure.Migrations
                     b.Property<string>("TargetType")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<Guid>("TransactionId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -151,7 +172,13 @@ namespace LioConecta.Infrastructure.Migrations
 
                     b.HasIndex("ActorId");
 
+                    b.HasIndex("CorrelationId");
+
                     b.HasIndex("CreatedAt");
+
+                    b.HasIndex("Source");
+
+                    b.HasIndex("TransactionId");
 
                     b.ToTable("audit_events");
                 });

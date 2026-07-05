@@ -27,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<IBenefitService, BenefitService>();
         services.AddScoped<ILeaveService, LeaveService>();
         services.AddScoped<IPollClosureService, PollClosureService>();
+        services.AddScoped<IAuditService, AuditService>();
 
         return services;
     }

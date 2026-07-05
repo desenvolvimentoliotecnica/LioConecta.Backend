@@ -6,6 +6,7 @@ using LioConecta.Infrastructure.Services;
 
 namespace LioConecta.IntegrationTests;
 
+[Collection("WebApp")]
 public class HealthEndpointTests : IClassFixture<LioConectaWebApplicationFactory>
 {
     private readonly HttpClient _client;

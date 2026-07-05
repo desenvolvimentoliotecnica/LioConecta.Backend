@@ -6,7 +6,9 @@ using LioConecta.Infrastructure.Configuration;
 using LioConecta.Infrastructure.Integrations.Glpi;
 using LioConecta.Infrastructure.Integrations.Graph;
 using LioConecta.Infrastructure.Integrations.Totvs;
+using LioConecta.Application.Common.Audit;
 using LioConecta.Infrastructure.Persistence;
+using LioConecta.Infrastructure.Persistence.Interceptors;
 using LioConecta.Infrastructure.Persistence.Repositories;
 using LioConecta.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -28,8 +30,14 @@ public static class DependencyInjection
                 $"App setting '{AppSettingKeys.DatabaseDefaultConnection}' is required.");
         }
 
-        services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(connectionString));
+        services.AddSingleton<IAuditContextAccessor, AuditContextAccessor>();
+        services.AddSingleton<ChangeAuditInterceptor>();
+
+        services.AddDbContext<AppDbContext>((serviceProvider, options) =>
+        {
+            options.UseNpgsql(connectionString);
+            options.AddInterceptors(serviceProvider.GetRequiredService<ChangeAuditInterceptor>());
+        });
 
         services.AddHttpContextAccessor();
 
@@ -60,6 +68,7 @@ public static class DependencyInjection
         services.AddScoped<IPayslipRepository, PayslipRepository>();
         services.AddScoped<IBenefitRepository, BenefitRepository>();
         services.AddScoped<ILeaveRepository, LeaveRepository>();
+        services.AddScoped<IAuditRepository, AuditRepository>();
     }
 
     private static void RegisterIntegrations(IServiceCollection services, IAppSettingsProvider settings)

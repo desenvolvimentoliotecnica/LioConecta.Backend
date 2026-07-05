@@ -416,6 +416,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         {
             entity.HasIndex(e => e.Action);
             entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.CorrelationId);
+            entity.HasIndex(e => e.TransactionId);
+            entity.HasIndex(e => e.Source);
 
             entity.HasOne(e => e.Actor)
                 .WithMany()

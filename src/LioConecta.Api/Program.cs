@@ -183,6 +183,11 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
+    app.UseMiddleware<AuditMiddleware>();
+    app.UseMiddleware<TransactionAuditMiddleware>();
+    app.UseMiddleware<AuditLoggingMiddleware>();
+    app.UseMiddleware<AuditTrailMiddleware>();
+
     app.MapControllers();
     app.MapHub<NotificationHub>("/hubs/notifications");
     app.MapHub<ChatHub>("/hubs/chat");

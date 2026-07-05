@@ -10,6 +10,8 @@ namespace LioConecta.IntegrationTests;
 
 public sealed class LioConectaWebApplicationFactory : WebApplicationFactory<Program>
 {
+    private readonly string _databaseName = $"LioConectaTests_{Guid.NewGuid():N}";
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -29,7 +31,7 @@ public sealed class LioConectaWebApplicationFactory : WebApplicationFactory<Prog
             services.RemoveAll(typeof(AppDbContext));
 
             services.AddDbContext<AppDbContext>(options =>
-                options.UseInMemoryDatabase("LioConectaTests"));
+                options.UseInMemoryDatabase(_databaseName));
         });
     }
 }

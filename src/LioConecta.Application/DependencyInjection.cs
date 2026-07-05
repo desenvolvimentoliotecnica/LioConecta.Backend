@@ -36,6 +36,8 @@ public static class DependencyInjection
         services.AddScoped<TimesheetMergeService>();
         services.AddScoped<IPontoService, PontoService>();
         services.AddScoped<ITimesheetSyncService, TimesheetSyncService>();
+        services.AddScoped<IPayslipSyncService, PayslipSyncService>();
+        services.AddScoped<PayslipPdfBuilder>();
 
         return services;
     }

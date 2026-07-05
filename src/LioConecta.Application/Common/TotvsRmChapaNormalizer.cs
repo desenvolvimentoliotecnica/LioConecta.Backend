@@ -6,6 +6,9 @@ public static class TotvsRmConstants
     public const int ChapaLength = 8;
     public const string PunchTableName = "ABATFUN";
     public const string ProcessedDayTableName = "AAFHTFUN";
+    public const string PayrollFinanceTableName = "PFFINANC";
+    public const string PayrollEventTableName = "PEVENTO";
+    public const string PayrollPeriodTableName = "PFPERFF";
 }
 
 public static class TotvsRmChapaNormalizer

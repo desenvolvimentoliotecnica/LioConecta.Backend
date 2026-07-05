@@ -1,7 +1,8 @@
 using System.Globalization;
-using System.Text;
 using System.Text.Json;
+using LioConecta.Application.Common;
 using LioConecta.Application.DTOs;
+using LioConecta.Application.Interfaces.Integrations;
 using LioConecta.Application.Interfaces.Repositories;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Domain.Entities;
@@ -12,7 +13,13 @@ namespace LioConecta.Application.Services;
 public sealed class PayslipService(
     IPayslipRepository payslipRepository,
     IServiceRequestService serviceRequestService,
-    ICurrentUserService currentUserService) : IPayslipService
+    ICurrentUserService currentUserService,
+    IPersonRepository personRepository,
+    ITotvsRmEmployeeRepository employeeRepository,
+    ITotvsRmConfigurationService totvsRmConfigurationService,
+    IPayslipSyncService payslipSyncService,
+    IAppSettingsProvider settings,
+    PayslipPdfBuilder payslipPdfBuilder) : IPayslipService
 {
     private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
@@ -35,19 +42,31 @@ public sealed class PayslipService(
 
     public async Task<PayslipSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default)
     {
+        var syncContext = await EnsureSyncedAsync(cancellationToken);
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
-        var latest = await payslipRepository.GetLatestAsync(personId, cancellationToken);
-        var count = await payslipRepository.CountAsync(personId, cancellationToken);
+        var eligible = await ListEligiblePayslipsAsync(personId, null, null, 100, cancellationToken);
+        var latest = eligible.FirstOrDefault();
 
         if (latest is null)
         {
-            return new PayslipSummaryDto("—", 0m, 0);
+            return new PayslipSummaryDto(
+                "—",
+                0m,
+                0,
+                syncContext.AvailabilityStatus,
+                syncContext.UserMessage,
+                syncContext.DataSource,
+                syncContext.SyncedAt);
         }
 
         return new PayslipSummaryDto(
             FormatCompetence(latest.Year, latest.Month),
             latest.NetAmount,
-            count);
+            eligible.Count,
+            syncContext.AvailabilityStatus,
+            syncContext.UserMessage,
+            syncContext.DataSource,
+            syncContext.SyncedAt);
     }
 
     public IReadOnlyList<PayslipServiceDto> GetServices() => ServiceCatalog;
@@ -58,8 +77,9 @@ public sealed class PayslipService(
         int limit,
         CancellationToken cancellationToken = default)
     {
+        await EnsureSyncedAsync(cancellationToken);
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
-        var payslips = await payslipRepository.ListAsync(personId, year, month, limit, cancellationToken);
+        var payslips = await ListEligiblePayslipsAsync(personId, year, month, limit, cancellationToken);
         return payslips.Select(ToListItem).ToList();
     }
 
@@ -68,35 +88,33 @@ public sealed class PayslipService(
         int month,
         CancellationToken cancellationToken = default)
     {
+        await EnsureSyncedAsync(cancellationToken);
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
+        if (!await IsEligibleCompetenceAsync(personId, year, month, cancellationToken))
+        {
+            return null;
+        }
+
         var payslip = await payslipRepository.GetByCompetenceAsync(personId, year, month, cancellationToken);
         return payslip is null ? null : ToDetail(payslip);
     }
 
     public async Task<byte[]> GetPdfAsync(int year, int month, CancellationToken cancellationToken = default)
     {
-        var detail = await GetDetailAsync(year, month, cancellationToken)
+        await EnsureSyncedAsync(cancellationToken);
+        var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
+        if (!await IsEligibleCompetenceAsync(personId, year, month, cancellationToken))
+        {
+            throw new InvalidOperationException("Holerite não encontrado.");
+        }
+
+        var payslip = await payslipRepository.GetByCompetenceAsync(personId, year, month, cancellationToken)
             ?? throw new InvalidOperationException("Holerite não encontrado.");
 
-        var sb = new StringBuilder();
-        sb.AppendLine($"Contracheque — {detail.Competence}");
-        sb.AppendLine($"Bruto: {detail.GrossAmount.ToString("C", PtBr)}");
-        sb.AppendLine($"Descontos: {detail.DeductionsTotal.ToString("C", PtBr)}");
-        sb.AppendLine($"Líquido: {detail.NetAmount.ToString("C", PtBr)}");
-        sb.AppendLine();
-        sb.AppendLine("Proventos:");
-        foreach (var line in detail.Earnings)
-        {
-            sb.AppendLine($"  {line.Code} {line.Label}: {line.Amount.ToString("C", PtBr)}");
-        }
+        var document = await payslipPdfBuilder.BuildAsync(personId, payslip, cancellationToken)
+            ?? throw new InvalidOperationException("Não foi possível montar o PDF do holerite.");
 
-        sb.AppendLine("Descontos:");
-        foreach (var line in detail.Deductions)
-        {
-            sb.AppendLine($"  {line.Code} {line.Label}: {line.Amount.ToString("C", PtBr)}");
-        }
-
-        return Encoding.UTF8.GetBytes(sb.ToString());
+        return PayslipPdfGenerator.Generate(document);
     }
 
     public async Task<PayslipComparativoDto?> GetComparativoAsync(
@@ -135,9 +153,11 @@ public sealed class PayslipService(
 
     public async Task<FgtsConsultaDto> GetFgtsConsultaAsync(CancellationToken cancellationToken = default)
     {
+        await EnsureSyncedAsync(cancellationToken);
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
-        var payslips = await payslipRepository.ListAsync(personId, null, null, 6, cancellationToken);
+        var payslips = await ListEligiblePayslipsAsync(personId, null, null, 6, cancellationToken);
         var deposits = payslips
+            .Where(p => p.PaymentType == "FOLHA")
             .Select(p =>
             {
                 var baseAmount = p.GrossAmount * 0.08m;
@@ -153,8 +173,10 @@ public sealed class PayslipService(
 
     public async Task<DescontosConsultaDto> GetDescontosConsultaAsync(CancellationToken cancellationToken = default)
     {
+        await EnsureSyncedAsync(cancellationToken);
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
-        var latest = await payslipRepository.GetLatestAsync(personId, cancellationToken)
+        var eligible = await ListEligiblePayslipsAsync(personId, null, null, 100, cancellationToken);
+        var latest = eligible.FirstOrDefault()
             ?? throw new InvalidOperationException("Nenhum holerite disponível.");
 
         var deductions = DeserializeLines<PayslipLineDto>(latest.DeductionsJson);
@@ -202,6 +224,124 @@ public sealed class PayslipService(
             "Solicitação registrada com sucesso. Acompanhe o andamento em Serviços.");
     }
 
+    private async Task<bool> IsEligibleCompetenceAsync(
+        Guid personId,
+        int year,
+        int month,
+        CancellationToken cancellationToken)
+    {
+        var admissionDate = await ResolveAdmissionDateAsync(personId, cancellationToken);
+        return PayslipCompetenceRules.IsEligible(year, month, admissionDate);
+    }
+
+    private async Task<IReadOnlyList<Payslip>> ListEligiblePayslipsAsync(
+        Guid personId,
+        int? year,
+        int? month,
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        var admissionDate = await ResolveAdmissionDateAsync(personId, cancellationToken);
+        var payslips = await payslipRepository.ListAsync(personId, year, month, limit, cancellationToken);
+
+        return payslips
+            .Where(p => PayslipCompetenceRules.IsEligible(p.Year, p.Month, admissionDate))
+            .ToList();
+    }
+
+    private async Task<DateTime?> ResolveAdmissionDateAsync(
+        Guid personId,
+        CancellationToken cancellationToken)
+    {
+        var person = await personRepository.GetByIdAsync(personId, cancellationToken);
+        if (person is null || string.IsNullOrWhiteSpace(person.EmployeeId))
+        {
+            return null;
+        }
+
+        var chapa = TotvsRmChapaNormalizer.Normalize(person.EmployeeId);
+        if (string.IsNullOrWhiteSpace(chapa))
+        {
+            return null;
+        }
+
+        var profile = await employeeRepository.GetProfileByChapaAsync(chapa, cancellationToken);
+        return profile?.DataAdmissao?.Date;
+    }
+
+    private async Task<PayslipSyncContext> EnsureSyncedAsync(CancellationToken cancellationToken)
+    {
+        var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
+        var person = await personRepository.GetByIdAsync(personId, cancellationToken);
+
+        if (person is null || string.IsNullOrWhiteSpace(person.EmployeeId))
+        {
+            return PayslipSyncContext.Unavailable(
+                "missing_employee_id",
+                "Sua matricula nao esta vinculada ao perfil. Solicite ao RH a regularizacao do cadastro.");
+        }
+
+        var runtime = await totvsRmConfigurationService.GetRuntimeConfigurationAsync(cancellationToken);
+        if (!runtime.IsEnabled)
+        {
+            var cachedSyncedAt = await payslipRepository.GetMaxSyncedAtUtcAsync(personId, cancellationToken);
+            if (cachedSyncedAt is not null)
+            {
+                return PayslipSyncContext.FromCache(cachedSyncedAt, "rm_disabled");
+            }
+
+            return PayslipSyncContext.Unavailable(
+                "rm_disabled",
+                "Consulta de holerite temporariamente indisponivel. Entre em contato com o RH.");
+        }
+
+        var ttlMinutes = settings.GetInt(AppSettingKeys.WorkersTotvsPayslipCacheTtlMinutes, 60);
+        var maxSyncedAt = await payslipRepository.GetMaxSyncedAtUtcAsync(personId, cancellationToken);
+        if (maxSyncedAt is not null && !IsStale(maxSyncedAt.Value, ttlMinutes))
+        {
+            return PayslipSyncContext.FromCache(maxSyncedAt, "cache");
+        }
+
+        try
+        {
+            var result = await payslipSyncService.SyncPersonAsync(personId, cancellationToken);
+            return new PayslipSyncContext(
+                result.AvailabilityStatus,
+                null,
+                result.DataSource ?? "live",
+                result.SyncedAt ?? DateTimeOffset.UtcNow);
+        }
+        catch (TotvsRmIntegrationDisabledException)
+        {
+            return PayslipSyncContext.Unavailable(
+                "rm_disabled",
+                "Consulta de holerite temporariamente indisponivel. Entre em contato com o RH.");
+        }
+        catch (TotvsRmIntegrationMisconfiguredException)
+        {
+            return PayslipSyncContext.Unavailable(
+                "rm_disabled",
+                "Consulta de holerite temporariamente indisponivel. Entre em contato com o RH.");
+        }
+        catch (TotvsRmIntegrationUnavailableException)
+        {
+            if (maxSyncedAt is not null)
+            {
+                return PayslipSyncContext.FromCache(maxSyncedAt, "rm_unavailable") with
+                {
+                    UserMessage = "Exibindo dados em cache. Nao foi possivel atualizar agora."
+                };
+            }
+
+            return PayslipSyncContext.Unavailable(
+                "rm_unavailable",
+                "Nao foi possivel consultar holerites agora. Tente novamente em alguns minutos.");
+        }
+    }
+
+    private static bool IsStale(DateTimeOffset syncedAtUtc, int ttlMinutes) =>
+        syncedAtUtc.AddMinutes(ttlMinutes) < DateTimeOffset.UtcNow;
+
     private static PayslipListItemDto ToListItem(Payslip payslip) =>
         new(
             payslip.Year,
@@ -209,7 +349,8 @@ public sealed class PayslipService(
             FormatCompetence(payslip.Year, payslip.Month),
             payslip.GrossAmount,
             payslip.NetAmount,
-            payslip.PublishedAt);
+            payslip.PublishedAt,
+            payslip.PaymentType);
 
     private static PayslipDetailDto ToDetail(Payslip payslip) =>
         new(
@@ -235,5 +376,18 @@ public sealed class PayslipService(
         }
 
         return $"{label}/{year}";
+    }
+
+    private sealed record PayslipSyncContext(
+        string AvailabilityStatus,
+        string? UserMessage,
+        string? DataSource,
+        DateTimeOffset? SyncedAt)
+    {
+        public static PayslipSyncContext Unavailable(string status, string message) =>
+            new(status, message, null, null);
+
+        public static PayslipSyncContext FromCache(DateTimeOffset? syncedAt, string status) =>
+            new("ok", null, "cache", syncedAt);
     }
 }

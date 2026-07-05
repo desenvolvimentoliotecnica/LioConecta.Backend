@@ -25,4 +25,21 @@ public interface IPayslipRepository
         Guid personId,
         int year,
         CancellationToken cancellationToken = default);
+
+    Task UpsertAsync(Payslip payslip, CancellationToken cancellationToken = default);
+
+    Task<DateTimeOffset?> GetMaxSyncedAtUtcAsync(
+        Guid personId,
+        CancellationToken cancellationToken = default);
+
+    Task<int> DeleteWithoutSourceAsync(
+        Guid personId,
+        string requiredSource,
+        CancellationToken cancellationToken = default);
+
+    Task<int> DeleteBeforeCompetenceAsync(
+        Guid personId,
+        int fromYear,
+        int fromMonth,
+        CancellationToken cancellationToken = default);
 }

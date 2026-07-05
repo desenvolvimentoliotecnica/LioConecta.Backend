@@ -25,6 +25,17 @@ public interface ITimesheetSyncService
         CancellationToken cancellationToken);
 }
 
+public interface IPayslipSyncService
+{
+    Task<PayslipSyncResultDto> SyncPersonAsync(
+        Guid personId,
+        CancellationToken cancellationToken);
+
+    Task<int> SyncAllActivePeopleAsync(
+        IWorkerRunContext? context,
+        CancellationToken cancellationToken);
+}
+
 public interface ITotvsEmployeeSyncService
 {
     Task<int> SyncEmployeesAsync(

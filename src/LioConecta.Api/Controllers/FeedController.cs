@@ -9,7 +9,10 @@ namespace LioConecta.Api.Controllers;
 [ApiController]
 [Route("api/v1/feed")]
 [Authorize]
-public sealed class FeedController(IFeedService feedService) : ControllerBase
+public sealed class FeedController(
+    IFeedService feedService,
+    IPostMediaService postMediaService,
+    ICurrentUserService currentUserService) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -42,6 +45,40 @@ public sealed class FeedController(IFeedService feedService) : ControllerBase
     {
         var post = await feedService.CreatePostAsync(request, cancellationToken);
         return CreatedAtAction(nameof(GetPost), new { id = post.Id }, post);
+    }
+
+    [HttpPost("posts/media/upload")]
+    [ProducesResponseType(typeof(UploadPostMediaResponseDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [RequestSizeLimit(52_428_800)]
+    public async Task<ActionResult<UploadPostMediaResponseDto>> UploadPostMedia(
+        IFormFile file,
+        CancellationToken cancellationToken = default)
+    {
+        if (file is null || file.Length == 0)
+        {
+            return BadRequest(new { message = "Nenhum arquivo enviado." });
+        }
+
+        try
+        {
+            var uploadedById = await currentUserService.GetPersonIdAsync(cancellationToken);
+            await using var stream = file.OpenReadStream();
+            var result = await postMediaService.UploadAsync(
+                new PostMediaUploadRequest(
+                    stream,
+                    file.FileName,
+                    file.ContentType,
+                    file.Length),
+                uploadedById,
+                cancellationToken);
+
+            return Created(result.Url, result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPost("posts/{postId:guid}/comments")]

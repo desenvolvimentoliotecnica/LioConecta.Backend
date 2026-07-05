@@ -1,0 +1,415 @@
+using LioConecta.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace LioConecta.Infrastructure.Persistence;
+
+public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+{
+    public DbSet<Person> People => Set<Person>();
+    public DbSet<Department> Departments => Set<Department>();
+    public DbSet<FeedPost> FeedPosts => Set<FeedPost>();
+    public DbSet<Comment> Comments => Set<Comment>();
+    public DbSet<Reaction> Reactions => Set<Reaction>();
+    public DbSet<Poll> Polls => Set<Poll>();
+    public DbSet<PollOption> PollOptions => Set<PollOption>();
+    public DbSet<PollVote> PollVotes => Set<PollVote>();
+    public DbSet<Celebration> Celebrations => Set<Celebration>();
+    public DbSet<Comunicado> Comunicados => Set<Comunicado>();
+    public DbSet<ComunicadoRead> ComunicadoReads => Set<ComunicadoRead>();
+    public DbSet<Group> Groups => Set<Group>();
+    public DbSet<GroupMember> GroupMembers => Set<GroupMember>();
+    public DbSet<GroupPost> GroupPosts => Set<GroupPost>();
+    public DbSet<DocumentMetadata> Documents => Set<DocumentMetadata>();
+    public DbSet<ServiceRequest> ServiceRequests => Set<ServiceRequest>();
+    public DbSet<ServiceRequestEvent> ServiceRequestEvents => Set<ServiceRequestEvent>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+    public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
+    public DbSet<CafeteriaMenu> CafeteriaMenus => Set<CafeteriaMenu>();
+    public DbSet<AnalyticsEvent> AnalyticsEvents => Set<AnalyticsEvent>();
+    public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
+    public DbSet<UserPreference> UserPreferences => Set<UserPreference>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        ApplySnakeCaseTableNames(modelBuilder);
+        ConfigurePerson(modelBuilder);
+        ConfigureDepartment(modelBuilder);
+        ConfigureFeed(modelBuilder);
+        ConfigureComunicado(modelBuilder);
+        ConfigureGroup(modelBuilder);
+        ConfigureDocuments(modelBuilder);
+        ConfigureServiceRequests(modelBuilder);
+        ConfigureNotifications(modelBuilder);
+        ConfigureChat(modelBuilder);
+        ConfigureCalendar(modelBuilder);
+        ConfigureAnalytics(modelBuilder);
+        ConfigureUserPreferences(modelBuilder);
+    }
+
+    private static void ApplySnakeCaseTableNames(ModelBuilder modelBuilder)
+    {
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            var tableName = entityType.GetTableName();
+            if (tableName is not null)
+            {
+                entityType.SetTableName(ToSnakeCase(tableName));
+            }
+        }
+    }
+
+    private static string ToSnakeCase(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            return name;
+        }
+
+        return string.Concat(name.Select((ch, i) =>
+            i > 0 && char.IsUpper(ch) ? "_" + char.ToLowerInvariant(ch) : char.ToLowerInvariant(ch).ToString()));
+    }
+
+    private static void ConfigurePerson(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<Person>();
+
+        entity.HasIndex(p => p.Slug).IsUnique();
+        entity.HasIndex(p => p.Email).IsUnique();
+        entity.HasIndex(p => p.AzureAdObjectId);
+        entity.HasIndex(p => p.DepartmentId);
+        entity.HasIndex(p => p.ManagerId);
+
+        entity.HasOne(p => p.Department)
+            .WithMany(d => d.Members)
+            .HasForeignKey(p => p.DepartmentId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        entity.HasOne(p => p.Manager)
+            .WithMany(p => p.DirectReports)
+            .HasForeignKey(p => p.ManagerId)
+            .OnDelete(DeleteBehavior.SetNull);
+    }
+
+    private static void ConfigureDepartment(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<Department>();
+
+        entity.HasIndex(d => d.Code);
+        entity.HasIndex(d => d.ParentDepartmentId);
+
+        entity.HasOne(d => d.ParentDepartment)
+            .WithMany(d => d.ChildDepartments)
+            .HasForeignKey(d => d.ParentDepartmentId)
+            .OnDelete(DeleteBehavior.SetNull);
+    }
+
+    private static void ConfigureFeed(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<FeedPost>(entity =>
+        {
+            entity.HasIndex(p => p.CreatedAt);
+            entity.HasIndex(p => p.AuthorId);
+            entity.HasIndex(p => p.Type);
+
+            entity.HasOne(p => p.Author)
+                .WithMany()
+                .HasForeignKey(p => p.AuthorId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Comment>(entity =>
+        {
+            entity.HasIndex(c => c.PostId);
+            entity.HasIndex(c => c.AuthorId);
+
+            entity.HasOne(c => c.Post)
+                .WithMany(p => p.Comments)
+                .HasForeignKey(c => c.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(c => c.Author)
+                .WithMany()
+                .HasForeignKey(c => c.AuthorId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Reaction>(entity =>
+        {
+            entity.HasIndex(r => new { r.PostId, r.PersonId }).IsUnique();
+
+            entity.HasOne(r => r.Post)
+                .WithMany(p => p.Reactions)
+                .HasForeignKey(r => r.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(r => r.Person)
+                .WithMany()
+                .HasForeignKey(r => r.PersonId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Poll>(entity =>
+        {
+            entity.HasIndex(p => p.PostId).IsUnique();
+
+            entity.HasOne(p => p.Post)
+                .WithMany()
+                .HasForeignKey(p => p.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PollOption>(entity =>
+        {
+            entity.HasIndex(o => o.PollId);
+
+            entity.HasOne(o => o.Poll)
+                .WithMany(p => p.Options)
+                .HasForeignKey(o => o.PollId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PollVote>(entity =>
+        {
+            entity.HasIndex(v => new { v.PollOptionId, v.PersonId }).IsUnique();
+            entity.HasIndex(v => v.PersonId);
+
+            entity.HasOne(v => v.PollOption)
+                .WithMany(o => o.Votes)
+                .HasForeignKey(v => v.PollOptionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(v => v.Person)
+                .WithMany()
+                .HasForeignKey(v => v.PersonId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Celebration>(entity =>
+        {
+            entity.HasIndex(c => c.PostId).IsUnique();
+
+            entity.HasOne(c => c.Post)
+                .WithMany()
+                .HasForeignKey(c => c.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(c => c.CelebratedPerson)
+                .WithMany()
+                .HasForeignKey(c => c.CelebratedPersonId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureComunicado(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Comunicado>(entity =>
+        {
+            entity.HasIndex(c => c.Kind);
+            entity.HasIndex(c => c.PublishedAt);
+            entity.HasIndex(c => c.AuthorId);
+
+            entity.HasOne(c => c.Author)
+                .WithMany()
+                .HasForeignKey(c => c.AuthorId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ComunicadoRead>(entity =>
+        {
+            entity.HasIndex(r => new { r.ComunicadoId, r.PersonId }).IsUnique();
+
+            entity.HasOne(r => r.Comunicado)
+                .WithMany(c => c.Reads)
+                .HasForeignKey(r => r.ComunicadoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(r => r.Person)
+                .WithMany()
+                .HasForeignKey(r => r.PersonId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureGroup(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Group>(entity =>
+        {
+            entity.HasIndex(g => g.OwnerId);
+
+            entity.HasOne(g => g.Owner)
+                .WithMany()
+                .HasForeignKey(g => g.OwnerId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<GroupMember>(entity =>
+        {
+            entity.HasIndex(m => new { m.GroupId, m.PersonId }).IsUnique();
+
+            entity.HasOne(m => m.Group)
+                .WithMany(g => g.Members)
+                .HasForeignKey(m => m.GroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(m => m.Person)
+                .WithMany()
+                .HasForeignKey(m => m.PersonId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<GroupPost>(entity =>
+        {
+            entity.HasIndex(p => p.GroupId);
+
+            entity.HasOne(p => p.Group)
+                .WithMany(g => g.Posts)
+                .HasForeignKey(p => p.GroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(p => p.Author)
+                .WithMany()
+                .HasForeignKey(p => p.AuthorId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureDocuments(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<DocumentMetadata>(entity =>
+        {
+            entity.HasIndex(d => d.Category);
+            entity.HasIndex(d => d.SharePointItemId).IsUnique();
+            entity.HasIndex(d => d.ModifiedAt);
+        });
+    }
+
+    private static void ConfigureServiceRequests(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ServiceRequest>(entity =>
+        {
+            entity.HasIndex(r => r.RequesterId);
+            entity.HasIndex(r => r.Status);
+            entity.HasIndex(r => r.Category);
+
+            entity.HasOne(r => r.Requester)
+                .WithMany()
+                .HasForeignKey(r => r.RequesterId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ServiceRequestEvent>(entity =>
+        {
+            entity.HasIndex(e => e.ServiceRequestId);
+
+            entity.HasOne(e => e.ServiceRequest)
+                .WithMany(r => r.Events)
+                .HasForeignKey(e => e.ServiceRequestId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Actor)
+                .WithMany()
+                .HasForeignKey(e => e.ActorId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+    }
+
+    private static void ConfigureNotifications(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasIndex(n => n.PersonId);
+            entity.HasIndex(n => new { n.PersonId, n.IsRead });
+            entity.HasIndex(n => n.CreatedAt);
+
+            entity.HasOne(n => n.Person)
+                .WithMany()
+                .HasForeignKey(n => n.PersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureChat(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ChatConversation>(entity =>
+        {
+            entity.HasIndex(c => c.CreatedById);
+
+            entity.HasOne(c => c.CreatedBy)
+                .WithMany()
+                .HasForeignKey(c => c.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ChatMessage>(entity =>
+        {
+            entity.HasIndex(m => m.ConversationId);
+            entity.HasIndex(m => m.CreatedAt);
+            entity.HasIndex(m => m.AuthorId);
+
+            entity.HasOne(m => m.Conversation)
+                .WithMany(c => c.Messages)
+                .HasForeignKey(m => m.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(m => m.Author)
+                .WithMany()
+                .HasForeignKey(m => m.AuthorId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureCalendar(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<CalendarEvent>(entity =>
+        {
+            entity.HasIndex(e => e.StartAt);
+            entity.HasIndex(e => e.ExternalId);
+        });
+
+        modelBuilder.Entity<CafeteriaMenu>(entity =>
+        {
+            entity.HasIndex(m => m.Date).IsUnique();
+        });
+    }
+
+    private static void ConfigureAnalytics(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<AnalyticsEvent>(entity =>
+        {
+            entity.HasIndex(e => e.EventType);
+            entity.HasIndex(e => e.OccurredAt);
+            entity.HasIndex(e => e.PersonId);
+
+            entity.HasOne(e => e.Person)
+                .WithMany()
+                .HasForeignKey(e => e.PersonId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<AuditEvent>(entity =>
+        {
+            entity.HasIndex(e => e.Action);
+            entity.HasIndex(e => e.CreatedAt);
+
+            entity.HasOne(e => e.Actor)
+                .WithMany()
+                .HasForeignKey(e => e.ActorId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+    }
+
+    private static void ConfigureUserPreferences(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<UserPreference>(entity =>
+        {
+            entity.HasIndex(p => p.PersonId).IsUnique();
+
+            entity.HasOne(p => p.Person)
+                .WithMany()
+                .HasForeignKey(p => p.PersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+}

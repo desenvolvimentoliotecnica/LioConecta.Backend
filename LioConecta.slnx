@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LioConecta.Api/LioConecta.Api.csproj" />
+    <Project Path="src/LioConecta.Application/LioConecta.Application.csproj" />
+    <Project Path="src/LioConecta.Domain/LioConecta.Domain.csproj" />
+    <Project Path="src/LioConecta.Infrastructure/LioConecta.Infrastructure.csproj" />
+    <Project Path="src/LioConecta.Workers/LioConecta.Workers.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LioConecta.IntegrationTests/LioConecta.IntegrationTests.csproj" />
+    <Project Path="tests/LioConecta.UnitTests/LioConecta.UnitTests.csproj" />
+  </Folder>
+</Solution>

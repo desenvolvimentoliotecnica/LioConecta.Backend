@@ -7,4 +7,5 @@ public static class WorkerKeys
     public const string PollClosure = "poll-closure";
     public const string TotvsTimesheetSync = "totvs-timesheet-sync";
     public const string TotvsPayslipSync = "totvs-payslip-sync";
+    public const string EmailDispatch = "email-dispatch";
 }

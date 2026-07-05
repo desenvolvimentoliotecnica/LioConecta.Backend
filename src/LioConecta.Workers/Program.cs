@@ -40,6 +40,7 @@ try
     builder.Services.AddHostedService<GraphSyncWorker>();
     builder.Services.AddHostedService<PollClosureWorker>();
     builder.Services.AddHostedService<TotvsTimesheetSyncWorker>();
+    builder.Services.AddHostedService<EmailDispatchWorker>();
 
     var host = builder.Build();
     await host.RunAsync();

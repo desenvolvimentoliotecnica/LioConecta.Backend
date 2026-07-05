@@ -15,7 +15,8 @@ public sealed class WorkerTriggerService(
     IGraphSyncService graphSyncService,
     IPollClosureService pollClosureService,
     ITimesheetSyncService timesheetSyncService,
-    IPayslipSyncService payslipSyncService) : IWorkerTriggerService
+    IPayslipSyncService payslipSyncService,
+    IEmailDispatchService emailDispatchService) : IWorkerTriggerService
 {
     public Task<IReadOnlyList<WorkerDefinitionDto>> ListWorkersAsync(CancellationToken cancellationToken)
     {
@@ -130,6 +131,17 @@ public sealed class WorkerTriggerService(
                 workerKey,
                 "manual",
                 async (context, ct) => _ = await payslipSyncService.SyncAllActivePeopleAsync(context, ct),
+                cancellationToken),
+            WorkerKeys.EmailDispatch => workerRunRecorder.ExecuteAsync(
+                workerKey,
+                "manual",
+                async (context, ct) =>
+                {
+                    var result = await emailDispatchService.ProcessBatchAsync(ct);
+                    await context.LogInfoAsync(
+                        $"Email dispatch: processed={result.Processed}, sent={result.Sent}, failed={result.Failed}, skipped={result.Skipped}",
+                        ct);
+                },
                 cancellationToken),
             _ => throw new ArgumentException($"Unknown worker key: {workerKey}", nameof(workerKey))
         };

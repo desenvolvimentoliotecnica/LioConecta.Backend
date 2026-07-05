@@ -59,6 +59,7 @@ try
         builder.Services.AddHostedService<PollClosureWorker>();
         builder.Services.AddHostedService<TotvsTimesheetSyncWorker>();
         builder.Services.AddHostedService<TotvsPayslipSyncWorker>();
+        builder.Services.AddHostedService<EmailDispatchWorker>();
     }
 
     builder.Services.AddHostedService<ObservabilityRetentionHostedService>();

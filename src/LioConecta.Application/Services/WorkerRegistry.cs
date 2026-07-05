@@ -37,5 +37,11 @@ public static class WorkerRegistry
             "Atualiza cache de contracheques consultando SQL Server TOTVS RM (PFFINANC/PEVENTO/PFPERFF).",
             AppSettingKeys.WorkersTotvsPayslipSyncIntervalMinutes,
             30),
+        new(
+            WorkerKeys.EmailDispatch,
+            "Envio de e-mails",
+            "Processa a fila de e-mails pendentes via SMTP configurado em banco.",
+            null,
+            1),
     ];
 }

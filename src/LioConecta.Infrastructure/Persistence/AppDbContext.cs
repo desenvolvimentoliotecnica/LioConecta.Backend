@@ -45,6 +45,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<WorkerRun> WorkerRuns => Set<WorkerRun>();
     public DbSet<WorkerRunLog> WorkerRunLogs => Set<WorkerRunLog>();
     public DbSet<TimesheetPeriodCache> TimesheetPeriodCaches => Set<TimesheetPeriodCache>();
+    public DbSet<EmailConfiguration> EmailConfigurations => Set<EmailConfiguration>();
+    public DbSet<EmailMessage> EmailMessages => Set<EmailMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -71,6 +73,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureTotvsRmConfiguration(modelBuilder);
         ConfigureWorkerRuns(modelBuilder);
         ConfigureTimesheetPeriodCache(modelBuilder);
+        ConfigureEmail(modelBuilder);
     }
 
     private static void ApplySnakeCaseTableNames(ModelBuilder modelBuilder)
@@ -641,6 +644,43 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany(r => r.Logs)
                 .HasForeignKey(l => l.WorkerRunId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureEmail(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<EmailConfiguration>(entity =>
+        {
+            entity.Property(c => c.FromAddress).HasMaxLength(256);
+            entity.Property(c => c.FromName).HasMaxLength(256);
+            entity.Property(c => c.SmtpHost).HasMaxLength(256);
+            entity.Property(c => c.SmtpUsername).HasMaxLength(256);
+
+            entity.HasOne(c => c.UpdatedBy)
+                .WithMany()
+                .HasForeignKey(c => c.UpdatedById)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<EmailMessage>(entity =>
+        {
+            entity.Property(m => m.Subject).HasMaxLength(500);
+            entity.Property(m => m.TemplateKey).HasMaxLength(128);
+            entity.Property(m => m.IdempotencyKey).HasMaxLength(128);
+            entity.Property(m => m.ProviderMessageId).HasMaxLength(256);
+            entity.Property(m => m.Status).HasConversion<string>().HasMaxLength(32);
+
+            entity.HasIndex(m => new { m.Status, m.NextRetryAt, m.ScheduledAt });
+            entity.HasIndex(m => m.CreatedAt);
+            entity.HasIndex(m => m.CorrelationId);
+            entity.HasIndex(m => m.IdempotencyKey)
+                .IsUnique()
+                .HasFilter("\"IdempotencyKey\" IS NOT NULL");
+
+            entity.HasOne(m => m.CreatedBy)
+                .WithMany()
+                .HasForeignKey(m => m.CreatedById)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 

@@ -32,6 +32,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<UserPreference> UserPreferences => Set<UserPreference>();
     public DbSet<MoodCheck> MoodChecks => Set<MoodCheck>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+    public DbSet<ComunicadoHeroImage> ComunicadoHeroImages => Set<ComunicadoHeroImage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -50,6 +51,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureUserPreferences(modelBuilder);
         ConfigureMoodChecks(modelBuilder);
         ConfigureAppSettings(modelBuilder);
+        ConfigureComunicadoHeroImages(modelBuilder);
     }
 
     private static void ApplySnakeCaseTableNames(ModelBuilder modelBuilder)
@@ -453,6 +455,22 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany()
                 .HasForeignKey(s => s.UpdatedById)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+    }
+
+    private static void ConfigureComunicadoHeroImages(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ComunicadoHeroImage>(entity =>
+        {
+            entity.HasIndex(i => i.AssetId);
+            entity.HasIndex(i => new { i.AssetId, i.Version }).IsUnique();
+            entity.HasIndex(i => i.CreatedAt);
+            entity.HasIndex(i => i.UploadedById);
+
+            entity.HasOne(i => i.UploadedBy)
+                .WithMany()
+                .HasForeignKey(i => i.UploadedById)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

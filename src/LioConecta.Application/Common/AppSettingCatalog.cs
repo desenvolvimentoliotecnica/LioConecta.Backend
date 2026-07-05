@@ -65,5 +65,14 @@ public static class AppSettingCatalog
 
         new(AppSettingKeys.SerilogDefaultLevel, "serilog", "Nível mínimo de log",
             "Default Serilog (Information, Debug, Warning…).", "string", false, "Information", 1),
+
+        new(AppSettingKeys.MediaComunicadosRootPath, "media", "Comunicados — pasta de armazenamento",
+            "Caminho relativo ao ContentRoot ou absoluto para uploads de imagens de destaque.", "string", false,
+            "App_Data/media/comunicados", 1),
+        new(AppSettingKeys.MediaComunicadosMaxSizeBytes, "media", "Comunicados — tamanho máximo (bytes)",
+            "Limite por arquivo enviado no editor de comunicados.", "integer", false, "5242880", 2),
+        new(AppSettingKeys.MediaComunicadosAllowedContentTypes, "media", "Comunicados — tipos MIME permitidos",
+            "Lista JSON de content-types aceitos no upload.", "json", false,
+            "[\"image/jpeg\",\"image/png\",\"image/webp\"]", 3),
     ];
 }

@@ -56,3 +56,5 @@ publish/
 # OS
 .DS_Store
 Thumbs.db
+
+App_Data/

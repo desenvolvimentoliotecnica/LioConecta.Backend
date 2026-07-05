@@ -14,6 +14,7 @@ using LioConecta.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Identity.Web;
 using Serilog;
 using Serilog.Events;
@@ -170,6 +171,14 @@ try
     app.UseExceptionHandler();
     app.UseHttpsRedirection();
     app.UseCors();
+
+    var mediaRoot = ResolveComunicadoMediaRoot(settingsProvider, app.Environment);
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(mediaRoot),
+        RequestPath = "/media/comunicados",
+    });
+
     app.UseAuthentication();
     app.UseAuthorization();
 
@@ -260,3 +269,14 @@ static Microsoft.Extensions.Configuration.IConfiguration BuildAzureAdConfigurati
 
 static LogEventLevel ParseLogLevel(string value) =>
     Enum.TryParse<LogEventLevel>(value, true, out var level) ? level : LogEventLevel.Information;
+
+static string ResolveComunicadoMediaRoot(IAppSettingsProvider settings, IWebHostEnvironment environment)
+{
+    var configured = settings.GetString(AppSettingKeys.MediaComunicadosRootPath, "App_Data/media/comunicados");
+    var absolute = Path.IsPathRooted(configured)
+        ? configured
+        : Path.Combine(environment.ContentRootPath, configured);
+
+    Directory.CreateDirectory(absolute);
+    return absolute;
+}

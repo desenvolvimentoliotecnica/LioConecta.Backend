@@ -56,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<ISearchRepository, SearchRepository>();
         services.AddScoped<IMoodCheckRepository, MoodCheckRepository>();
         services.AddScoped<IAppSettingRepository, AppSettingRepository>();
+        services.AddScoped<IComunicadoHeroImageRepository, ComunicadoHeroImageRepository>();
     }
 
     private static void RegisterIntegrations(IServiceCollection services, IAppSettingsProvider settings)
@@ -116,6 +117,7 @@ public static class DependencyInjection
     private static void RegisterServices(IServiceCollection services, IAppSettingsProvider settings)
     {
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<IComunicadoHeroImageService, ComunicadoHeroImageService>();
         services.AddScoped<SeedDataService>();
 
         var redisConnection = settings.GetRedisConnection();

@@ -27,6 +27,7 @@ public sealed class AppSettingService(
             ["graph"] = ("Microsoft Graph", "SharePoint, calendário, Planner e presença."),
             ["workers"] = ("Workers", "Intervalos de sincronização em background."),
             ["serilog"] = ("Logging", "Níveis de log Serilog."),
+            ["media"] = ("Mídia", "Uploads locais de imagens de comunicados (até migrar para S3/SharePoint)."),
         };
 
     private static readonly HashSet<string> RestartKeys =
@@ -182,6 +183,7 @@ public sealed class AppSettingService(
         "graph" => 9,
         "workers" => 10,
         "serilog" => 11,
+        "media" => 12,
         _ => 99,
     };
 }

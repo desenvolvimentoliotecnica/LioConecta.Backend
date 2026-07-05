@@ -31,4 +31,8 @@ public static class AppSettingKeys
     public const string WorkersGraphSyncIntervalMinutes = "workers.graph_sync_interval_minutes";
 
     public const string SerilogDefaultLevel = "serilog.default_level";
+
+    public const string MediaComunicadosRootPath = "media.comunicados.root_path";
+    public const string MediaComunicadosMaxSizeBytes = "media.comunicados.max_size_bytes";
+    public const string MediaComunicadosAllowedContentTypes = "media.comunicados.allowed_content_types";
 }

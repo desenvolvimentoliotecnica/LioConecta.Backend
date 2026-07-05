@@ -1,6 +1,7 @@
 using LioConecta.Domain.Entities;
 using LioConecta.Domain.Enums;
 using LioConecta.Infrastructure.Persistence;
+using LioConecta.Infrastructure.Security;
 using LioConecta.Infrastructure.Seed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -24,6 +25,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             await EnsureEmployeeIdsAsync(cancellationToken);
             await EnsureDevTestUserProfileAsync(cancellationToken);
             await EnsureTotvsRmConfigurationAsync(cancellationToken);
+            await EnsureEmailConfigurationDevDefaultsAsync(cancellationToken);
             logger.LogDebug("Database already contains people; skipping seed.");
             return;
         }
@@ -675,6 +677,60 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
 
         await db.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Seeded default TOTVS RM configuration row.");
+    }
+
+    private async Task EnsureEmailConfigurationDevDefaultsAsync(CancellationToken cancellationToken)
+    {
+        var entity = await db.EmailConfigurations.FirstOrDefaultAsync(cancellationToken);
+        var now = DateTimeOffset.UtcNow;
+
+        if (entity is null)
+        {
+            entity = new EmailConfiguration
+            {
+                Id = Guid.NewGuid(),
+                IsEnabled = EmailConfigurationDefaults.DevIsEnabled,
+                FromAddress = EmailConfigurationDefaults.DevFromAddress,
+                FromName = EmailConfigurationDefaults.DevFromName,
+                SmtpHost = EmailConfigurationDefaults.DevSmtpHost,
+                SmtpPort = EmailConfigurationDefaults.DevSmtpPort,
+                SmtpUsername = EmailConfigurationDefaults.DevSmtpUsername,
+                UseStartTls = EmailConfigurationDefaults.DevUseStartTls,
+                TimeoutSeconds = 30,
+                MaxAttempts = 5,
+                InitialRetryDelaySeconds = 60,
+                MaxRetryDelaySeconds = 21600,
+                DispatchBatchSize = 20,
+                DispatchIntervalSeconds = 30,
+                CreatedAt = now,
+                UpdatedAt = now,
+            };
+
+            db.EmailConfigurations.Add(entity);
+        }
+        else if (string.IsNullOrWhiteSpace(entity.SmtpHost))
+        {
+            entity.IsEnabled = EmailConfigurationDefaults.DevIsEnabled;
+            entity.FromAddress = EmailConfigurationDefaults.DevFromAddress;
+            entity.FromName = EmailConfigurationDefaults.DevFromName;
+            entity.SmtpHost = EmailConfigurationDefaults.DevSmtpHost;
+            entity.SmtpPort = EmailConfigurationDefaults.DevSmtpPort;
+            entity.SmtpUsername = EmailConfigurationDefaults.DevSmtpUsername;
+            entity.UseStartTls = EmailConfigurationDefaults.DevUseStartTls;
+            entity.UpdatedAt = now;
+        }
+
+        var devPassword = Environment.GetEnvironmentVariable("LIO_DEV_SMTP_PASSWORD");
+        if (!string.IsNullOrWhiteSpace(devPassword) &&
+            string.IsNullOrWhiteSpace(entity.SmtpPasswordProtected))
+        {
+            entity.SmtpPasswordProtected = SecretProtector.Protect(
+                devPassword.Trim(),
+                "LioConecta.Backend::EmailConfiguration::Secret::v1");
+            entity.UpdatedAt = now;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     private static Person CreatePerson(

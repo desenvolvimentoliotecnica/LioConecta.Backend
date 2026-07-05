@@ -21,10 +21,19 @@ public sealed class TotvsRmEmployeeRepository(
                 LTRIM(RTRIM(F.CHAPA)) AS Chapa,
                 F.CODPESSOA AS CodPessoa,
                 LTRIM(RTRIM(F.NOME)) AS Nome,
+                LTRIM(RTRIM(F.CODSECAO)) AS CodSecao,
                 LTRIM(RTRIM(S.DESCRICAO)) AS SecaoDescricao,
+                LTRIM(RTRIM(F.CODFUNCAO)) AS CodFuncao,
                 LTRIM(RTRIM(FN.NOME)) AS FuncaoDescricao,
                 F.DATAADMISSAO AS DataAdmissao,
                 LTRIM(RTRIM(P.CPF)) AS Cpf,
+                LTRIM(RTRIM(P.CARTIDENTIDADE)) AS Rg,
+                LTRIM(RTRIM(P.TELEFONE1)) AS Telefone,
+                LTRIM(RTRIM(P.EMAIL)) AS EmailPessoal,
+                LTRIM(RTRIM(P.CIDADE)) AS Cidade,
+                LTRIM(RTRIM(P.ESTADO)) AS Estado,
+                LTRIM(RTRIM(P.RUA)) AS Endereco,
+                LTRIM(RTRIM(G.NOME)) AS GestorNome,
                 LTRIM(RTRIM(F.CODBANCOPAGTO)) AS Banco,
                 LTRIM(RTRIM(F.CODAGENCIAPAGTO)) AS Agencia,
                 LTRIM(RTRIM(F.CONTAPAGAMENTO)) AS Conta
@@ -35,6 +44,8 @@ public sealed class TotvsRmEmployeeRepository(
                 ON S.CODCOLIGADA = F.CODCOLIGADA AND S.CODIGO = F.CODSECAO
             LEFT JOIN dbo.PFUNCAO FN WITH (NOLOCK)
                 ON FN.CODCOLIGADA = F.CODCOLIGADA AND FN.CODIGO = F.CODFUNCAO
+            LEFT JOIN dbo.PFUNC G WITH (NOLOCK)
+                ON G.CODCOLIGADA = S.CODCOLIGADA AND G.CHAPA = S.CHAPACHEFE
             WHERE F.CODCOLIGADA = @CodColigada
               AND F.CHAPA = @Chapa
               AND (F.CODSITUACAO IS NULL OR F.CODSITUACAO = 'A');

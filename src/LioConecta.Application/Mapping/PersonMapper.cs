@@ -49,6 +49,16 @@ public static class JsonMapper
     public static string SerializeStringList(IReadOnlyList<string>? value)
         => JsonSerializer.Serialize(value ?? [], Options);
 
+    public static string SerializeSkills(IReadOnlyList<PersonSkillDto> skills)
+        => JsonSerializer.Serialize(
+            skills.Select(skill => new
+            {
+                name = skill.Name,
+                level = skill.Level,
+                endorsements = skill.Endorsements,
+            }),
+            Options);
+
     public static IReadOnlyList<PersonSkillDto> DeserializeSkills(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
@@ -181,7 +191,7 @@ public static class PersonMapper
             person.Manager?.Name,
             person.Manager?.Slug,
             person.TeamsUpn,
-            ReadPersonalString("bio"),
+            ReadPersonalString("aboutMe") ?? ReadPersonalString("bio"),
             ReadPersonalString("pronouns"),
             showSensitive ? person.BirthDate : null,
             person.HireDate,

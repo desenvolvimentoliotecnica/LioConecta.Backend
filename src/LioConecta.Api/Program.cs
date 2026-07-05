@@ -1,17 +1,22 @@
 using LioConecta.Api.Auth;
 using LioConecta.Api.Authorization;
+using LioConecta.Api.Extensions;
 using LioConecta.Api.Hubs;
 using LioConecta.Api.Middleware;
 using LioConecta.Api.Services;
 using LioConecta.Application;
 using LioConecta.Application.Common;
+using LioConecta.Application.Common.Audit;
+using LioConecta.Application.Common.Observability;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Domain.Enums;
 using LioConecta.Infrastructure;
 using LioConecta.Infrastructure.Configuration;
 using LioConecta.Infrastructure.Persistence;
 using LioConecta.Infrastructure.Services;
+using LioConecta.Workers.Jobs;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
@@ -47,7 +52,15 @@ try
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(settingsProvider);
     builder.Services.AddScoped<INotificationBroadcaster, SignalRNotificationBroadcaster>();
-    builder.Services.AddHostedService<PollClosureHostedService>();
+    if (builder.Environment.IsDevelopment())
+    {
+        builder.Services.AddHostedService<TotvsSyncWorker>();
+        builder.Services.AddHostedService<GraphSyncWorker>();
+        builder.Services.AddHostedService<PollClosureWorker>();
+        builder.Services.AddHostedService<TotvsTimesheetSyncWorker>();
+    }
+
+    builder.Services.AddHostedService<ObservabilityRetentionHostedService>();
 
     var authenticationBuilder = builder.Services.AddAuthentication(options =>
     {
@@ -68,6 +81,68 @@ try
     {
         var azureConfig = BuildAzureAdConfiguration(settingsProvider);
         authenticationBuilder.AddMicrosoftIdentityWebApi(azureConfig);
+
+        if (settingsProvider.GetBool(AppSettingKeys.ObservabilityAuthAuditEnabled, true))
+        {
+            builder.Services.Configure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+            {
+                var existing = options.Events ?? new JwtBearerEvents();
+                options.Events = new JwtBearerEvents
+                {
+                    OnAuthenticationFailed = async context =>
+                    {
+                        if (existing.OnAuthenticationFailed is not null)
+                        {
+                            await existing.OnAuthenticationFailed(context);
+                        }
+
+                        var recorder = context.HttpContext.RequestServices
+                            .GetRequiredService<IAccessAuditRecorder>();
+                        var correlationId = ResolveAuthCorrelationId(context.HttpContext);
+                        await recorder.RecordAsync(new AccessAuditEntry(
+                            EventType: AccessEventTypes.Authentication,
+                            EventName: ObservabilityEventNames.Authentication.LoginFailed,
+                            CorrelationId: correlationId,
+                            UserId: null,
+                            UsernameSnapshot: null,
+                            SessionId: null,
+                            Resource: context.Request.Path.Value,
+                            Action: "jwt_validate",
+                            Result: AccessEventResults.Failed,
+                            ReasonCode: context.Exception.GetType().Name,
+                            StatusCode: StatusCodes.Status401Unauthorized,
+                            HttpMethod: context.Request.Method,
+                            Path: context.Request.Path.Value));
+                    },
+                    OnTokenValidated = async context =>
+                    {
+                        if (existing.OnTokenValidated is not null)
+                        {
+                            await existing.OnTokenValidated(context);
+                        }
+
+                        var recorder = context.HttpContext.RequestServices
+                            .GetRequiredService<IAccessAuditRecorder>();
+                        var correlationId = ResolveAuthCorrelationId(context.HttpContext);
+                        var username = context.Principal?.FindFirst("preferred_username")?.Value;
+                        await recorder.RecordAsync(new AccessAuditEntry(
+                            EventType: AccessEventTypes.Authentication,
+                            EventName: ObservabilityEventNames.Authentication.LoginSucceeded,
+                            CorrelationId: correlationId,
+                            UserId: null,
+                            UsernameSnapshot: username,
+                            SessionId: null,
+                            Resource: context.Request.Path.Value,
+                            Action: "jwt_validate",
+                            Result: AccessEventResults.Success,
+                            ReasonCode: null,
+                            StatusCode: StatusCodes.Status200OK,
+                            HttpMethod: context.Request.Method,
+                            Path: context.Request.Path.Value));
+                    },
+                };
+            });
+        }
     }
 
     builder.Services.AddAuthorization(options =>
@@ -133,6 +208,8 @@ try
 
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
     builder.Services.AddProblemDetails();
+    builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, ObservabilityAuthorizationResultHandler>();
+    builder.Services.AddLioConectaObservability(settingsProvider, builder.Environment);
 
     var postgresConnection = settingsProvider.GetConnectionString();
     var redisConnection = settingsProvider.GetRedisConnection();
@@ -173,6 +250,8 @@ try
     app.UseHttpsRedirection();
     app.UseCors();
 
+    app.UseMiddleware<CorrelationMiddleware>();
+
     var mediaRoot = ResolveComunicadoMediaRoot(settingsProvider, app.Environment);
     app.UseStaticFiles(new StaticFileOptions
     {
@@ -182,6 +261,15 @@ try
 
     app.UseAuthentication();
     app.UseAuthorization();
+
+    app.UseMiddleware<AccessAuditMiddleware>();
+    app.UseMiddleware<AuditMiddleware>();
+    app.UseMiddleware<TransactionAuditMiddleware>();
+    app.UseMiddleware<ObservabilityLoggingMiddleware>();
+    app.UseMiddleware<AuditLoggingMiddleware>();
+    app.UseMiddleware<AuditTrailMiddleware>();
+
+    app.UseLioConectaObservability(settingsProvider);
 
     app.MapControllers();
     app.MapHub<NotificationHub>("/hubs/notifications");
@@ -280,4 +368,15 @@ static string ResolveComunicadoMediaRoot(IAppSettingsProvider settings, IWebHost
 
     Directory.CreateDirectory(absolute);
     return absolute;
+}
+
+static Guid ResolveAuthCorrelationId(HttpContext httpContext)
+{
+    if (httpContext.Items[AuditContext.HttpContextItemKey] is AuditContext auditContext)
+    {
+        return auditContext.CorrelationId;
+    }
+
+    var header = httpContext.Request.Headers[AuditContext.CorrelationHeaderName].FirstOrDefault();
+    return Guid.TryParse(header, out var parsed) ? parsed : Guid.NewGuid();
 }

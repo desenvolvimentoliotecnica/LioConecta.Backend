@@ -27,6 +27,15 @@ public static class DependencyInjection
         services.AddScoped<IBenefitService, BenefitService>();
         services.AddScoped<ILeaveService, LeaveService>();
         services.AddScoped<IPollClosureService, PollClosureService>();
+        services.AddScoped<IAuditService, AuditService>();
+        services.AddScoped<IObservabilityIngestionService, ObservabilityIngestionService>();
+        services.AddScoped<IObservabilityRetentionService, ObservabilityRetentionService>();
+        services.AddScoped<IObservabilityQueryService, ObservabilityQueryService>();
+
+        services.AddScoped<TimesheetAggregationService>();
+        services.AddScoped<TimesheetMergeService>();
+        services.AddScoped<IPontoService, PontoService>();
+        services.AddScoped<ITimesheetSyncService, TimesheetSyncService>();
 
         return services;
     }

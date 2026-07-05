@@ -22,6 +22,84 @@ namespace LioConecta.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("LioConecta.Domain.Entities.AccessEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EventName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("IpAddress")
+                        .HasColumnType("text");
+
+                    b.Property<string>("IpHash")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MetadataJson")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Permission")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ReasonCode")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Resource")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Result")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserAgent")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UsernameSnapshot")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrelationId");
+
+                    b.HasIndex("OccurredAt");
+
+                    b.HasIndex("EventType", "OccurredAt");
+
+                    b.HasIndex("Result", "OccurredAt");
+
+                    b.HasIndex("UserId", "OccurredAt");
+
+                    b.ToTable("access_events");
+                });
+
             modelBuilder.Entity("LioConecta.Domain.Entities.AnalyticsEvent", b =>
                 {
                     b.Property<Guid>("Id")
@@ -128,11 +206,29 @@ namespace LioConecta.Infrastructure.Migrations
                     b.Property<Guid?>("ActorId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("DetailsJson")
                         .HasColumnType("text");
+
+                    b.Property<int?>("DurationMs")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("HttpMethod")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Path")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("StatusCode")
+                        .HasColumnType("integer");
 
                     b.Property<string>("TargetId")
                         .IsRequired()
@@ -141,6 +237,9 @@ namespace LioConecta.Infrastructure.Migrations
                     b.Property<string>("TargetType")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<Guid>("TransactionId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -151,7 +250,13 @@ namespace LioConecta.Infrastructure.Migrations
 
                     b.HasIndex("ActorId");
 
+                    b.HasIndex("CorrelationId");
+
                     b.HasIndex("CreatedAt");
+
+                    b.HasIndex("Source");
+
+                    b.HasIndex("TransactionId");
 
                     b.ToTable("audit_events");
                 });
@@ -1014,6 +1119,173 @@ namespace LioConecta.Infrastructure.Migrations
                     b.ToTable("notifications");
                 });
 
+            modelBuilder.Entity("LioConecta.Domain.Entities.ObservabilityEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Application")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DurationMs")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Environment")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ErrorCode")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ErrorType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("EventName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("HttpMethod")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MetadataJson")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RequestId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ResourceId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ResourceType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Route")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RouteTemplate")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<short>("Severity")
+                        .HasColumnType("smallint");
+
+                    b.Property<string>("SpanId")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("StatusCode")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Success")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("TraceId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrelationId");
+
+                    b.HasIndex("OccurredAt");
+
+                    b.HasIndex("TraceId");
+
+                    b.HasIndex("EventName", "OccurredAt");
+
+                    b.HasIndex("EventType", "OccurredAt");
+
+                    b.HasIndex("Severity", "OccurredAt");
+
+                    b.HasIndex("UserId", "OccurredAt");
+
+                    b.ToTable("observability_events");
+                });
+
+            modelBuilder.Entity("LioConecta.Domain.Entities.PageView", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DurationMs")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("MetadataJson")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Module")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PageName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ReferrerTemplate")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RouteTemplate")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OccurredAt");
+
+                    b.HasIndex("SessionId");
+
+                    b.HasIndex("Module", "OccurredAt");
+
+                    b.HasIndex("RouteTemplate", "OccurredAt");
+
+                    b.HasIndex("UserId", "OccurredAt");
+
+                    b.ToTable("page_views");
+                });
+
             modelBuilder.Entity("LioConecta.Domain.Entities.Payslip", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1090,6 +1362,10 @@ namespace LioConecta.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("EmployeeId")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
                     b.Property<DateOnly?>("HireDate")
                         .HasColumnType("date");
 
@@ -1150,6 +1426,8 @@ namespace LioConecta.Infrastructure.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("EmployeeId");
 
                     b.HasIndex("ManagerId");
 
@@ -1365,6 +1643,101 @@ namespace LioConecta.Infrastructure.Migrations
                     b.ToTable("service_request_events");
                 });
 
+            modelBuilder.Entity("LioConecta.Domain.Entities.TimesheetPeriodCache", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EntriesJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Month")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("PersonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("SummaryJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("SyncedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PersonId", "Year", "Month")
+                        .IsUnique();
+
+                    b.ToTable("timesheet_period_caches");
+                });
+
+            modelBuilder.Entity("LioConecta.Domain.Entities.TotvsRmConfiguration", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Database")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("PasswordProtected")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Port")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Server")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<int>("TimesheetPeriodEndDay")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TimesheetPeriodStartDay")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("TrustServerCertificate")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("totvs_rm_configurations");
+                });
+
             modelBuilder.Entity("LioConecta.Domain.Entities.UserPreference", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1398,6 +1771,89 @@ namespace LioConecta.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("user_preferences");
+                });
+
+            modelBuilder.Entity("LioConecta.Domain.Entities.WorkerRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("FinishedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("TriggerSource")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("WorkerKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StartedAtUtc");
+
+                    b.HasIndex("WorkerKey");
+
+                    b.ToTable("worker_runs");
+                });
+
+            modelBuilder.Entity("LioConecta.Domain.Entities.WorkerRunLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Level")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<DateTimeOffset>("LoggedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("WorkerRunId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkerRunId");
+
+                    b.ToTable("worker_run_logs");
+                });
+
+            modelBuilder.Entity("LioConecta.Domain.Entities.AccessEvent", b =>
+                {
+                    b.HasOne("LioConecta.Domain.Entities.Person", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("LioConecta.Domain.Entities.AnalyticsEvent", b =>
@@ -1682,6 +2138,26 @@ namespace LioConecta.Infrastructure.Migrations
                     b.Navigation("Person");
                 });
 
+            modelBuilder.Entity("LioConecta.Domain.Entities.ObservabilityEvent", b =>
+                {
+                    b.HasOne("LioConecta.Domain.Entities.Person", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LioConecta.Domain.Entities.PageView", b =>
+                {
+                    b.HasOne("LioConecta.Domain.Entities.Person", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("LioConecta.Domain.Entities.Payslip", b =>
                 {
                     b.HasOne("LioConecta.Domain.Entities.Person", "Person")
@@ -1799,6 +2275,17 @@ namespace LioConecta.Infrastructure.Migrations
                     b.Navigation("ServiceRequest");
                 });
 
+            modelBuilder.Entity("LioConecta.Domain.Entities.TimesheetPeriodCache", b =>
+                {
+                    b.HasOne("LioConecta.Domain.Entities.Person", "Person")
+                        .WithMany()
+                        .HasForeignKey("PersonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Person");
+                });
+
             modelBuilder.Entity("LioConecta.Domain.Entities.UserPreference", b =>
                 {
                     b.HasOne("LioConecta.Domain.Entities.Person", "Person")
@@ -1808,6 +2295,17 @@ namespace LioConecta.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Person");
+                });
+
+            modelBuilder.Entity("LioConecta.Domain.Entities.WorkerRunLog", b =>
+                {
+                    b.HasOne("LioConecta.Domain.Entities.WorkerRun", "WorkerRun")
+                        .WithMany("Logs")
+                        .HasForeignKey("WorkerRunId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("WorkerRun");
                 });
 
             modelBuilder.Entity("LioConecta.Domain.Entities.ChatConversation", b =>
@@ -1859,6 +2357,11 @@ namespace LioConecta.Infrastructure.Migrations
             modelBuilder.Entity("LioConecta.Domain.Entities.ServiceRequest", b =>
                 {
                     b.Navigation("Events");
+                });
+
+            modelBuilder.Entity("LioConecta.Domain.Entities.WorkerRun", b =>
+                {
+                    b.Navigation("Logs");
                 });
 #pragma warning restore 612, 618
         }

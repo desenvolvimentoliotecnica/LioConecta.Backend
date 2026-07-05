@@ -6,6 +6,7 @@ using LioConecta.Infrastructure.Services;
 
 namespace LioConecta.IntegrationTests;
 
+[Collection("WebApp")]
 public class HealthEndpointTests : IClassFixture<LioConectaWebApplicationFactory>
 {
     private readonly HttpClient _client;
@@ -40,7 +41,7 @@ public class HealthEndpointTests : IClassFixture<LioConectaWebApplicationFactory
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var json = await response.Content.ReadAsStringAsync();
-        Assert.Contains("maria-silva", json, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("leonardo-sabino-mendes", json, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

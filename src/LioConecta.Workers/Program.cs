@@ -39,6 +39,7 @@ try
     builder.Services.AddHostedService<TotvsSyncWorker>();
     builder.Services.AddHostedService<GraphSyncWorker>();
     builder.Services.AddHostedService<PollClosureWorker>();
+    builder.Services.AddHostedService<TotvsTimesheetSyncWorker>();
 
     var host = builder.Build();
     await host.RunAsync();

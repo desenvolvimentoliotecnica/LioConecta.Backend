@@ -29,6 +29,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<CafeteriaMenu> CafeteriaMenus => Set<CafeteriaMenu>();
     public DbSet<AnalyticsEvent> AnalyticsEvents => Set<AnalyticsEvent>();
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
+    public DbSet<ObservabilityEvent> ObservabilityEvents => Set<ObservabilityEvent>();
+    public DbSet<PageView> PageViews => Set<PageView>();
+    public DbSet<AccessEvent> AccessEvents => Set<AccessEvent>();
     public DbSet<UserPreference> UserPreferences => Set<UserPreference>();
     public DbSet<MoodCheck> MoodChecks => Set<MoodCheck>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
@@ -38,6 +41,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<EmployeeBenefit> EmployeeBenefits => Set<EmployeeBenefit>();
     public DbSet<EmployeeLeaveBalance> EmployeeLeaveBalances => Set<EmployeeLeaveBalance>();
     public DbSet<LeaveRecord> LeaveRecords => Set<LeaveRecord>();
+    public DbSet<TotvsRmConfiguration> TotvsRmConfigurations => Set<TotvsRmConfiguration>();
+    public DbSet<WorkerRun> WorkerRuns => Set<WorkerRun>();
+    public DbSet<WorkerRunLog> WorkerRunLogs => Set<WorkerRunLog>();
+    public DbSet<TimesheetPeriodCache> TimesheetPeriodCaches => Set<TimesheetPeriodCache>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -53,6 +60,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureChat(modelBuilder);
         ConfigureCalendar(modelBuilder);
         ConfigureAnalytics(modelBuilder);
+        ConfigureObservability(modelBuilder);
         ConfigureUserPreferences(modelBuilder);
         ConfigureMoodChecks(modelBuilder);
         ConfigureAppSettings(modelBuilder);
@@ -60,6 +68,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigurePayslips(modelBuilder);
         ConfigureEmployeeBenefits(modelBuilder);
         ConfigureEmployeeLeave(modelBuilder);
+        ConfigureTotvsRmConfiguration(modelBuilder);
+        ConfigureWorkerRuns(modelBuilder);
+        ConfigureTimesheetPeriodCache(modelBuilder);
     }
 
     private static void ApplySnakeCaseTableNames(ModelBuilder modelBuilder)
@@ -94,6 +105,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         entity.HasIndex(p => p.AzureAdObjectId);
         entity.HasIndex(p => p.DepartmentId);
         entity.HasIndex(p => p.ManagerId);
+        entity.HasIndex(p => p.EmployeeId);
+
+        entity.Property(p => p.EmployeeId).HasMaxLength(32);
 
         entity.HasOne(p => p.Department)
             .WithMany(d => d.Members)
@@ -416,10 +430,60 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         {
             entity.HasIndex(e => e.Action);
             entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.CorrelationId);
+            entity.HasIndex(e => e.TransactionId);
+            entity.HasIndex(e => e.Source);
 
             entity.HasOne(e => e.Actor)
                 .WithMany()
                 .HasForeignKey(e => e.ActorId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+    }
+
+    private static void ConfigureObservability(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ObservabilityEvent>(entity =>
+        {
+            entity.HasIndex(e => e.OccurredAt);
+            entity.HasIndex(e => new { e.EventType, e.OccurredAt });
+            entity.HasIndex(e => new { e.EventName, e.OccurredAt });
+            entity.HasIndex(e => e.CorrelationId);
+            entity.HasIndex(e => e.TraceId);
+            entity.HasIndex(e => new { e.UserId, e.OccurredAt });
+            entity.HasIndex(e => new { e.Severity, e.OccurredAt });
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<PageView>(entity =>
+        {
+            entity.HasIndex(e => e.OccurredAt);
+            entity.HasIndex(e => new { e.RouteTemplate, e.OccurredAt });
+            entity.HasIndex(e => new { e.UserId, e.OccurredAt });
+            entity.HasIndex(e => e.SessionId);
+            entity.HasIndex(e => new { e.Module, e.OccurredAt });
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<AccessEvent>(entity =>
+        {
+            entity.HasIndex(e => e.OccurredAt);
+            entity.HasIndex(e => new { e.EventType, e.OccurredAt });
+            entity.HasIndex(e => new { e.UserId, e.OccurredAt });
+            entity.HasIndex(e => e.CorrelationId);
+            entity.HasIndex(e => new { e.Result, e.OccurredAt });
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
     }
@@ -540,6 +604,54 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasOne(r => r.Person)
                 .WithMany()
                 .HasForeignKey(r => r.PersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureTotvsRmConfiguration(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<TotvsRmConfiguration>(entity =>
+        {
+            entity.Property(c => c.Server).HasMaxLength(256);
+            entity.Property(c => c.Database).HasMaxLength(128);
+            entity.Property(c => c.UserName).HasMaxLength(128);
+        });
+    }
+
+    private static void ConfigureWorkerRuns(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<WorkerRun>(entity =>
+        {
+            entity.HasIndex(r => r.WorkerKey);
+            entity.HasIndex(r => r.StartedAtUtc);
+            entity.Property(r => r.WorkerKey).HasMaxLength(64);
+            entity.Property(r => r.Status).HasMaxLength(32);
+            entity.Property(r => r.TriggerSource).HasMaxLength(32);
+        });
+
+        modelBuilder.Entity<WorkerRunLog>(entity =>
+        {
+            entity.HasKey(l => l.Id);
+            entity.HasIndex(l => l.WorkerRunId);
+            entity.Property(l => l.Level).HasMaxLength(16);
+
+            entity.HasOne(l => l.WorkerRun)
+                .WithMany(r => r.Logs)
+                .HasForeignKey(l => l.WorkerRunId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureTimesheetPeriodCache(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<TimesheetPeriodCache>(entity =>
+        {
+            entity.HasIndex(c => new { c.PersonId, c.Year, c.Month }).IsUnique();
+            entity.Property(c => c.Source).HasMaxLength(32);
+
+            entity.HasOne(c => c.Person)
+                .WithMany()
+                .HasForeignKey(c => c.PersonId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

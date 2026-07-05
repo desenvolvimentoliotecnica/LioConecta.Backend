@@ -6,7 +6,10 @@ using LioConecta.Infrastructure.Configuration;
 using LioConecta.Infrastructure.Integrations.Glpi;
 using LioConecta.Infrastructure.Integrations.Graph;
 using LioConecta.Infrastructure.Integrations.Totvs;
+using LioConecta.Application.Common.Audit;
+using LioConecta.Infrastructure.Integrations.TotvsRm;
 using LioConecta.Infrastructure.Persistence;
+using LioConecta.Infrastructure.Persistence.Interceptors;
 using LioConecta.Infrastructure.Persistence.Repositories;
 using LioConecta.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -28,8 +31,14 @@ public static class DependencyInjection
                 $"App setting '{AppSettingKeys.DatabaseDefaultConnection}' is required.");
         }
 
-        services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(connectionString));
+        services.AddSingleton<IAuditContextAccessor, AuditContextAccessor>();
+        services.AddSingleton<ChangeAuditInterceptor>();
+
+        services.AddDbContext<AppDbContext>((serviceProvider, options) =>
+        {
+            options.UseNpgsql(connectionString);
+            options.AddInterceptors(serviceProvider.GetRequiredService<ChangeAuditInterceptor>());
+        });
 
         services.AddHttpContextAccessor();
 
@@ -60,6 +69,9 @@ public static class DependencyInjection
         services.AddScoped<IPayslipRepository, PayslipRepository>();
         services.AddScoped<IBenefitRepository, BenefitRepository>();
         services.AddScoped<ILeaveRepository, LeaveRepository>();
+        services.AddScoped<IAuditRepository, AuditRepository>();
+        services.AddScoped<IObservabilityRepository, ObservabilityRepository>();
+        services.AddScoped<ITimesheetPeriodCacheRepository, TimesheetPeriodCacheRepository>();
     }
 
     private static void RegisterIntegrations(IServiceCollection services, IAppSettingsProvider settings)
@@ -94,34 +106,44 @@ public static class DependencyInjection
             services.AddSingleton<ITotvsAdapter, DevTotvsAdapter>();
             services.AddSingleton<IGlpiAdapter, DevGlpiAdapter>();
             services.AddSingleton<IGraphAdapter, DevGraphAdapter>();
-            return;
+        }
+        else
+        {
+            services.AddHttpClient<ITotvsAdapter, TotvsAdapter>((sp, client) =>
+            {
+                var options = sp.GetRequiredService<IOptions<TotvsOptions>>().Value;
+                client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
+            });
+
+            services.AddHttpClient<IGlpiAdapter, GlpiAdapter>((sp, client) =>
+            {
+                var options = sp.GetRequiredService<IOptions<GlpiOptions>>().Value;
+                client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
+            });
+
+            services.AddHttpClient<IGraphAdapter, GraphAdapter>((sp, client) =>
+            {
+                var options = sp.GetRequiredService<IOptions<GraphOptions>>().Value;
+                client.BaseAddress = new Uri("https://graph.microsoft.com/v1.0/");
+                _ = options;
+            });
         }
 
-        services.AddHttpClient<ITotvsAdapter, TotvsAdapter>((sp, client) =>
-        {
-            var options = sp.GetRequiredService<IOptions<TotvsOptions>>().Value;
-            client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
-        });
-
-        services.AddHttpClient<IGlpiAdapter, GlpiAdapter>((sp, client) =>
-        {
-            var options = sp.GetRequiredService<IOptions<GlpiOptions>>().Value;
-            client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
-        });
-
-        services.AddHttpClient<IGraphAdapter, GraphAdapter>((sp, client) =>
-        {
-            var options = sp.GetRequiredService<IOptions<GraphOptions>>().Value;
-            client.BaseAddress = new Uri("https://graph.microsoft.com/v1.0/");
-            _ = options;
-        });
+        services.AddScoped<ITotvsRmTimesheetRepository, TotvsRmTimesheetRepository>();
+        services.AddScoped<TotvsRmConnectionTester>();
     }
 
     private static void RegisterServices(IServiceCollection services, IAppSettingsProvider settings)
     {
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<IAccessAuditRecorder, AccessAuditRecorder>();
         services.AddScoped<IComunicadoHeroImageService, ComunicadoHeroImageService>();
         services.AddScoped<SeedDataService>();
+        services.AddScoped<ITotvsRmConfigurationService, TotvsRmConfigurationService>();
+        services.AddScoped<ITotvsEmployeeSyncService, TotvsEmployeeSyncService>();
+        services.AddScoped<IGraphSyncService, GraphSyncService>();
+        services.AddScoped<IWorkerRunRecorder, WorkerRunRecorder>();
+        services.AddScoped<IWorkerTriggerService, WorkerTriggerService>();
 
         var redisConnection = settings.GetRedisConnection();
         if (!string.IsNullOrWhiteSpace(redisConnection))

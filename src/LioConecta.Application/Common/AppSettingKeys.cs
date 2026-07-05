@@ -35,4 +35,23 @@ public static class AppSettingKeys
     public const string MediaComunicadosRootPath = "media.comunicados.root_path";
     public const string MediaComunicadosMaxSizeBytes = "media.comunicados.max_size_bytes";
     public const string MediaComunicadosAllowedContentTypes = "media.comunicados.allowed_content_types";
+
+    public const string ObservabilityOtelEnabled = "observability.otel.enabled";
+    public const string ObservabilityOtelServiceName = "observability.otel.service_name";
+    public const string ObservabilityOtelOtlpEndpoint = "observability.otel.otlp_endpoint";
+    public const string ObservabilityOtelPrometheusEnabled = "observability.otel.prometheus_enabled";
+    public const string ObservabilityOtelTraceSampleRatio = "observability.otel.trace_sample_ratio";
+
+    public const string ObservabilityAccessAuditEnabled = "observability.access_audit.enabled";
+    public const string ObservabilityAccessAuditRoutePatterns = "observability.access_audit.route_patterns";
+
+    public const string ObservabilityPageViewsEnabled = "observability.page_views.enabled";
+    public const string ObservabilityAuthAuditEnabled = "observability.auth_audit.enabled";
+
+    public const string ObservabilityRetentionObservabilityDays = "observability.retention.observability_days";
+    public const string ObservabilityRetentionPageViewDays = "observability.retention.page_view_days";
+    public const string ObservabilityRetentionAccessEventDays = "observability.retention.access_event_days";
+    public const string ObservabilityRetentionAggregatesDays = "observability.retention.aggregates_days";
+    public const string ObservabilityRetentionEnabled = "observability.retention.enabled";
+    public const string ObservabilityPrivacyIpMode = "observability.privacy.ip_mode";
 }

@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using LioConecta.Application.Common.Audit;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,30 +12,64 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
         Exception exception,
         CancellationToken cancellationToken)
     {
-        logger.LogError(exception, "Unhandled exception for {Method} {Path}",
-            httpContext.Request.Method,
-            httpContext.Request.Path);
+        var correlationId = ResolveCorrelationId(httpContext);
+        var traceId = Activity.Current?.TraceId.ToString();
 
-        var (statusCode, title) = exception switch
+        logger.LogError(
+            exception,
+            "Unhandled exception for {Method} {Path} correlationId={CorrelationId} traceId={TraceId}",
+            httpContext.Request.Method,
+            httpContext.Request.Path,
+            correlationId,
+            traceId);
+
+        var (statusCode, title, detail) = exception switch
         {
-            KeyNotFoundException => (StatusCodes.Status404NotFound, "Resource not found"),
-            UnauthorizedAccessException => (StatusCodes.Status403Forbidden, "Forbidden"),
-            ArgumentException => (StatusCodes.Status400BadRequest, "Bad request"),
-            InvalidOperationException => (StatusCodes.Status409Conflict, "Conflict"),
-            _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred"),
+            KeyNotFoundException ex => (StatusCodes.Status404NotFound, "Resource not found", ex.Message),
+            UnauthorizedAccessException => (StatusCodes.Status403Forbidden, "Forbidden", "Access to the resource was denied."),
+            ArgumentException ex => (StatusCodes.Status400BadRequest, "Bad request", ex.Message),
+            InvalidOperationException ex => (StatusCodes.Status409Conflict, "Conflict", ex.Message),
+            _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred",
+                "Não foi possível concluir a operação."),
         };
 
         var problemDetails = new ProblemDetails
         {
             Status = statusCode,
             Title = title,
-            Detail = exception.Message,
+            Detail = detail,
             Instance = httpContext.Request.Path,
+            Extensions =
+            {
+                ["correlationId"] = correlationId.ToString(),
+            },
         };
 
+        if (!string.IsNullOrEmpty(traceId))
+        {
+            problemDetails.Extensions["traceId"] = traceId;
+        }
+
+        httpContext.Response.Headers[AuditContext.CorrelationHeaderName] = correlationId.ToString();
         httpContext.Response.StatusCode = statusCode;
         await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
 
         return true;
+    }
+
+    private static Guid ResolveCorrelationId(HttpContext httpContext)
+    {
+        if (httpContext.Items[AuditContext.HttpContextItemKey] is AuditContext auditContext)
+        {
+            return auditContext.CorrelationId;
+        }
+
+        var header = httpContext.Request.Headers[AuditContext.CorrelationHeaderName].FirstOrDefault();
+        if (Guid.TryParse(header, out var parsed))
+        {
+            return parsed;
+        }
+
+        return Guid.NewGuid();
     }
 }

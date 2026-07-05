@@ -10,6 +10,34 @@ public sealed class AuditMiddleware(RequestDelegate next)
         IAuditContextAccessor contextAccessor,
         ICurrentUserService currentUserService)
     {
+        if (context.Items[AuditContext.HttpContextItemKey] is AuditContext existing)
+        {
+            existing.HttpMethod = context.Request.Method;
+            existing.Path = context.Request.Path.Value;
+
+            if (existing.ActorId is null && context.User.Identity?.IsAuthenticated == true)
+            {
+                try
+                {
+                    existing.ActorId = await currentUserService.GetPersonIdAsync(context.RequestAborted);
+                }
+                catch
+                {
+                    // Best effort.
+                }
+            }
+
+            contextAccessor.Set(existing);
+
+            if (IsMutableApiRequest(context.Request))
+            {
+                context.Request.EnableBuffering();
+            }
+
+            await next(context);
+            return;
+        }
+
         var correlationHeader = context.Request.Headers[AuditContext.CorrelationHeaderName].FirstOrDefault();
         var correlationId = Guid.TryParse(correlationHeader, out var parsedCorrelation)
             ? parsedCorrelation

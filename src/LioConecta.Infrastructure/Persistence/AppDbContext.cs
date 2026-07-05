@@ -29,6 +29,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<CafeteriaMenu> CafeteriaMenus => Set<CafeteriaMenu>();
     public DbSet<AnalyticsEvent> AnalyticsEvents => Set<AnalyticsEvent>();
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
+    public DbSet<ObservabilityEvent> ObservabilityEvents => Set<ObservabilityEvent>();
+    public DbSet<PageView> PageViews => Set<PageView>();
+    public DbSet<AccessEvent> AccessEvents => Set<AccessEvent>();
     public DbSet<UserPreference> UserPreferences => Set<UserPreference>();
     public DbSet<MoodCheck> MoodChecks => Set<MoodCheck>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
@@ -53,6 +56,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureChat(modelBuilder);
         ConfigureCalendar(modelBuilder);
         ConfigureAnalytics(modelBuilder);
+        ConfigureObservability(modelBuilder);
         ConfigureUserPreferences(modelBuilder);
         ConfigureMoodChecks(modelBuilder);
         ConfigureAppSettings(modelBuilder);
@@ -423,6 +427,53 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasOne(e => e.Actor)
                 .WithMany()
                 .HasForeignKey(e => e.ActorId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+    }
+
+    private static void ConfigureObservability(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ObservabilityEvent>(entity =>
+        {
+            entity.HasIndex(e => e.OccurredAt);
+            entity.HasIndex(e => new { e.EventType, e.OccurredAt });
+            entity.HasIndex(e => new { e.EventName, e.OccurredAt });
+            entity.HasIndex(e => e.CorrelationId);
+            entity.HasIndex(e => e.TraceId);
+            entity.HasIndex(e => new { e.UserId, e.OccurredAt });
+            entity.HasIndex(e => new { e.Severity, e.OccurredAt });
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<PageView>(entity =>
+        {
+            entity.HasIndex(e => e.OccurredAt);
+            entity.HasIndex(e => new { e.RouteTemplate, e.OccurredAt });
+            entity.HasIndex(e => new { e.UserId, e.OccurredAt });
+            entity.HasIndex(e => e.SessionId);
+            entity.HasIndex(e => new { e.Module, e.OccurredAt });
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<AccessEvent>(entity =>
+        {
+            entity.HasIndex(e => e.OccurredAt);
+            entity.HasIndex(e => new { e.EventType, e.OccurredAt });
+            entity.HasIndex(e => new { e.UserId, e.OccurredAt });
+            entity.HasIndex(e => e.CorrelationId);
+            entity.HasIndex(e => new { e.Result, e.OccurredAt });
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
     }

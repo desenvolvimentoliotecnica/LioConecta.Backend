@@ -69,6 +69,7 @@ public static class DependencyInjection
         services.AddScoped<IBenefitRepository, BenefitRepository>();
         services.AddScoped<ILeaveRepository, LeaveRepository>();
         services.AddScoped<IAuditRepository, AuditRepository>();
+        services.AddScoped<IObservabilityRepository, ObservabilityRepository>();
     }
 
     private static void RegisterIntegrations(IServiceCollection services, IAppSettingsProvider settings)
@@ -129,6 +130,7 @@ public static class DependencyInjection
     private static void RegisterServices(IServiceCollection services, IAppSettingsProvider settings)
     {
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<IAccessAuditRecorder, AccessAuditRecorder>();
         services.AddScoped<IComunicadoHeroImageService, ComunicadoHeroImageService>();
         services.AddScoped<SeedDataService>();
 

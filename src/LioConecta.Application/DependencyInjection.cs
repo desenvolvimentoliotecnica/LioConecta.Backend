@@ -28,6 +28,9 @@ public static class DependencyInjection
         services.AddScoped<ILeaveService, LeaveService>();
         services.AddScoped<IPollClosureService, PollClosureService>();
         services.AddScoped<IAuditService, AuditService>();
+        services.AddScoped<IObservabilityIngestionService, ObservabilityIngestionService>();
+        services.AddScoped<IObservabilityRetentionService, ObservabilityRetentionService>();
+        services.AddScoped<IObservabilityQueryService, ObservabilityQueryService>();
 
         return services;
     }

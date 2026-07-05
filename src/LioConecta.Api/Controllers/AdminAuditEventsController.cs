@@ -1,3 +1,4 @@
+using LioConecta.Api.Attributes;
 using LioConecta.Api.Authorization;
 using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Services;
@@ -10,6 +11,7 @@ namespace LioConecta.Api.Controllers;
 [ApiController]
 [Route("api/v1/admin/audit-events")]
 [Authorize(Policy = AuthPolicies.RequireAdmin)]
+[AccessAudited(Resource = "AuditTrail")]
 public sealed class AdminAuditEventsController(IAuditService auditService) : ControllerBase
 {
     [HttpGet("summary")]

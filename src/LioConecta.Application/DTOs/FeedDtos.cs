@@ -13,7 +13,8 @@ public sealed record FeedPostDto(
     int CommentCount,
     int ReactionCount,
     string? ViewerReaction,
-    IReadOnlyList<CommentDto> Comments);
+    IReadOnlyList<CommentDto> Comments,
+    PollDto? Poll = null);
 
 public sealed record CommentDto(
     Guid Id,

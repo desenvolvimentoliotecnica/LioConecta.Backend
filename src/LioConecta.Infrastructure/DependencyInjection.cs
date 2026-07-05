@@ -57,6 +57,7 @@ public static class DependencyInjection
         services.AddScoped<IMoodCheckRepository, MoodCheckRepository>();
         services.AddScoped<IAppSettingRepository, AppSettingRepository>();
         services.AddScoped<IComunicadoHeroImageRepository, ComunicadoHeroImageRepository>();
+        services.AddScoped<IPayslipRepository, PayslipRepository>();
     }
 
     private static void RegisterIntegrations(IServiceCollection services, IAppSettingsProvider settings)

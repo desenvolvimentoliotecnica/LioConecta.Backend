@@ -221,7 +221,8 @@ public static class FeedMapper
     public static FeedPostDto ToDto(
         FeedPost post,
         Guid? viewerPersonId,
-        bool includeComments = false)
+        bool includeComments = false,
+        PollDto? poll = null)
     {
         var viewerReaction = viewerPersonId is null
             ? null
@@ -230,7 +231,7 @@ public static class FeedMapper
         var comments = includeComments
             ? post.Comments
                 .OrderBy(c => c.CreatedAt)
-                .Select(c => ToCommentDto(c))
+                .Select(ToCommentDto)
                 .ToList()
             : [];
 
@@ -245,7 +246,24 @@ public static class FeedMapper
             post.Comments.Count,
             post.Reactions.Count,
             viewerReaction,
-            comments);
+            comments,
+            poll);
+    }
+
+    public static PollDto ToPollDto(Poll poll, Guid viewerPersonId)
+    {
+        var hasVoted = poll.Options.Any(o => o.Votes.Any(v => v.PersonId == viewerPersonId));
+        var options = poll.Options
+            .OrderBy(o => o.SortOrder)
+            .Select(o => new PollOptionDto(
+                o.Id,
+                o.Text,
+                o.Votes.Count,
+                o.SortOrder,
+                hasVoted && o.Votes.Any(v => v.PersonId == viewerPersonId)))
+            .ToList();
+
+        return new PollDto(poll.Id, poll.PostId, poll.Question, poll.EndsAt, hasVoted, options);
     }
 
     public static CommentDto ToCommentDto(Comment comment)

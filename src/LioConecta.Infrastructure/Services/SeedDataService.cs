@@ -17,6 +17,8 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             await EnsureComunicadosCatalogAsync(cancellationToken);
             await EnsureArchivedAtBackfillAsync(cancellationToken);
             await EnsureGroupsCatalogAsync(cancellationToken);
+            await EnsurePayslipsCatalogAsync(cancellationToken);
+            await EnsurePollSeedAsync(cancellationToken);
             logger.LogDebug("Database already contains people; skipping seed.");
             return;
         }
@@ -158,13 +160,53 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             {
                 Id = SeedIds.FeedPostPoll,
                 AuthorId = SeedIds.MariaSilva,
-                Type = PostType.News,
-                Content = "LioTécnica lança nova iniciativa de inovação aberta com squads multidisciplinares.",
-                MetadataJson = "{\"category\":\"innovation\"}",
+                Type = PostType.Poll,
+                Content = "Qual tema você gostaria para a próxima palestra de liderança?",
+                MetadataJson = "{\"heroImageUrl\":\"/bg-poll.png\"}",
                 IsPinned = false,
                 CreatedAt = now.AddDays(-2),
                 UpdatedAt = now.AddDays(-2)
             }
+        };
+
+        var pollSeedId = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffff0001");
+        var poll = new Poll
+        {
+            Id = pollSeedId,
+            PostId = SeedIds.FeedPostPoll,
+            Question = "Qual tema você gostaria para a próxima palestra de liderança?",
+            CreatedAt = now.AddDays(-2),
+            UpdatedAt = now.AddDays(-2),
+            Options =
+            [
+                new PollOption
+                {
+                    Id = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffff0002"),
+                    PollId = pollSeedId,
+                    Text = "Gestão de conflitos",
+                    SortOrder = 0,
+                    CreatedAt = now.AddDays(-2),
+                    UpdatedAt = now.AddDays(-2)
+                },
+                new PollOption
+                {
+                    Id = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffff0003"),
+                    PollId = pollSeedId,
+                    Text = "Comunicação assertiva",
+                    SortOrder = 1,
+                    CreatedAt = now.AddDays(-2),
+                    UpdatedAt = now.AddDays(-2)
+                },
+                new PollOption
+                {
+                    Id = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffff0004"),
+                    PollId = pollSeedId,
+                    Text = "Inteligência emocional",
+                    SortOrder = 2,
+                    CreatedAt = now.AddDays(-2),
+                    UpdatedAt = now.AddDays(-2)
+                }
+            ]
         };
 
         var notifications = new[]
@@ -211,6 +253,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
         db.People.AddRange(people);
         db.Comunicados.AddRange(comunicados);
         db.FeedPosts.AddRange(feedPosts);
+        db.Polls.Add(poll);
         db.Notifications.AddRange(notifications);
 
         await db.SaveChangesAsync(cancellationToken);
@@ -300,6 +343,33 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
         logger.LogInformation("Seeded {Count} catalog comunicados.", added);
     }
 
+    private async Task EnsurePayslipsCatalogAsync(CancellationToken cancellationToken)
+    {
+        var mariaId = SeedIds.MariaSilva;
+        var hasPayslips = await db.Payslips.AnyAsync(p => p.PersonId == mariaId, cancellationToken);
+        if (hasPayslips)
+        {
+            return;
+        }
+
+        var seedTime = DateTimeOffset.UtcNow.AddDays(-30);
+        foreach (var payslip in PayslipCatalogSeed.BuildPayslips(mariaId, seedTime))
+        {
+            db.Payslips.Add(payslip);
+        }
+
+        var hasInforme = await db.IncomeStatements.AnyAsync(
+            i => i.PersonId == mariaId && i.Year == 2025,
+            cancellationToken);
+        if (!hasInforme)
+        {
+            db.IncomeStatements.Add(PayslipCatalogSeed.BuildIncomeStatement2025(mariaId, seedTime));
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Seeded payslip catalog for Maria Silva.");
+    }
+
     private async Task EnsureArchivedAtBackfillAsync(CancellationToken cancellationToken)
     {
         var pending = await db.Comunicados
@@ -320,6 +390,84 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
 
         await db.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Backfilled ArchivedAt for {Count} comunicados.", pending.Count);
+    }
+
+    private async Task EnsurePollSeedAsync(CancellationToken cancellationToken)
+    {
+        var hasPoll = await db.Polls.AnyAsync(p => p.PostId == SeedIds.FeedPostPoll, cancellationToken);
+        if (hasPoll)
+        {
+            return;
+        }
+
+        var postExists = await db.FeedPosts.AnyAsync(p => p.Id == SeedIds.FeedPostPoll, cancellationToken);
+        if (!postExists)
+        {
+            var now = DateTimeOffset.UtcNow.AddDays(-2);
+            db.FeedPosts.Add(new FeedPost
+            {
+                Id = SeedIds.FeedPostPoll,
+                AuthorId = SeedIds.MariaSilva,
+                Type = PostType.Poll,
+                Content = "Qual tema você gostaria para a próxima palestra de liderança?",
+                MetadataJson = "{\"heroImageUrl\":\"/bg-poll.png\"}",
+                IsPinned = false,
+                CreatedAt = now,
+                UpdatedAt = now
+            });
+        }
+        else
+        {
+            var post = await db.FeedPosts.FirstAsync(p => p.Id == SeedIds.FeedPostPoll, cancellationToken);
+            post.Type = PostType.Poll;
+            post.Content = "Qual tema você gostaria para a próxima palestra de liderança?";
+            post.MetadataJson = "{\"heroImageUrl\":\"/bg-poll.png\"}";
+            post.UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        var pollSeedId = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffff0001");
+        var seededAt = DateTimeOffset.UtcNow.AddDays(-2);
+        db.Polls.Add(new Poll
+        {
+            Id = pollSeedId,
+            PostId = SeedIds.FeedPostPoll,
+            Question = "Qual tema você gostaria para a próxima palestra de liderança?",
+            CreatedAt = seededAt,
+            UpdatedAt = seededAt,
+            Options =
+            [
+                new PollOption
+                {
+                    Id = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffff0002"),
+                    PollId = pollSeedId,
+                    Text = "Gestão de conflitos",
+                    SortOrder = 0,
+                    CreatedAt = seededAt,
+                    UpdatedAt = seededAt
+                },
+                new PollOption
+                {
+                    Id = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffff0003"),
+                    PollId = pollSeedId,
+                    Text = "Comunicação assertiva",
+                    SortOrder = 1,
+                    CreatedAt = seededAt,
+                    UpdatedAt = seededAt
+                },
+                new PollOption
+                {
+                    Id = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffff0004"),
+                    PollId = pollSeedId,
+                    Text = "Inteligência emocional",
+                    SortOrder = 2,
+                    CreatedAt = seededAt,
+                    UpdatedAt = seededAt
+                }
+            ]
+        });
+
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Seeded sample poll for feed.");
     }
 
     private static Person CreatePerson(

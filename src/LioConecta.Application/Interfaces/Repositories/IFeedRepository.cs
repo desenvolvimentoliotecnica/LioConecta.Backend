@@ -11,6 +11,12 @@ public interface IFeedRepository
 
     Task AddPostAsync(FeedPost post, CancellationToken cancellationToken = default);
 
+    Task AddPostWithPollAsync(FeedPost post, Poll poll, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Poll>> GetPollsByPostIdsAsync(
+        IReadOnlyCollection<Guid> postIds,
+        CancellationToken cancellationToken = default);
+
     Task AddCommentAsync(Comment comment, CancellationToken cancellationToken = default);
 
     Task<Reaction?> GetReactionAsync(Guid postId, Guid personId, CancellationToken cancellationToken = default);

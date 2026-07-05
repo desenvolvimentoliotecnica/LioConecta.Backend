@@ -63,6 +63,29 @@ public sealed class FeedRepository(AppDbContext db) : IFeedRepository
         await db.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task AddPostWithPollAsync(FeedPost post, Poll poll, CancellationToken cancellationToken = default)
+    {
+        db.FeedPosts.Add(post);
+        db.Polls.Add(poll);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Poll>> GetPollsByPostIdsAsync(
+        IReadOnlyCollection<Guid> postIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (postIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await db.Polls
+            .Include(p => p.Options).ThenInclude(o => o.Votes)
+            .AsNoTracking()
+            .Where(p => postIds.Contains(p.PostId))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task AddCommentAsync(Comment comment, CancellationToken cancellationToken = default)
     {
         db.Comments.Add(comment);

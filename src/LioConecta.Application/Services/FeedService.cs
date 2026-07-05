@@ -19,7 +19,26 @@ public sealed class FeedService(
     {
         var viewerId = await currentUserService.GetPersonIdAsync(cancellationToken);
         var page = await feedRepository.GetFeedPageAsync(request, cancellationToken);
-        var items = page.Items.Select(p => FeedMapper.ToDto(p, viewerId, includeComments: true)).ToList();
+        var pollPostIds = page.Items
+            .Where(p => p.Type == PostType.Poll)
+            .Select(p => p.Id)
+            .ToList();
+        var pollsByPostId = (await feedRepository.GetPollsByPostIdsAsync(pollPostIds, cancellationToken))
+            .ToDictionary(p => p.PostId);
+
+        var items = page.Items
+            .Select(p =>
+            {
+                PollDto? pollDto = null;
+                if (p.Type == PostType.Poll && pollsByPostId.TryGetValue(p.Id, out var poll))
+                {
+                    pollDto = FeedMapper.ToPollDto(poll, viewerId);
+                }
+
+                return FeedMapper.ToDto(p, viewerId, includeComments: true, pollDto);
+            })
+            .ToList();
+
         return PagedResult<FeedPostDto>.FromItems(items, page.NextCursor, page.HasMore);
     }
 
@@ -27,7 +46,22 @@ public sealed class FeedService(
     {
         var viewerId = await currentUserService.GetPersonIdAsync(cancellationToken);
         var post = await feedRepository.GetByIdAsync(id, cancellationToken);
-        return post is null ? null : FeedMapper.ToDto(post, viewerId, includeComments: true);
+        if (post is null)
+        {
+            return null;
+        }
+
+        PollDto? pollDto = null;
+        if (post.Type == PostType.Poll)
+        {
+            var poll = await feedRepository.GetPollByPostIdAsync(id, cancellationToken);
+            if (poll is not null)
+            {
+                pollDto = FeedMapper.ToPollDto(poll, viewerId);
+            }
+        }
+
+        return FeedMapper.ToDto(post, viewerId, includeComments: true, pollDto);
     }
 
     public async Task<FeedPostDto> CreatePostAsync(
@@ -36,6 +70,12 @@ public sealed class FeedService(
     {
         var authorId = await currentUserService.GetPersonIdAsync(cancellationToken);
         var now = DateTimeOffset.UtcNow;
+
+        if (request.Type == PostType.Poll)
+        {
+            return await CreatePollPostAsync(request, authorId, now, cancellationToken);
+        }
+
         var post = new FeedPost
         {
             Id = Guid.NewGuid(),
@@ -51,6 +91,69 @@ public sealed class FeedService(
         var saved = await feedRepository.GetByIdAsync(post.Id, cancellationToken)
             ?? throw new InvalidOperationException($"Post {post.Id} was not found after save.");
         return FeedMapper.ToDto(saved, authorId);
+    }
+
+    private async Task<FeedPostDto> CreatePollPostAsync(
+        CreatePostRequest request,
+        Guid authorId,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var parsed = PollCreateParser.Parse(request.Content, request.Metadata);
+        var metadata = new Dictionary<string, object?>();
+        if (!string.IsNullOrWhiteSpace(parsed.HeroImageUrl))
+        {
+            metadata["heroImageUrl"] = parsed.HeroImageUrl;
+        }
+
+        if (parsed.EndsAt is not null)
+        {
+            metadata["endsAt"] = parsed.EndsAt.Value.ToString("O");
+        }
+
+        var postId = Guid.NewGuid();
+        var pollId = Guid.NewGuid();
+        var post = new FeedPost
+        {
+            Id = postId,
+            AuthorId = authorId,
+            Type = PostType.Poll,
+            Content = parsed.Question,
+            MetadataJson = JsonMapper.SerializeObjectDictionary(metadata),
+            CreatedAt = now,
+            UpdatedAt = now
+        };
+
+        var poll = new Poll
+        {
+            Id = pollId,
+            PostId = postId,
+            Question = parsed.Question,
+            EndsAt = parsed.EndsAt,
+            CreatedAt = now,
+            UpdatedAt = now,
+            Options = parsed.Options
+                .Select((text, index) => new PollOption
+                {
+                    Id = Guid.NewGuid(),
+                    PollId = pollId,
+                    Text = text,
+                    SortOrder = index,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                })
+                .ToList()
+        };
+
+        await feedRepository.AddPostWithPollAsync(post, poll, cancellationToken);
+
+        var saved = await feedRepository.GetByIdAsync(postId, cancellationToken)
+            ?? throw new InvalidOperationException($"Post {postId} was not found after save.");
+        var savedPoll = await feedRepository.GetPollByPostIdAsync(postId, cancellationToken)
+            ?? throw new InvalidOperationException($"Poll for post {postId} was not found after save.");
+        var pollDto = FeedMapper.ToPollDto(savedPoll, authorId);
+
+        return FeedMapper.ToDto(saved, authorId, poll: pollDto);
     }
 
     public async Task<CommentDto> AddCommentAsync(

@@ -33,6 +33,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<MoodCheck> MoodChecks => Set<MoodCheck>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<ComunicadoHeroImage> ComunicadoHeroImages => Set<ComunicadoHeroImage>();
+    public DbSet<Payslip> Payslips => Set<Payslip>();
+    public DbSet<IncomeStatement> IncomeStatements => Set<IncomeStatement>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -52,6 +54,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureMoodChecks(modelBuilder);
         ConfigureAppSettings(modelBuilder);
         ConfigureComunicadoHeroImages(modelBuilder);
+        ConfigurePayslips(modelBuilder);
     }
 
     private static void ApplySnakeCaseTableNames(ModelBuilder modelBuilder)
@@ -471,6 +474,30 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany()
                 .HasForeignKey(i => i.UploadedById)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigurePayslips(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Payslip>(entity =>
+        {
+            entity.HasIndex(p => new { p.PersonId, p.Year, p.Month }).IsUnique();
+            entity.HasIndex(p => p.PublishedAt);
+
+            entity.HasOne(p => p.Person)
+                .WithMany()
+                .HasForeignKey(p => p.PersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<IncomeStatement>(entity =>
+        {
+            entity.HasIndex(i => new { i.PersonId, i.Year }).IsUnique();
+
+            entity.HasOne(i => i.Person)
+                .WithMany()
+                .HasForeignKey(i => i.PersonId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

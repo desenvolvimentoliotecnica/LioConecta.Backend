@@ -13,6 +13,11 @@ public interface IPersonRepository
 
     Task<IReadOnlyList<Person>> GetOrgChartPeopleAsync(CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Person>> GetDirectoryPeopleAsync(
+        string? query,
+        string? departmentId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(Person person, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(Person person, CancellationToken cancellationToken = default);

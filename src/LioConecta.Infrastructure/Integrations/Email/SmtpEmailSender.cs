@@ -25,7 +25,7 @@ public sealed class SmtpEmailSender : ISmtpEmailSender
 
         try
         {
-            var message = BuildMessage(config, request);
+            var message = await BuildMessageAsync(config, request, cancellationToken);
             using var client = new SmtpClient
             {
                 Timeout = config.TimeoutSeconds * 1000,
@@ -83,7 +83,7 @@ public sealed class SmtpEmailSender : ISmtpEmailSender
 
             if (!string.IsNullOrWhiteSpace(testRecipient))
             {
-                var testMessage = BuildMessage(
+                var testMessage = await BuildMessageAsync(
                     config,
                     new SmtpSendRequest(
                         [testRecipient.Trim()],
@@ -91,7 +91,8 @@ public sealed class SmtpEmailSender : ISmtpEmailSender
                         [],
                         "LioConecta — teste SMTP",
                         "<p>Este e um e-mail de teste enviado pelo LioConecta.</p>",
-                        "Este e um e-mail de teste enviado pelo LioConecta."));
+                        "Este e um e-mail de teste enviado pelo LioConecta."),
+                    cancellationToken);
 
                 await client.SendAsync(testMessage, cancellationToken);
                 await client.DisconnectAsync(true, cancellationToken);
@@ -110,7 +111,10 @@ public sealed class SmtpEmailSender : ISmtpEmailSender
         }
     }
 
-    private static MimeMessage BuildMessage(EmailRuntimeConfiguration config, SmtpSendRequest request)
+    private static async Task<MimeMessage> BuildMessageAsync(
+        EmailRuntimeConfiguration config,
+        SmtpSendRequest request,
+        CancellationToken cancellationToken)
     {
         var message = new MimeMessage();
         var fromAddress = string.IsNullOrWhiteSpace(config.FromAddress)
@@ -149,6 +153,24 @@ public sealed class SmtpEmailSender : ISmtpEmailSender
         if (string.IsNullOrWhiteSpace(builder.HtmlBody) && string.IsNullOrWhiteSpace(builder.TextBody))
         {
             builder.TextBody = request.Subject;
+        }
+
+        if (request.Attachments is { Count: > 0 })
+        {
+            foreach (var attachment in request.Attachments)
+            {
+                if (string.IsNullOrWhiteSpace(attachment.StoragePath) || !File.Exists(attachment.StoragePath))
+                {
+                    continue;
+                }
+
+                await using var stream = File.OpenRead(attachment.StoragePath);
+                await builder.Attachments.AddAsync(
+                    attachment.FileName,
+                    stream,
+                    ContentType.Parse(attachment.ContentType),
+                    cancellationToken);
+            }
         }
 
         message.Body = builder.ToMessageBody();

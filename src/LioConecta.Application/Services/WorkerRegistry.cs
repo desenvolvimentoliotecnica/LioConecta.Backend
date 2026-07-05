@@ -20,6 +20,12 @@ public static class WorkerRegistry
             AppSettingKeys.WorkersGraphSyncIntervalMinutes,
             60),
         new(
+            WorkerKeys.GraphDirectorySync,
+            "Sync diretório Microsoft Graph",
+            "Importa colaboradores @liotecnica.com.br do Entra ID para o cadastro de pessoas.",
+            AppSettingKeys.WorkersGraphDirectorySyncIntervalMinutes,
+            60),
+        new(
             WorkerKeys.PollClosure,
             "Encerramento de enquetes",
             "Notifica participantes quando enquetes são encerradas.",

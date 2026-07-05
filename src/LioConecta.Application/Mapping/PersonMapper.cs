@@ -132,14 +132,30 @@ public static class JsonMapper
 
 public static class PersonMapper
 {
-    public static PersonSummaryDto ToSummary(Person person)
+    public static PersonSummaryDto ToSummary(Person person, DateOnly? birthDate = null, DateOnly? hireDate = null)
         => new(
             person.Id,
             person.Slug,
             person.Name,
             person.Title,
             person.PhotoUrl,
-            person.Department?.Name,
+            person.Department?.Name ?? person.Dept,
+            person.Location,
+            person.Manager?.Slug,
+            person.IsActive,
+            birthDate ?? person.BirthDate,
+            hireDate ?? person.HireDate);
+
+    public static PersonDirectoryEntryDto ToDirectoryEntry(Person person)
+        => new(
+            person.Id,
+            person.Slug,
+            person.Name,
+            person.Title,
+            person.PhotoUrl,
+            person.Email,
+            person.TeamsUpn,
+            person.Department?.Name ?? person.Dept,
             person.Location,
             person.Manager?.Slug,
             person.IsActive);
@@ -210,7 +226,7 @@ public static class PersonMapper
             person.Name,
             person.Title,
             person.PhotoUrl,
-            person.Department?.Name,
+            person.Department?.Name ?? person.Dept,
             person.ManagerId,
             JsonMapper.DeserializeStringList(person.TagsJson));
 

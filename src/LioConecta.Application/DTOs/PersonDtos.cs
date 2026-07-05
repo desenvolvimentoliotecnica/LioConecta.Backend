@@ -21,7 +21,33 @@ public sealed record PersonSummaryDto(
     string? DepartmentName,
     string? Location,
     string? ManagerSlug,
+    bool IsActive,
+    DateOnly? BirthDate = null,
+    DateOnly? HireDate = null);
+
+public sealed record PersonDirectoryEntryDto(
+    Guid Id,
+    string Slug,
+    string Name,
+    string? Title,
+    string? PhotoUrl,
+    string Email,
+    string? TeamsUpn,
+    string? DepartmentName,
+    string? Location,
+    string? ManagerSlug,
     bool IsActive);
+
+public sealed record PersonDirectoryDepartmentDto(
+    string Id,
+    string Name,
+    int Count,
+    IReadOnlyList<PersonDirectoryEntryDto> People);
+
+public sealed record PersonDirectoryDto(
+    DateTimeOffset? SyncedAtUtc,
+    int Total,
+    IReadOnlyList<PersonDirectoryDepartmentDto> Departments);
 
 public sealed record PersonSkillDto(
     string Name,

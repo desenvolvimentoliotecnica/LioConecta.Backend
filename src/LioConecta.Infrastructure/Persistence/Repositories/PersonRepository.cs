@@ -57,6 +57,43 @@ public sealed class PersonRepository(AppDbContext db) : IPersonRepository
             .OrderBy(p => p.Name)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<Person>> GetDirectoryPeopleAsync(
+        string? query,
+        string? departmentId,
+        CancellationToken cancellationToken = default)
+    {
+        var queryable = db.People
+            .AsNoTracking()
+            .Include(p => p.Department)
+            .Include(p => p.Manager)
+            .Where(p => p.IsActive);
+
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            var pattern = $"%{query.Trim()}%";
+            queryable = queryable.Where(p =>
+                EF.Functions.ILike(p.Name, pattern) ||
+                EF.Functions.ILike(p.Email, pattern) ||
+                (p.Title != null && EF.Functions.ILike(p.Title, pattern)) ||
+                (p.Dept != null && EF.Functions.ILike(p.Dept, pattern)) ||
+                (p.Department != null && EF.Functions.ILike(p.Department.Name, pattern)));
+        }
+
+        var people = await queryable
+            .OrderBy(p => p.Name)
+            .ToListAsync(cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(departmentId) || departmentId == "all")
+        {
+            return people;
+        }
+
+        return people
+            .Where(p => Application.Common.PersonSlugHelper.DepartmentIdFromName(
+                p.Department?.Name ?? p.Dept) == departmentId)
+            .ToList();
+    }
+
     public async Task AddAsync(Person person, CancellationToken cancellationToken = default)
     {
         db.People.Add(person);

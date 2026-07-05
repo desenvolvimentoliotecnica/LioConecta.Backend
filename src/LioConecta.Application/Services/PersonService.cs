@@ -10,7 +10,8 @@ namespace LioConecta.Application.Services;
 public sealed class PersonService(
     IPersonRepository personRepository,
     ICurrentUserService currentUserService,
-    ITotvsRmEmployeeRepository employeeRepository) : IPersonService
+    ITotvsRmEmployeeRepository employeeRepository,
+    IAppSettingsProvider settingsProvider) : IPersonService
 {
     public async Task<MeDto> GetMeAsync(CancellationToken cancellationToken = default)
     {
@@ -254,7 +255,7 @@ public sealed class PersonService(
         CancellationToken cancellationToken = default)
     {
         var people = await personRepository.SearchAsync(query, limit, cancellationToken);
-        return people.Select(PersonMapper.ToSummary).ToList();
+        return people.Select(p => PersonMapper.ToSummary(p)).ToList();
     }
 
     public async Task<OrgChartDto> GetOrgChartAsync(CancellationToken cancellationToken = default)
@@ -263,5 +264,35 @@ public sealed class PersonService(
         var nodes = people.Select(PersonMapper.ToOrgChartNode).ToList();
         var rootId = people.FirstOrDefault(p => p.ManagerId is null)?.Id;
         return new OrgChartDto(nodes, rootId);
+    }
+
+    public async Task<PersonDirectoryDto> GetDirectoryAsync(
+        string? query,
+        string? departmentId,
+        CancellationToken cancellationToken = default)
+    {
+        var people = await personRepository.GetDirectoryPeopleAsync(query, departmentId, cancellationToken);
+        var departments = people
+            .GroupBy(p => PersonSlugHelper.DepartmentIdFromName(p.Department?.Name ?? p.Dept))
+            .OrderBy(group => group.First().Department?.Name ?? group.First().Dept ?? "Sem departamento")
+            .Select(group =>
+            {
+                var name = group.First().Department?.Name ?? group.First().Dept ?? "Sem departamento";
+                var entries = group
+                    .OrderBy(p => p.Name)
+                    .Select(PersonMapper.ToDirectoryEntry)
+                    .ToList();
+                return new PersonDirectoryDepartmentDto(group.Key, name, entries.Count, entries);
+            })
+            .ToList();
+
+        DateTimeOffset? syncedAt = null;
+        var syncedRaw = settingsProvider.GetString(AppSettingKeys.GraphDirectoryLastSyncUtc);
+        if (DateTimeOffset.TryParse(syncedRaw, out var parsed))
+        {
+            syncedAt = parsed;
+        }
+
+        return new PersonDirectoryDto(syncedAt, people.Count, departments);
     }
 }

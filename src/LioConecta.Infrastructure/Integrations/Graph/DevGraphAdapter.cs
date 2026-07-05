@@ -5,6 +5,47 @@ namespace LioConecta.Infrastructure.Integrations.Graph;
 
 public sealed class DevGraphAdapter : IGraphAdapter
 {
+    public Task<IReadOnlyList<GraphDirectoryUser>> GetDirectoryUsersAsync(
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<GraphDirectoryUser> users =
+        [
+            new()
+            {
+                ObjectId = Guid.Parse("11111111-1111-1111-1111-111111111101"),
+                DisplayName = "Maria Silva",
+                UserPrincipalName = "maria.silva@liotecnica.com.br",
+                Mail = "maria.silva@liotecnica.com.br",
+                JobTitle = "Gerente de Projetos",
+                Department = "Produto",
+                AccountEnabled = true,
+            },
+            new()
+            {
+                ObjectId = Guid.Parse("11111111-1111-1111-1111-111111111102"),
+                DisplayName = "Carlos Mendes",
+                UserPrincipalName = "carlos.mendes@liotecnica.com.br",
+                Mail = "carlos.mendes@liotecnica.com.br",
+                JobTitle = "Analista de Produto",
+                Department = "Produto",
+                ManagerObjectId = Guid.Parse("11111111-1111-1111-1111-111111111101"),
+                AccountEnabled = true,
+            },
+            new()
+            {
+                ObjectId = Guid.Parse("11111111-1111-1111-1111-111111111103"),
+                DisplayName = "Patricia Nunes",
+                UserPrincipalName = "patricia.nunes@liotecnica.com.br",
+                Mail = "patricia.nunes@liotecnica.com.br",
+                JobTitle = "Coordenadora de RH",
+                Department = "Recursos Humanos",
+                AccountEnabled = true,
+            },
+        ];
+
+        return Task.FromResult(users);
+    }
+
     public Task SyncUserPhotosAsync(CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
 

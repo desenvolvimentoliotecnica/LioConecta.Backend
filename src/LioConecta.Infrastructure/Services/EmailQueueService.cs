@@ -51,6 +51,7 @@ public sealed class EmailQueueService(
             BodyText = request.BodyText,
             TemplateKey = request.TemplateKey,
             MetadataJson = request.MetadataJson,
+            AttachmentsJson = EmailMessageMapper.SerializeAttachments(request.Attachments),
             Priority = request.Priority,
             IdempotencyKey = string.IsNullOrWhiteSpace(request.IdempotencyKey)
                 ? null

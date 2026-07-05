@@ -26,6 +26,17 @@ public sealed class PeopleController(
         return Ok(people);
     }
 
+    [HttpGet("directory")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<PersonDirectoryDto>> GetDirectory(
+        [FromQuery] string? q,
+        [FromQuery] string? department,
+        CancellationToken cancellationToken = default)
+    {
+        var directory = await personService.GetDirectoryAsync(q, department, cancellationToken);
+        return Ok(directory);
+    }
+
     [HttpGet("org-chart")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<OrgChartDto>> GetOrgChart(CancellationToken cancellationToken)
@@ -48,7 +59,7 @@ public sealed class PeopleController(
             .OrderByDescending(p => p.HireDate)
             .ToListAsync(cancellationToken);
 
-        return Ok(people.Select(PersonMapper.ToSummary).ToList());
+        return Ok(people.Select(p => PersonMapper.ToSummary(p)).ToList());
     }
 
     [HttpGet("birthdays")]
@@ -82,7 +93,7 @@ public sealed class PeopleController(
                 var nextBirthday = new DateOnly(today.Year, birthDate.Month, birthDate.Day);
                 return nextBirthday < today ? nextBirthday.AddYears(1) : nextBirthday;
             })
-            .Select(PersonMapper.ToSummary)
+            .Select(p => PersonMapper.ToSummary(p))
             .ToList();
 
         return Ok(upcoming);

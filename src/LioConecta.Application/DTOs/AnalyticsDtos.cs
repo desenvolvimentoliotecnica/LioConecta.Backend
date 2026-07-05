@@ -4,6 +4,7 @@ public sealed record AnalyticsDashboardDto(
     int ActiveUsers,
     int FeedPosts,
     int FeedReactions,
+    int FeedComments,
     int ServiceRequests,
     int UnreadNotifications,
     int MoodChecks,

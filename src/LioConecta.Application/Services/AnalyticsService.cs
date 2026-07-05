@@ -25,6 +25,7 @@ public sealed class AnalyticsService(
             ActiveUsers: events.Where(e => e.PersonId is not null).Select(e => e.PersonId).Distinct().Count(),
             FeedPosts: eventsByType.GetValueOrDefault("FeedPostCreated"),
             FeedReactions: eventsByType.GetValueOrDefault("FeedPostLiked"),
+            FeedComments: eventsByType.GetValueOrDefault("FeedPostCommented"),
             ServiceRequests: eventsByType.GetValueOrDefault("ServiceRequestCreated"),
             UnreadNotifications: unread,
             MoodChecks: eventsByType.GetValueOrDefault("MoodCheckRecorded"),

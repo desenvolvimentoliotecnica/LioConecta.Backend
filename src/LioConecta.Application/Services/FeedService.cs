@@ -19,7 +19,7 @@ public sealed class FeedService(
     {
         var viewerId = await currentUserService.GetPersonIdAsync(cancellationToken);
         var page = await feedRepository.GetFeedPageAsync(request, cancellationToken);
-        var items = page.Items.Select(p => FeedMapper.ToDto(p, viewerId)).ToList();
+        var items = page.Items.Select(p => FeedMapper.ToDto(p, viewerId, includeComments: true)).ToList();
         return PagedResult<FeedPostDto>.FromItems(items, page.NextCursor, page.HasMore);
     }
 
@@ -58,6 +58,12 @@ public sealed class FeedService(
         CreateCommentRequest request,
         CancellationToken cancellationToken = default)
     {
+        var text = request.Text.Trim();
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            throw new ArgumentException("Comment text is required.", nameof(request));
+        }
+
         var authorId = await currentUserService.GetPersonIdAsync(cancellationToken);
         var post = await feedRepository.GetByIdAsync(postId, cancellationToken)
             ?? throw new KeyNotFoundException($"Post {postId} was not found.");
@@ -68,13 +74,38 @@ public sealed class FeedService(
             Id = Guid.NewGuid(),
             PostId = post.Id,
             AuthorId = authorId,
-            Text = request.Text.Trim(),
+            Text = text,
             CreatedAt = now,
             UpdatedAt = now
         };
 
         await feedRepository.AddCommentAsync(comment, cancellationToken);
-        return FeedMapper.ToCommentDto(comment);
+
+        var savedPost = await feedRepository.GetByIdAsync(post.Id, cancellationToken);
+        var savedComment = savedPost?.Comments.FirstOrDefault(c => c.Id == comment.Id) ?? comment;
+
+        await TrackCommentEventAsync(authorId, post.Id, savedComment.Id, cancellationToken);
+
+        return FeedMapper.ToCommentDto(savedComment);
+    }
+
+    private async Task TrackCommentEventAsync(
+        Guid personId,
+        Guid postId,
+        Guid commentId,
+        CancellationToken cancellationToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+        await analyticsRepository.AddEventAsync(new AnalyticsEvent
+        {
+            Id = Guid.NewGuid(),
+            EventType = "FeedPostCommented",
+            PersonId = personId,
+            MetadataJson = $"{{\"postId\":\"{postId}\",\"commentId\":\"{commentId}\"}}",
+            OccurredAt = now,
+            CreatedAt = now,
+            UpdatedAt = now
+        }, cancellationToken);
     }
 
     public async Task ReactAsync(

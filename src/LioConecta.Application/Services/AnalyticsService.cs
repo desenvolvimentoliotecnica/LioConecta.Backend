@@ -26,6 +26,7 @@ public sealed class AnalyticsService(
             FeedPosts: eventsByType.GetValueOrDefault("FeedPostCreated"),
             ServiceRequests: eventsByType.GetValueOrDefault("ServiceRequestCreated"),
             UnreadNotifications: unread,
+            MoodChecks: eventsByType.GetValueOrDefault("MoodCheckRecorded"),
             EventsByType: eventsByType);
     }
 }

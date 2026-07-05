@@ -55,6 +55,7 @@ public static class DependencyInjection
         services.AddScoped<IAnalyticsRepository, AnalyticsRepository>();
         services.AddScoped<IUserPreferenceRepository, UserPreferenceRepository>();
         services.AddScoped<ISearchRepository, SearchRepository>();
+        services.AddScoped<IMoodCheckRepository, MoodCheckRepository>();
     }
 
     private static void RegisterIntegrations(IServiceCollection services, IConfiguration configuration)

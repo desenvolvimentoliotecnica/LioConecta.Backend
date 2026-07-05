@@ -5,6 +5,7 @@ public sealed record AnalyticsDashboardDto(
     int FeedPosts,
     int ServiceRequests,
     int UnreadNotifications,
+    int MoodChecks,
     IReadOnlyDictionary<string, int> EventsByType);
 
 public sealed record SearchResultDto(

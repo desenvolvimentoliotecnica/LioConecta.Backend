@@ -30,6 +30,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<AnalyticsEvent> AnalyticsEvents => Set<AnalyticsEvent>();
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
     public DbSet<UserPreference> UserPreferences => Set<UserPreference>();
+    public DbSet<MoodCheck> MoodChecks => Set<MoodCheck>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -46,6 +47,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureCalendar(modelBuilder);
         ConfigureAnalytics(modelBuilder);
         ConfigureUserPreferences(modelBuilder);
+        ConfigureMoodChecks(modelBuilder);
     }
 
     private static void ApplySnakeCaseTableNames(ModelBuilder modelBuilder)
@@ -409,6 +411,21 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasOne(p => p.Person)
                 .WithMany()
                 .HasForeignKey(p => p.PersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureMoodChecks(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<MoodCheck>(entity =>
+        {
+            entity.HasIndex(m => new { m.PersonId, m.CheckDate }).IsUnique();
+            entity.HasIndex(m => m.CheckDate);
+            entity.HasIndex(m => m.Mood);
+
+            entity.HasOne(m => m.Person)
+                .WithMany()
+                .HasForeignKey(m => m.PersonId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

@@ -1,0 +1,76 @@
+namespace LioConecta.Application.DTOs;
+
+public sealed record LeaveSummaryDto(
+    int AvailableDays,
+    int PendingRequests,
+    string? NextScheduledLabel);
+
+public sealed record LeaveServiceDto(
+    string Id,
+    string Title,
+    string Desc,
+    string Category,
+    string Sla,
+    bool Online,
+    bool Featured,
+    string Action,
+    string HelpText,
+    string? PortalUrl);
+
+public sealed record LeavePeriodDto(
+    string Label,
+    int AcquiredDays,
+    int UsedDays,
+    int AvailableDays,
+    DateOnly? ExpiresAt);
+
+public sealed record LeaveBalanceDto(
+    int AvailableDays,
+    int AcquiredDays,
+    int ScheduledDays,
+    int ExpiredDays,
+    IReadOnlyList<LeavePeriodDto> Periods,
+    IReadOnlyList<string> Notes);
+
+public sealed record LeaveHistoryItemDto(
+    Guid Id,
+    string Title,
+    string RecordType,
+    string Status,
+    DateOnly? StartDate,
+    DateOnly? EndDate,
+    int? Days,
+    string? Note);
+
+public sealed record LeaveBancoHorasEntryDto(
+    string Date,
+    string Description,
+    decimal Hours,
+    string Type);
+
+public sealed record LeaveBancoHorasDto(
+    decimal BalanceHours,
+    IReadOnlyList<LeaveBancoHorasEntryDto> Entries);
+
+public sealed record LeaveTeamMemberDto(
+    string Name,
+    string Role,
+    string AbsenceType,
+    DateOnly StartDate,
+    DateOnly EndDate);
+
+public sealed record LeaveTeamCalendarDto(
+    IReadOnlyList<LeaveTeamMemberDto> Members);
+
+public sealed record CreateLeaveRequestDto(
+    string ServiceId,
+    DateOnly? StartDate,
+    DateOnly? EndDate,
+    int? Days,
+    string? Notes);
+
+public sealed record LeaveRequestResultDto(
+    Guid RequestId,
+    Guid RecordId,
+    string Status,
+    string Message);

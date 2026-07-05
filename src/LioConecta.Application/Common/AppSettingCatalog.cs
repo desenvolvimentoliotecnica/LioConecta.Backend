@@ -75,5 +75,6 @@ public static class AppSettingCatalog
             "Lista JSON de content-types aceitos no upload.", "json", false,
             "[\"image/jpeg\",\"image/png\",\"image/webp\"]", 3),
         ..BenefitPortalSettingCatalog.ToAppSettingDefinitions(),
+        ..LeavePortalSettingCatalog.ToAppSettingDefinitions(),
     ];
 }

@@ -29,6 +29,7 @@ public sealed class AppSettingService(
             ["serilog"] = ("Logging", "Níveis de log Serilog."),
             ["media"] = ("Mídia", "Uploads locais de imagens de comunicados (até migrar para S3/SharePoint)."),
             ["benefits"] = ("Benefícios", "URLs dos portais externos exibidos na página de Benefícios (botão Abrir portal)."),
+            ["leave"] = ("Férias e ausências", "URLs dos portais e links externos dos serviços de férias, licenças e afastamentos."),
         };
 
     private static readonly HashSet<string> RestartKeys =
@@ -186,6 +187,7 @@ public sealed class AppSettingService(
         "serilog" => 11,
         "media" => 12,
         "benefits" => 13,
+        "leave" => 14,
         _ => 99,
     };
 }

@@ -19,6 +19,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             await EnsureGroupsCatalogAsync(cancellationToken);
             await EnsurePayslipsCatalogAsync(cancellationToken);
             await EnsureBenefitsCatalogAsync(cancellationToken);
+            await EnsureLeaveCatalogAsync(cancellationToken);
             await EnsurePollSeedAsync(cancellationToken);
             logger.LogDebug("Database already contains people; skipping seed.");
             return;
@@ -388,6 +389,27 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
 
         await db.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Seeded benefits catalog for Maria Silva.");
+    }
+
+    private async Task EnsureLeaveCatalogAsync(CancellationToken cancellationToken)
+    {
+        var mariaId = SeedIds.MariaSilva;
+        var hasBalance = await db.EmployeeLeaveBalances.AnyAsync(b => b.PersonId == mariaId, cancellationToken);
+        if (hasBalance)
+        {
+            return;
+        }
+
+        var seedTime = DateTimeOffset.UtcNow.AddDays(-30);
+        db.EmployeeLeaveBalances.Add(LeaveCatalogSeed.BuildBalanceForPerson(mariaId, seedTime));
+
+        foreach (var record in LeaveCatalogSeed.BuildRecordsForPerson(mariaId, seedTime))
+        {
+            db.LeaveRecords.Add(record);
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Seeded leave catalog for Maria Silva.");
     }
 
     private async Task EnsureArchivedAtBackfillAsync(CancellationToken cancellationToken)

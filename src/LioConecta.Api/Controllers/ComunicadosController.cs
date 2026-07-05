@@ -39,6 +39,14 @@ public sealed class ComunicadosController(
         return Ok(page);
     }
 
+    [HttpGet("hub")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<ComunicadoHubDto>> GetHub(CancellationToken cancellationToken)
+    {
+        var hub = await comunicadoService.GetHubAsync(cancellationToken);
+        return Ok(hub);
+    }
+
     [HttpGet("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

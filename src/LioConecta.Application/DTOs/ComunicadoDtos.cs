@@ -27,3 +27,11 @@ public sealed record ComunicadoListItemDto(
     DateTimeOffset? PublishedAt,
     DateTimeOffset? ArchivedAt,
     bool IsReadByViewer);
+
+public sealed record ComunicadoHubDto(
+    int OficiaisCount,
+    int DepartamentaisCount,
+    int UrgentesCount,
+    int UrgentesUnreadCount,
+    int ArquivoCount,
+    IReadOnlyList<ComunicadoListItemDto> Recent);

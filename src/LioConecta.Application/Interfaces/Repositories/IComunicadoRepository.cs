@@ -21,4 +21,15 @@ public interface IComunicadoRepository
     Task<bool> IsReadAsync(Guid comunicadoId, Guid personId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<Comunicado>> SearchAsync(string query, int limit, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyDictionary<ComunicadoKind, int>> GetActiveCountsByKindAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<int> GetArchivedCountAsync(CancellationToken cancellationToken = default);
+
+    Task<int> GetUnreadUrgentCountAsync(Guid personId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Comunicado>> GetRecentActiveAsync(
+        int limit,
+        CancellationToken cancellationToken = default);
 }

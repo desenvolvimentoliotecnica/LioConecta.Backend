@@ -17,4 +17,6 @@ public interface IComunicadoService
     Task<ComunicadoDto?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default);
 
     Task MarkAsReadAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<ComunicadoHubDto> GetHubAsync(CancellationToken cancellationToken = default);
 }

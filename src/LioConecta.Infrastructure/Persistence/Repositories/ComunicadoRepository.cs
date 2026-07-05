@@ -153,4 +153,43 @@ public sealed class ComunicadoRepository(AppDbContext db) : IComunicadoRepositor
             .Take(Math.Clamp(limit, 1, 100))
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyDictionary<ComunicadoKind, int>> GetActiveCountsByKindAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var rows = await db.Comunicados
+            .AsNoTracking()
+            .Where(c => c.ArchivedAt == null)
+            .GroupBy(c => c.Kind)
+            .Select(g => new { Kind = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        return rows.ToDictionary(r => r.Kind, r => r.Count);
+    }
+
+    public Task<int> GetArchivedCountAsync(CancellationToken cancellationToken = default) =>
+        db.Comunicados.AsNoTracking().CountAsync(c => c.ArchivedAt != null, cancellationToken);
+
+    public Task<int> GetUnreadUrgentCountAsync(Guid personId, CancellationToken cancellationToken = default) =>
+        db.Comunicados
+            .AsNoTracking()
+            .Where(c =>
+                c.ArchivedAt == null &&
+                c.Kind == ComunicadoKind.Urgente &&
+                !db.ComunicadoReads.Any(r => r.ComunicadoId == c.Id && r.PersonId == personId))
+            .CountAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<Comunicado>> GetRecentActiveAsync(
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        return await db.Comunicados
+            .Include(c => c.Author)
+            .AsNoTracking()
+            .Where(c => c.ArchivedAt == null)
+            .OrderByDescending(c => c.PublishedAt ?? c.CreatedAt)
+            .ThenByDescending(c => c.Id)
+            .Take(Math.Clamp(limit, 1, 20))
+            .ToListAsync(cancellationToken);
+    }
 }

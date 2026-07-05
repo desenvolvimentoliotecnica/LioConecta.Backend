@@ -70,4 +70,28 @@ public sealed class ComunicadoService(
 
         await comunicadoRepository.MarkAsReadAsync(id, viewerId, cancellationToken);
     }
+
+    public async Task<ComunicadoHubDto> GetHubAsync(CancellationToken cancellationToken = default)
+    {
+        var viewerId = await currentUserService.GetPersonIdAsync(cancellationToken);
+        var counts = await comunicadoRepository.GetActiveCountsByKindAsync(cancellationToken);
+        var archivedCount = await comunicadoRepository.GetArchivedCountAsync(cancellationToken);
+        var urgentesUnread = await comunicadoRepository.GetUnreadUrgentCountAsync(viewerId, cancellationToken);
+        var recent = await comunicadoRepository.GetRecentActiveAsync(5, cancellationToken);
+
+        var recentItems = new List<ComunicadoListItemDto>();
+        foreach (var comunicado in recent)
+        {
+            var isRead = await comunicadoRepository.IsReadAsync(comunicado.Id, viewerId, cancellationToken);
+            recentItems.Add(ComunicadoMapper.ToListItem(comunicado, isRead));
+        }
+
+        return new ComunicadoHubDto(
+            counts.GetValueOrDefault(ComunicadoKind.Oficial),
+            counts.GetValueOrDefault(ComunicadoKind.Departamental),
+            counts.GetValueOrDefault(ComunicadoKind.Urgente),
+            urgentesUnread,
+            archivedCount,
+            recentItems);
+    }
 }

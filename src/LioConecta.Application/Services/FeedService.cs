@@ -47,8 +47,9 @@ public sealed class FeedService(
         };
 
         await feedRepository.AddPostAsync(post, cancellationToken);
-        post.Author = null;
-        return FeedMapper.ToDto(post, authorId);
+        var saved = await feedRepository.GetByIdAsync(post.Id, cancellationToken)
+            ?? throw new InvalidOperationException($"Post {post.Id} was not found after save.");
+        return FeedMapper.ToDto(saved, authorId);
     }
 
     public async Task<CommentDto> AddCommentAsync(

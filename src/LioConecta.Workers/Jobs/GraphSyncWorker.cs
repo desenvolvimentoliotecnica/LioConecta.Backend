@@ -1,4 +1,6 @@
+using LioConecta.Application.Common;
 using LioConecta.Application.Interfaces.Integrations;
+using LioConecta.Application.Interfaces.Services;
 using LioConecta.Domain.Entities;
 using LioConecta.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -9,21 +11,21 @@ public sealed class GraphSyncWorker : BackgroundService
 {
     private readonly IServiceProvider _services;
     private readonly ILogger<GraphSyncWorker> _logger;
-    private readonly IConfiguration _configuration;
+    private readonly IAppSettingsProvider _settings;
 
     public GraphSyncWorker(
         IServiceProvider services,
         ILogger<GraphSyncWorker> logger,
-        IConfiguration configuration)
+        IAppSettingsProvider settings)
     {
         _services = services;
         _logger = logger;
-        _configuration = configuration;
+        _settings = settings;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var intervalMinutes = _configuration.GetValue("Workers:GraphSyncIntervalMinutes", 60);
+        var intervalMinutes = _settings.GetInt(AppSettingKeys.WorkersGraphSyncIntervalMinutes, 60);
         _logger.LogInformation("Graph sync worker started (interval: {Interval} min)", intervalMinutes);
 
         while (!stoppingToken.IsCancellationRequested)

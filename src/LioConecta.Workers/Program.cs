@@ -1,7 +1,9 @@
 using LioConecta.Application;
 using LioConecta.Infrastructure;
+using LioConecta.Infrastructure.Configuration;
 using LioConecta.Workers.Jobs;
 using Serilog;
+using Serilog.Events;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -11,14 +13,25 @@ try
 {
     var builder = Host.CreateApplicationBuilder(args);
 
+    var devFallback = builder.Environment.IsDevelopment()
+        ? "Host=localhost;Port=5433;Database=lioconecta;Username=lioconecta;Password=lioconecta_dev"
+        : null;
+
+    var bootstrapConnection = BootstrapConnection.Resolve(devFallback);
+    var values = await AppSettingsSeeder.LoadValuesAsync(bootstrapConnection);
+    var settingsProvider = new AppSettingsProvider();
+    settingsProvider.Reload(values);
+
+    builder.Services.AddSingleton<LioConecta.Application.Interfaces.Services.IAppSettingsProvider>(settingsProvider);
+
     builder.Services.AddSerilog((services, configuration) => configuration
-        .ReadFrom.Configuration(builder.Configuration)
+        .MinimumLevel.Is(LogEventLevel.Information)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext()
         .WriteTo.Console());
 
     builder.Services.AddApplication();
-    builder.Services.AddInfrastructure(builder.Configuration);
+    builder.Services.AddInfrastructure(settingsProvider);
 
     builder.Services.AddHostedService<TotvsSyncWorker>();
     builder.Services.AddHostedService<GraphSyncWorker>();

@@ -22,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<ISearchService, SearchService>();
         services.AddScoped<IActivityService, ActivityService>();
         services.AddScoped<IMoodCheckService, MoodCheckService>();
+        services.AddScoped<IAppSettingService, AppSettingService>();
 
         return services;
     }

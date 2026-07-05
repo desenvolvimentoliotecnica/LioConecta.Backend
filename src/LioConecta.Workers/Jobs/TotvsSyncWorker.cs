@@ -1,4 +1,6 @@
+using LioConecta.Application.Common;
 using LioConecta.Application.Interfaces.Integrations;
+using LioConecta.Application.Interfaces.Services;
 using LioConecta.Domain.Entities;
 using LioConecta.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -9,21 +11,21 @@ public sealed class TotvsSyncWorker : BackgroundService
 {
     private readonly IServiceProvider _services;
     private readonly ILogger<TotvsSyncWorker> _logger;
-    private readonly IConfiguration _configuration;
+    private readonly IAppSettingsProvider _settings;
 
     public TotvsSyncWorker(
         IServiceProvider services,
         ILogger<TotvsSyncWorker> logger,
-        IConfiguration configuration)
+        IAppSettingsProvider settings)
     {
         _services = services;
         _logger = logger;
-        _configuration = configuration;
+        _settings = settings;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var intervalMinutes = _configuration.GetValue("Workers:TotvsSyncIntervalMinutes", 30);
+        var intervalMinutes = _settings.GetInt(AppSettingKeys.WorkersTotvsSyncIntervalMinutes, 30);
         _logger.LogInformation("TOTVS sync worker started (interval: {Interval} min)", intervalMinutes);
 
         while (!stoppingToken.IsCancellationRequested)

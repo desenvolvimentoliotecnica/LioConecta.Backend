@@ -4,9 +4,11 @@ using LioConecta.Api.Hubs;
 using LioConecta.Api.Middleware;
 using LioConecta.Api.Services;
 using LioConecta.Application;
+using LioConecta.Application.Common;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Domain.Enums;
 using LioConecta.Infrastructure;
+using LioConecta.Infrastructure.Configuration;
 using LioConecta.Infrastructure.Persistence;
 using LioConecta.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication;
@@ -14,6 +16,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Serilog;
+using Serilog.Events;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -23,19 +26,25 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    builder.Host.UseSerilog((context, services, configuration) => configuration
-        .ReadFrom.Configuration(context.Configuration)
+    var settingsProvider = await CreateSettingsProviderAsync(builder.Environment);
+
+    var logLevel = ParseLogLevel(settingsProvider.GetString(AppSettingKeys.SerilogDefaultLevel, "Information"));
+    builder.Host.UseSerilog((_, services, configuration) => configuration
+        .MinimumLevel.Is(logLevel)
+        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext()
         .WriteTo.Console());
 
-    var configuration = builder.Configuration;
-    var useDevAuth = configuration.GetValue("Auth:UseDevAuth", builder.Environment.IsDevelopment());
-    var azureClientId = configuration["AzureAd:ClientId"];
+    var useDevAuth = settingsProvider.GetBool(AppSettingKeys.AuthUseDevAuth, builder.Environment.IsDevelopment());
+    var azureClientId = settingsProvider.GetString(AppSettingKeys.AzureAdClientId);
     var useDevAuthentication = string.IsNullOrWhiteSpace(azureClientId);
 
+    builder.Services.AddSingleton<IAppSettingsProvider>(settingsProvider);
     builder.Services.AddApplication();
-    builder.Services.AddInfrastructure(configuration);
+    builder.Services.AddInfrastructure(settingsProvider);
     builder.Services.AddScoped<INotificationBroadcaster, SignalRNotificationBroadcaster>();
 
     var authenticationBuilder = builder.Services.AddAuthentication(options =>
@@ -55,7 +64,8 @@ try
     }
     else
     {
-        authenticationBuilder.AddMicrosoftIdentityWebApi(configuration.GetSection("AzureAd"));
+        var azureConfig = BuildAzureAdConfiguration(settingsProvider);
+        authenticationBuilder.AddMicrosoftIdentityWebApi(azureConfig);
     }
 
     builder.Services.AddAuthorization(options =>
@@ -86,9 +96,11 @@ try
         }
     });
 
-    var allowedOrigins = configuration
-        .GetSection("Cors:AllowedOrigins")
-        .Get<string[]>() ?? ["http://localhost:5173", "http://localhost:5174"];
+    var allowedOrigins = settingsProvider.GetStringArray(AppSettingKeys.CorsAllowedOrigins);
+    if (allowedOrigins.Count == 0)
+    {
+        allowedOrigins = ["http://localhost:5173", "http://localhost:5174"];
+    }
 
     builder.Services.AddCors(options =>
     {
@@ -105,7 +117,7 @@ try
             }
             else
             {
-                policy.WithOrigins(allowedOrigins)
+                policy.WithOrigins(allowedOrigins.ToArray())
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();
@@ -120,12 +132,13 @@ try
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
     builder.Services.AddProblemDetails();
 
-    var postgresConnection = configuration.GetConnectionString("DefaultConnection");
-    var redisConnection = configuration.GetConnectionString("Redis");
+    var postgresConnection = settingsProvider.GetConnectionString();
+    var redisConnection = settingsProvider.GetRedisConnection();
 
     var healthChecks = builder.Services.AddHealthChecks();
 
-    if (!string.IsNullOrWhiteSpace(postgresConnection))
+    if (!string.IsNullOrWhiteSpace(postgresConnection) &&
+        !builder.Environment.IsEnvironment("Testing"))
     {
         healthChecks.AddNpgSql(postgresConnection, name: "postgres", tags: ["ready"]);
     }
@@ -202,3 +215,48 @@ finally
 {
     await Log.CloseAndFlushAsync();
 }
+
+static async Task<IAppSettingsProvider> CreateSettingsProviderAsync(IWebHostEnvironment environment)
+{
+    var provider = new AppSettingsProvider();
+
+    if (environment.IsEnvironment("Testing"))
+    {
+        provider.Reload(BuildTestingDefaults());
+        return provider;
+    }
+
+    var devFallback = environment.IsDevelopment()
+        ? "Host=localhost;Port=5433;Database=lioconecta;Username=lioconecta;Password=lioconecta_dev"
+        : null;
+
+    var bootstrapConnection = BootstrapConnection.Resolve(devFallback);
+    var values = await AppSettingsSeeder.LoadValuesAsync(bootstrapConnection);
+    provider.Reload(values);
+    return provider;
+}
+
+static Dictionary<string, string> BuildTestingDefaults()
+{
+    return AppSettingCatalog.All.ToDictionary(
+        d => d.Key,
+        d => d.DefaultValue,
+        StringComparer.OrdinalIgnoreCase);
+}
+
+static Microsoft.Extensions.Configuration.IConfiguration BuildAzureAdConfiguration(IAppSettingsProvider settings)
+{
+    return new Microsoft.Extensions.Configuration.ConfigurationBuilder()
+        .AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["AzureAd:Instance"] = settings.GetString(AppSettingKeys.AzureAdInstance),
+            ["AzureAd:TenantId"] = settings.GetString(AppSettingKeys.AzureAdTenantId),
+            ["AzureAd:ClientId"] = settings.GetString(AppSettingKeys.AzureAdClientId),
+            ["AzureAd:Audience"] = settings.GetString(AppSettingKeys.AzureAdAudience),
+        })
+        .Build()
+        .GetSection("AzureAd");
+}
+
+static LogEventLevel ParseLogLevel(string value) =>
+    Enum.TryParse<LogEventLevel>(value, true, out var level) ? level : LogEventLevel.Information;

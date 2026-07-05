@@ -31,6 +31,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
     public DbSet<UserPreference> UserPreferences => Set<UserPreference>();
     public DbSet<MoodCheck> MoodChecks => Set<MoodCheck>();
+    public DbSet<AppSetting> AppSettings => Set<AppSetting>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -48,6 +49,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureAnalytics(modelBuilder);
         ConfigureUserPreferences(modelBuilder);
         ConfigureMoodChecks(modelBuilder);
+        ConfigureAppSettings(modelBuilder);
     }
 
     private static void ApplySnakeCaseTableNames(ModelBuilder modelBuilder)
@@ -437,6 +439,20 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany()
                 .HasForeignKey(m => m.PersonId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureAppSettings(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<AppSetting>(entity =>
+        {
+            entity.HasIndex(s => s.Key).IsUnique();
+            entity.HasIndex(s => s.Category);
+
+            entity.HasOne(s => s.UpdatedBy)
+                .WithMany()
+                .HasForeignKey(s => s.UpdatedById)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

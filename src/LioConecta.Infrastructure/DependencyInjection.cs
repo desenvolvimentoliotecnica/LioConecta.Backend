@@ -1,6 +1,8 @@
+using LioConecta.Application.Common;
 using LioConecta.Application.Interfaces.Integrations;
 using LioConecta.Application.Interfaces.Repositories;
 using LioConecta.Application.Interfaces.Services;
+using LioConecta.Infrastructure.Configuration;
 using LioConecta.Infrastructure.Integrations.Glpi;
 using LioConecta.Infrastructure.Integrations.Graph;
 using LioConecta.Infrastructure.Integrations.Totvs;
@@ -8,26 +10,23 @@ using LioConecta.Infrastructure.Persistence;
 using LioConecta.Infrastructure.Persistence.Repositories;
 using LioConecta.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace LioConecta.Infrastructure;
 
 public static class DependencyInjection
 {
-    public sealed class IntegrationsOptions
-    {
-        public const string SectionName = "Integrations";
-
-        public bool UseDevAdapters { get; set; } = true;
-    }
-
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IAppSettingsProvider settings)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required.");
+        var connectionString = settings.GetConnectionString();
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException(
+                $"App setting '{AppSettingKeys.DatabaseDefaultConnection}' is required.");
+        }
 
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connectionString));
@@ -35,8 +34,8 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
 
         RegisterRepositories(services);
-        RegisterIntegrations(services, configuration);
-        RegisterServices(services, configuration);
+        RegisterIntegrations(services, settings);
+        RegisterServices(services, settings);
 
         return services;
     }
@@ -56,20 +55,37 @@ public static class DependencyInjection
         services.AddScoped<IUserPreferenceRepository, UserPreferenceRepository>();
         services.AddScoped<ISearchRepository, SearchRepository>();
         services.AddScoped<IMoodCheckRepository, MoodCheckRepository>();
+        services.AddScoped<IAppSettingRepository, AppSettingRepository>();
     }
 
-    private static void RegisterIntegrations(IServiceCollection services, IConfiguration configuration)
+    private static void RegisterIntegrations(IServiceCollection services, IAppSettingsProvider settings)
     {
-        var integrations = configuration
-            .GetSection(IntegrationsOptions.SectionName)
-            .Get<IntegrationsOptions>() ?? new IntegrationsOptions();
+        services.AddSingleton<IOptions<IntegrationsOptions>>(_ => Options.Create(new IntegrationsOptions
+        {
+            UseDevAdapters = settings.GetBool(AppSettingKeys.IntegrationsUseDevAdapters, true),
+        }));
 
-        services.Configure<IntegrationsOptions>(configuration.GetSection(IntegrationsOptions.SectionName));
-        services.Configure<TotvsOptions>(configuration.GetSection(TotvsOptions.SectionName));
-        services.Configure<GlpiOptions>(configuration.GetSection(GlpiOptions.SectionName));
-        services.Configure<GraphOptions>(configuration.GetSection(GraphOptions.SectionName));
+        services.AddSingleton<IOptions<TotvsOptions>>(_ => Options.Create(new TotvsOptions
+        {
+            BaseUrl = settings.GetString(AppSettingKeys.TotvsBaseUrl),
+            ApiKey = settings.GetString(AppSettingKeys.TotvsApiKey),
+        }));
 
-        if (integrations.UseDevAdapters)
+        services.AddSingleton<IOptions<GlpiOptions>>(_ => Options.Create(new GlpiOptions
+        {
+            BaseUrl = settings.GetString(AppSettingKeys.GlpiBaseUrl),
+            AppToken = settings.GetString(AppSettingKeys.GlpiAppToken),
+            UserToken = settings.GetString(AppSettingKeys.GlpiUserToken),
+        }));
+
+        services.AddSingleton<IOptions<GraphOptions>>(_ => Options.Create(new GraphOptions
+        {
+            TenantId = settings.GetString(AppSettingKeys.GraphTenantId),
+            ClientId = settings.GetString(AppSettingKeys.GraphClientId),
+            ClientSecret = settings.GetString(AppSettingKeys.GraphClientSecret),
+        }));
+
+        if (settings.GetBool(AppSettingKeys.IntegrationsUseDevAdapters, true))
         {
             services.AddSingleton<ITotvsAdapter, DevTotvsAdapter>();
             services.AddSingleton<IGlpiAdapter, DevGlpiAdapter>();
@@ -79,34 +95,41 @@ public static class DependencyInjection
 
         services.AddHttpClient<ITotvsAdapter, TotvsAdapter>((sp, client) =>
         {
-            var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<TotvsOptions>>().Value;
+            var options = sp.GetRequiredService<IOptions<TotvsOptions>>().Value;
             client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
         });
 
         services.AddHttpClient<IGlpiAdapter, GlpiAdapter>((sp, client) =>
         {
-            var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<GlpiOptions>>().Value;
+            var options = sp.GetRequiredService<IOptions<GlpiOptions>>().Value;
             client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
         });
 
         services.AddHttpClient<IGraphAdapter, GraphAdapter>((sp, client) =>
         {
-            var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<GraphOptions>>().Value;
-            client.BaseAddress = new Uri($"https://graph.microsoft.com/v1.0/");
+            var options = sp.GetRequiredService<IOptions<GraphOptions>>().Value;
+            client.BaseAddress = new Uri("https://graph.microsoft.com/v1.0/");
             _ = options;
         });
     }
 
-    private static void RegisterServices(IServiceCollection services, IConfiguration configuration)
+    private static void RegisterServices(IServiceCollection services, IAppSettingsProvider settings)
     {
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<SeedDataService>();
 
-        var redisConnection = configuration.GetConnectionString("Redis");
+        var redisConnection = settings.GetRedisConnection();
         if (!string.IsNullOrWhiteSpace(redisConnection))
         {
             services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(_ =>
                 StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnection));
         }
+    }
+
+    public sealed class IntegrationsOptions
+    {
+        public const string SectionName = "Integrations";
+
+        public bool UseDevAdapters { get; set; } = true;
     }
 }

@@ -1,4 +1,5 @@
 using LioConecta.Domain.Common;
+using LioConecta.Domain.Enums;
 
 namespace LioConecta.Domain.Entities;
 
@@ -8,11 +9,27 @@ public class Group : BaseEntity
 
     public string? Description { get; set; }
 
+    public GroupType Type { get; set; }
+
+    public GroupAccessMode AccessMode { get; set; }
+
+    public string Icon { get; set; } = "fa-users";
+
+    public GroupStatus Status { get; set; } = GroupStatus.PendingApproval;
+
     public bool IsPrivate { get; set; }
 
     public Guid OwnerId { get; set; }
 
     public Person? Owner { get; set; }
+
+    public Guid? ReviewedById { get; set; }
+
+    public Person? ReviewedBy { get; set; }
+
+    public DateTimeOffset? ReviewedAt { get; set; }
+
+    public string? RejectionReason { get; set; }
 
     public ICollection<GroupMember> Members { get; set; } = [];
 

@@ -346,11 +346,17 @@ public static class GroupMapper
             group.Id,
             group.Name,
             group.Description,
+            group.Type,
+            group.AccessMode,
+            group.Icon,
+            group.Status,
             group.IsPrivate,
             PersonMapper.ToSummary(group.Owner ?? new Person { Name = "Desconhecido" }),
             group.Members.Count,
             isMember,
-            group.CreatedAt);
+            group.CreatedAt,
+            group.ReviewedAt,
+            group.RejectionReason);
 }
 
 public static class CalendarMapper

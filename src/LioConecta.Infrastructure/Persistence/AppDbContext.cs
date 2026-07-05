@@ -242,11 +242,18 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         modelBuilder.Entity<Group>(entity =>
         {
             entity.HasIndex(g => g.OwnerId);
+            entity.HasIndex(g => g.Status);
+            entity.Property(g => g.Icon).HasMaxLength(64);
 
             entity.HasOne(g => g.Owner)
                 .WithMany()
                 .HasForeignKey(g => g.OwnerId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(g => g.ReviewedBy)
+                .WithMany()
+                .HasForeignKey(g => g.ReviewedById)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<GroupMember>(entity =>

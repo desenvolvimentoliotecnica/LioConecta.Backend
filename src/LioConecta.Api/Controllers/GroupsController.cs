@@ -1,3 +1,4 @@
+using LioConecta.Api.Authorization;
 using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Application.Mapping;
@@ -24,6 +25,15 @@ public sealed class GroupsController(
         return Ok(groups);
     }
 
+    [HttpGet("pending")]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<GroupDto>>> ListPending(CancellationToken cancellationToken)
+    {
+        var groups = await groupService.GetPendingApprovalAsync(cancellationToken);
+        return Ok(groups);
+    }
+
     [HttpGet("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -39,8 +49,36 @@ public sealed class GroupsController(
         [FromBody] CreateGroupRequest request,
         CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return BadRequest(new { message = "O nome do grupo é obrigatório." });
+        }
+
         var group = await groupService.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = group.Id }, group);
+    }
+
+    [HttpPost("{id:guid}/approve")]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GroupDto>> Approve(Guid id, CancellationToken cancellationToken)
+    {
+        var group = await groupService.ApproveAsync(id, cancellationToken);
+        return group is null ? NotFound() : Ok(group);
+    }
+
+    [HttpPost("{id:guid}/reject")]
+    [Authorize(Policy = AuthPolicies.RequireAdmin)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GroupDto>> Reject(
+        Guid id,
+        [FromBody] RejectGroupRequest request,
+        CancellationToken cancellationToken)
+    {
+        var group = await groupService.RejectAsync(id, request, cancellationToken);
+        return group is null ? NotFound() : Ok(group);
     }
 
     [HttpPut("{id:guid}")]

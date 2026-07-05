@@ -3,6 +3,7 @@ using LioConecta.Application.Interfaces.Repositories;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Application.Mapping;
 using LioConecta.Domain.Entities;
+using LioConecta.Domain.Enums;
 
 namespace LioConecta.Application.Services;
 
@@ -25,6 +26,12 @@ public sealed class GroupService(
         return result;
     }
 
+    public async Task<IReadOnlyList<GroupDto>> GetPendingApprovalAsync(CancellationToken cancellationToken = default)
+    {
+        var groups = await groupRepository.GetPendingApprovalAsync(cancellationToken);
+        return groups.Select(g => GroupMapper.ToDto(g, isMember: false)).ToList();
+    }
+
     public async Task<GroupDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
@@ -44,12 +51,17 @@ public sealed class GroupService(
     {
         var ownerId = await currentUserService.GetPersonIdAsync(cancellationToken);
         var now = DateTimeOffset.UtcNow;
+        var icon = string.IsNullOrWhiteSpace(request.Icon) ? "fa-users" : request.Icon.Trim();
         var group = new Group
         {
             Id = Guid.NewGuid(),
             Name = request.Name.Trim(),
             Description = request.Description?.Trim(),
-            IsPrivate = request.IsPrivate,
+            Type = request.Type,
+            AccessMode = request.AccessMode,
+            Icon = icon,
+            Status = GroupStatus.PendingApproval,
+            IsPrivate = request.AccessMode == GroupAccessMode.Private,
             OwnerId = ownerId,
             CreatedAt = now,
             UpdatedAt = now
@@ -66,7 +78,50 @@ public sealed class GroupService(
             UpdatedAt = now
         }, cancellationToken);
 
-        group.Members = [new GroupMember { PersonId = ownerId }];
-        return GroupMapper.ToDto(group, isMember: true);
+        var loaded = await groupRepository.GetByIdAsync(group.Id, cancellationToken);
+        return GroupMapper.ToDto(loaded ?? group, isMember: true);
+    }
+
+    public async Task<GroupDto?> ApproveAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var reviewerId = await currentUserService.GetPersonIdAsync(cancellationToken);
+        var group = await groupRepository.GetByIdForUpdateAsync(id, cancellationToken);
+        if (group is null || group.Status != GroupStatus.PendingApproval)
+        {
+            return null;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        group.Status = GroupStatus.Active;
+        group.ReviewedById = reviewerId;
+        group.ReviewedAt = now;
+        group.RejectionReason = null;
+        await groupRepository.UpdateAsync(group, cancellationToken);
+
+        var isMember = await groupRepository.IsMemberAsync(id, reviewerId, cancellationToken);
+        return GroupMapper.ToDto(group, isMember);
+    }
+
+    public async Task<GroupDto?> RejectAsync(
+        Guid id,
+        RejectGroupRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var reviewerId = await currentUserService.GetPersonIdAsync(cancellationToken);
+        var group = await groupRepository.GetByIdForUpdateAsync(id, cancellationToken);
+        if (group is null || group.Status != GroupStatus.PendingApproval)
+        {
+            return null;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        group.Status = GroupStatus.Rejected;
+        group.ReviewedById = reviewerId;
+        group.ReviewedAt = now;
+        group.RejectionReason = request.Reason?.Trim();
+        await groupRepository.UpdateAsync(group, cancellationToken);
+
+        var isMember = await groupRepository.IsMemberAsync(id, reviewerId, cancellationToken);
+        return GroupMapper.ToDto(group, isMember);
     }
 }

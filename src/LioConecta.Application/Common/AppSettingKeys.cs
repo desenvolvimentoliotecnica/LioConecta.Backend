@@ -38,6 +38,7 @@ public static class AppSettingKeys
     public const string GlpiAppToken = "glpi.app_token";
     public const string GlpiUserToken = "glpi.user_token";
     public const string GlpiProfileId = "glpi.profile_id";
+    public const string HelpDeskGlpiAreas = "helpdesk.glpi_areas";
 
     public const string GraphTenantId = "graph.tenant_id";
     public const string GraphClientId = "graph.client_id";

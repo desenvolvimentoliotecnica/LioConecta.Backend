@@ -48,13 +48,45 @@ public sealed class HelpDeskController(IHelpDeskService helpDeskService) : Contr
         return Ok(result);
     }
 
-    [HttpGet("categories")]
-    [ProducesResponseType(typeof(IReadOnlyList<HelpDeskItilCategoryDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<HelpDeskItilCategoryDto>>> GetCategories(
+    [HttpGet("areas")]
+    [ProducesResponseType(typeof(IReadOnlyList<HelpDeskAreaDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<HelpDeskAreaDto>>> GetAreas(
         CancellationToken cancellationToken)
     {
-        var categories = await helpDeskService.GetCategoriesAsync(cancellationToken);
-        return Ok(categories);
+        var areas = await helpDeskService.GetAreasAsync(cancellationToken);
+        return Ok(areas);
+    }
+
+    [HttpGet("entities")]
+    [ProducesResponseType(typeof(IReadOnlyList<HelpDeskGlpiEntityDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<HelpDeskGlpiEntityDto>>> GetEntities(
+        CancellationToken cancellationToken)
+    {
+        var entities = await helpDeskService.GetEntitiesAsync(cancellationToken);
+        return Ok(entities);
+    }
+
+    [HttpGet("categories")]
+    [ProducesResponseType(typeof(IReadOnlyList<HelpDeskItilCategoryDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<IReadOnlyList<HelpDeskItilCategoryDto>>> GetCategories(
+        [FromQuery] string areaId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(areaId))
+        {
+            return BadRequest(new { detail = "Informe areaId válido." });
+        }
+
+        try
+        {
+            var categories = await helpDeskService.GetCategoriesAsync(areaId, cancellationToken);
+            return Ok(categories);
+        }
+        catch (ArgumentException exception)
+        {
+            return BadRequest(new { detail = exception.Message });
+        }
     }
 
     [HttpGet("tickets/mine")]

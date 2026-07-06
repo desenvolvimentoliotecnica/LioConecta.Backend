@@ -6,7 +6,7 @@ namespace LioConecta.UnitTests;
 public class HelpDeskTicketCreateValidatorTests
 {
     private static CreateHelpDeskTicketRequestDto ValidRequest() =>
-        new("VPN instável", "media", 3, "Descrição detalhada do problema com mais de dez caracteres.");
+        new("VPN instável", "media", 2, 3, "Descrição detalhada do problema com mais de dez caracteres.");
 
     [Fact]
     public void Validate_AcceptsValidRequest()
@@ -28,6 +28,14 @@ public class HelpDeskTicketCreateValidatorTests
         var request = ValidRequest() with { Description = "curta" };
         var exception = Assert.Throws<ArgumentException>(() => HelpDeskTicketCreateValidator.Validate(request));
         Assert.Contains("Descrição", exception.Message);
+    }
+
+    [Fact]
+    public void Validate_RejectsInvalidEntityId()
+    {
+        var request = ValidRequest() with { EntityId = 0 };
+        var exception = Assert.Throws<ArgumentException>(() => HelpDeskTicketCreateValidator.Validate(request));
+        Assert.Contains("Entidade", exception.Message);
     }
 
     [Fact]

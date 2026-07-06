@@ -14,7 +14,14 @@ public interface IHelpDeskService
         CreateHelpDeskTicketRequestDto request,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<HelpDeskAreaDto>> GetAreasAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<HelpDeskGlpiEntityDto>> GetEntitiesAsync(
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<HelpDeskItilCategoryDto>> GetCategoriesAsync(
+        string areaId,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<HelpDeskTicketListItemDto>> GetMyTicketsAsync(

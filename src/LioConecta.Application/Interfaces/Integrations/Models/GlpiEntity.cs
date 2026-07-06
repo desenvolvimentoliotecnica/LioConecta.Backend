@@ -1,6 +1,6 @@
 namespace LioConecta.Application.Interfaces.Integrations.Models;
 
-public sealed class GlpiItilCategory
+public sealed class GlpiEntity
 {
     public int Id { get; set; }
 
@@ -11,6 +11,4 @@ public sealed class GlpiItilCategory
     public int? ParentId { get; set; }
 
     public bool HasChildren { get; set; }
-
-    public int EntityId { get; set; }
 }

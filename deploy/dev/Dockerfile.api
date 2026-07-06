@@ -1,0 +1,29 @@
+﻿FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+COPY src/LioConecta.Api/LioConecta.Api.csproj src/LioConecta.Api/
+COPY src/LioConecta.Application/LioConecta.Application.csproj src/LioConecta.Application/
+COPY src/LioConecta.Domain/LioConecta.Domain.csproj src/LioConecta.Domain/
+COPY src/LioConecta.Infrastructure/LioConecta.Infrastructure.csproj src/LioConecta.Infrastructure/
+COPY src/LioConecta.Workers/LioConecta.Workers.csproj src/LioConecta.Workers/
+
+RUN dotnet restore src/LioConecta.Api/LioConecta.Api.csproj
+
+COPY src/ src/
+RUN dotnet publish src/LioConecta.Api/LioConecta.Api.csproj -c Release -o /app/publish --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /app/publish .
+
+ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8080
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=60s --retries=5 \
+  CMD curl -f http://localhost:8080/health || exit 1
+
+ENTRYPOINT ["dotnet", "LioConecta.Api.dll"]

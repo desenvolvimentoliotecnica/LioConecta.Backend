@@ -8,8 +8,11 @@ public interface IGlpiAdapter
         string title,
         string description,
         string priority,
-        string category,
+        int categoryId,
         string requesterEmail,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<GlpiItilCategory>> GetItilCategoriesAsync(
         CancellationToken cancellationToken = default);
 
     Task<GlpiTicketResult> GetTicketStatusAsync(

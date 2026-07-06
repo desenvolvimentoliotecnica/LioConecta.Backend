@@ -37,12 +37,24 @@ public sealed class HelpDeskController(IHelpDeskService helpDeskService) : Contr
 
     [HttpPost("tickets")]
     [ProducesResponseType(typeof(HelpDeskTicketResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status502BadGateway)]
     public async Task<ActionResult<HelpDeskTicketResultDto>> CreateTicket(
         [FromBody] CreateHelpDeskTicketRequestDto request,
         CancellationToken cancellationToken)
     {
         var result = await helpDeskService.CreateTicketAsync(request, cancellationToken);
         return Ok(result);
+    }
+
+    [HttpGet("categories")]
+    [ProducesResponseType(typeof(IReadOnlyList<HelpDeskItilCategoryDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<HelpDeskItilCategoryDto>>> GetCategories(
+        CancellationToken cancellationToken)
+    {
+        var categories = await helpDeskService.GetCategoriesAsync(cancellationToken);
+        return Ok(categories);
     }
 
     [HttpGet("tickets/mine")]

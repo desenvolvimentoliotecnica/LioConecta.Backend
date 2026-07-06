@@ -1,4 +1,5 @@
 using LioConecta.Application.Common;
+using LioConecta.Application.Common.Integrations;
 using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Integrations;
 using LioConecta.Application.Interfaces.Integrations.Models;
@@ -124,38 +125,47 @@ public sealed class HelpDeskService(
         CreateHelpDeskTicketRequestDto request,
         CancellationToken cancellationToken = default)
     {
+        HelpDeskTicketCreateValidator.Validate(request);
+
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
         var person = await personRepository.GetByIdAsync(personId, cancellationToken)
             ?? throw new InvalidOperationException("Person profile not found.");
 
+        var subject = request.Subject.Trim();
+        var description = request.Description.Trim();
+        var priority = request.Priority.Trim();
+
+        var glpiResult = await glpiAdapter.CreateTicketAsync(
+            subject,
+            description,
+            priority,
+            request.CategoryId,
+            person.Email,
+            cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(glpiResult.TicketId) ||
+            string.Equals(glpiResult.Status, "Error", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new GlpiIntegrationException("Não foi possível registrar o chamado no GLPI.");
+        }
+
         var payload = new Dictionary<string, object?>
         {
-            ["subject"] = request.Subject.Trim(),
-            ["priority"] = request.Priority.Trim(),
-            ["category"] = request.Category.Trim(),
-            ["description"] = request.Description.Trim(),
+            ["subject"] = subject,
+            ["priority"] = priority,
+            ["categoryId"] = request.CategoryId,
+            ["description"] = description,
         };
 
         var created = await serviceRequestService.CreateAsync(
             new CreateServiceRequestRequest(HelpDeskType, ServiceCategory.TI, payload),
             cancellationToken);
 
-        var glpiResult = await glpiAdapter.CreateTicketAsync(
-            request.Subject.Trim(),
-            request.Description.Trim(),
-            request.Priority.Trim(),
-            request.Category.Trim(),
-            person.Email,
+        await serviceRequestRepository.SetExternalRefAsync(
+            created.Id,
+            glpiResult.TicketId,
+            "TI — Service Desk",
             cancellationToken);
-
-        var stored = await serviceRequestRepository.GetByIdAsync(created.Id, cancellationToken);
-        if (stored is not null)
-        {
-            stored.ExternalRef = glpiResult.TicketId;
-            stored.AssigneeTeam = "TI — Service Desk";
-            stored.UpdatedAt = DateTimeOffset.UtcNow;
-            await serviceRequestRepository.UpdateAsync(stored, cancellationToken);
-        }
 
         return new HelpDeskTicketResultDto(
             created.Id,
@@ -163,6 +173,15 @@ public sealed class HelpDeskService(
             $"Chamado registrado com sucesso. Protocolo GLPI #{glpiResult.TicketId}.",
             glpiResult.TicketId,
             glpiResult.Url);
+    }
+
+    public async Task<IReadOnlyList<HelpDeskItilCategoryDto>> GetCategoriesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var categories = await glpiAdapter.GetItilCategoriesAsync(cancellationToken);
+        return categories
+            .Select(c => new HelpDeskItilCategoryDto(c.Id, c.Name, c.FullName))
+            .ToList();
     }
 
     public async Task<IReadOnlyList<HelpDeskTicketListItemDto>> GetMyTicketsAsync(

@@ -13,6 +13,14 @@ internal static class GlpiSearchFields
 
     public const int UserId = 2;
     public const int UserEmail = 5;
+    public const int UserLogin = 1;
+
+    public const int UserEmailRecordEmail = 1;
+    public const int UserEmailRecordUserId = 2;
+
+    public const int ItilCategoryId = 2;
+    public const int ItilCategoryName = 1;
+    public const int ItilCategoryCompleteName = 13;
 }
 
 internal static class GlpiStatusMapper

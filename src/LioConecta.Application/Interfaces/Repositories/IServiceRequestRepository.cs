@@ -13,4 +13,10 @@ public interface IServiceRequestRepository
     Task AddEventAsync(ServiceRequestEvent serviceRequestEvent, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(ServiceRequest request, CancellationToken cancellationToken = default);
+
+    Task SetExternalRefAsync(
+        Guid id,
+        string externalRef,
+        string assigneeTeam,
+        CancellationToken cancellationToken = default);
 }

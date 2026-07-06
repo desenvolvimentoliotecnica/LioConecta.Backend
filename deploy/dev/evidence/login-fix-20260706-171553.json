@@ -1,0 +1,25 @@
+{
+    "timestamp":  "20260706-171553",
+    "url":  "http://10.0.0.79:8091",
+    "fixApplied":  "audit_events schema (CorrelationId, TransactionId, Source, HttpMethod, Path, StatusCode, DurationMs)",
+    "bootstrapLogin":  {
+                           "status":  "200",
+                           "user":  "leonardo.mendes@liotecnica.com.br",
+                           "tokenLength":  733
+                       },
+    "ldapLogin":  {
+                      "status":  "200",
+                      "user":  "leonardo.mendes@liotecnica.com.br",
+                      "tokenLength":  733
+                  },
+    "meEndpoint":  {
+                       "email":  "leonardo.mendes@liotecnica.com.br",
+                       "status":  "200",
+                       "name":  "Leonardo Sabino Mendes",
+                       "roles":  [
+                                     6,
+                                     0
+                                 ]
+                   },
+    "health":  "Healthy"
+}

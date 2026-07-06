@@ -43,4 +43,21 @@ public sealed class ServiceRequestRepository(AppDbContext db) : IServiceRequestR
         db.ServiceRequests.Update(request);
         await db.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task SetExternalRefAsync(
+        Guid id,
+        string externalRef,
+        string assigneeTeam,
+        CancellationToken cancellationToken = default)
+    {
+        var updatedAt = DateTimeOffset.UtcNow;
+        await db.ServiceRequests
+            .Where(r => r.Id == id)
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(r => r.ExternalRef, externalRef)
+                    .SetProperty(r => r.AssigneeTeam, assigneeTeam)
+                    .SetProperty(r => r.UpdatedAt, updatedAt),
+                cancellationToken);
+    }
 }

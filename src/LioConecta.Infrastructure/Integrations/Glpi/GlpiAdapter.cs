@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using LioConecta.Application.Common;
+using LioConecta.Application.Common.Integrations;
 using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Integrations;
 using LioConecta.Application.Interfaces.Integrations.Models;
@@ -18,6 +19,10 @@ public sealed class GlpiAdapter(
 {
     private const int PageSize = 50;
     private const int MaxTickets = 100;
+    private static readonly TimeSpan CategoryCacheDuration = TimeSpan.FromMinutes(5);
+
+    private IReadOnlyList<GlpiItilCategory>? _cachedCategories;
+    private DateTimeOffset _categoriesCachedAt = DateTimeOffset.MinValue;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -28,22 +33,30 @@ public sealed class GlpiAdapter(
         string title,
         string description,
         string priority,
-        string category,
+        int categoryId,
         string requesterEmail,
         CancellationToken cancellationToken = default)
     {
         var credentials = credentialsResolver.Resolve();
         if (string.IsNullOrWhiteSpace(credentials.BaseUrl))
         {
-            logger.LogWarning("GLPI BaseUrl is not configured.");
-            return new GlpiTicketResult { Status = "Error" };
+            throw new GlpiIntegrationException("GLPI não configurado. Informe glpi.base_url no portal admin.");
+        }
+
+        if (categoryId <= 0)
+        {
+            throw new ArgumentException("Categoria inválida.");
         }
 
         var requesterId = await ResolveUserIdAsync(credentials, requesterEmail, cancellationToken);
-        var priorityLevel = MapFormPriority(priority);
-        var categoryId = MapCategoryId(category);
+        if (requesterId is null)
+        {
+            throw new GlpiRequesterNotFoundException(requesterEmail);
+        }
 
+        var priorityLevel = MapFormPriority(priority);
         var sessionToken = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
+
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Post, BuildUrl(credentials.BaseUrl, "Ticket"));
@@ -66,12 +79,26 @@ public sealed class GlpiAdapter(
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 await sessionManager.InvalidateSessionAsync(httpClient, credentials, cancellationToken);
-                return await CreateTicketAsync(title, description, priority, category, requesterEmail, cancellationToken);
+                return await CreateTicketAsync(title, description, priority, categoryId, requesterEmail, cancellationToken);
             }
 
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(cancellationToken);
+                logger.LogError(
+                    "GLPI ticket creation failed for {Email}: {Status} {Body}",
+                    requesterEmail,
+                    (int)response.StatusCode,
+                    body);
+                throw new GlpiIntegrationException("O GLPI rejeitou a criação do chamado. Verifique categoria e permissões.");
+            }
+
             var payload = await response.Content.ReadFromJsonAsync<Dictionary<string, JsonElement>>(JsonOptions, cancellationToken);
             var ticketId = ReadElement(payload?.GetValueOrDefault("id")).Trim('"');
+            if (string.IsNullOrWhiteSpace(ticketId))
+            {
+                throw new GlpiIntegrationException("O GLPI não retornou o identificador do chamado.");
+            }
 
             return new GlpiTicketResult
             {
@@ -80,11 +107,114 @@ public sealed class GlpiAdapter(
                 Url = BuildTicketUrl(credentials, ticketId),
             };
         }
+        catch (GlpiRequesterNotFoundException)
+        {
+            throw;
+        }
+        catch (ArgumentException)
+        {
+            throw;
+        }
+        catch (GlpiIntegrationException)
+        {
+            throw;
+        }
         catch (Exception exception)
         {
             logger.LogError(exception, "Failed to create GLPI ticket for {Email}", requesterEmail);
-            return new GlpiTicketResult { Status = "Error" };
+            throw new GlpiIntegrationException("Falha ao comunicar com o GLPI.", exception);
         }
+    }
+
+    public async Task<IReadOnlyList<GlpiItilCategory>> GetItilCategoriesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        if (_cachedCategories is not null &&
+            DateTimeOffset.UtcNow - _categoriesCachedAt < CategoryCacheDuration)
+        {
+            return _cachedCategories;
+        }
+
+        var credentials = credentialsResolver.Resolve();
+        if (string.IsNullOrWhiteSpace(credentials.BaseUrl))
+        {
+            logger.LogWarning("GLPI BaseUrl is not configured.");
+            return [];
+        }
+
+        var query =
+            $"{BuildUrl(credentials.BaseUrl, "search/ITILCategory")}" +
+            $"?forcedisplay[0]={GlpiSearchFields.ItilCategoryId}" +
+            $"&forcedisplay[1]={GlpiSearchFields.ItilCategoryName}" +
+            $"&forcedisplay[2]={GlpiSearchFields.ItilCategoryCompleteName}" +
+            "&range=0-499" +
+            "&sort=1&order=ASC";
+
+        var sessionToken = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Get, query);
+        ApplySessionHeaders(request, credentials, sessionToken);
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            await sessionManager.InvalidateSessionAsync(httpClient, credentials, cancellationToken);
+            return await GetItilCategoriesAsync(cancellationToken);
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            logger.LogWarning("GLPI ITILCategory search failed: {Status} {Body}", (int)response.StatusCode, body);
+            return _cachedCategories ?? [];
+        }
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+        if (!document.RootElement.TryGetProperty("data", out var dataElement))
+        {
+            return [];
+        }
+
+        var categories = new Dictionary<int, GlpiItilCategory>();
+        foreach (var row in dataElement.EnumerateArray())
+        {
+            var idRaw = ReadRowField(row, GlpiSearchFields.ItilCategoryId);
+            if (!int.TryParse(idRaw, out var id) || id <= 0)
+            {
+                continue;
+            }
+
+            if (categories.ContainsKey(id))
+            {
+                continue;
+            }
+
+            var name = ReadRowField(row, GlpiSearchFields.ItilCategoryName);
+            var fullName = ReadRowField(row, GlpiSearchFields.ItilCategoryCompleteName);
+            if (string.IsNullOrWhiteSpace(fullName))
+            {
+                fullName = name;
+            }
+
+            if (string.IsNullOrWhiteSpace(fullName))
+            {
+                continue;
+            }
+
+            categories[id] = new GlpiItilCategory
+            {
+                Id = id,
+                Name = string.IsNullOrWhiteSpace(name) ? fullName : name,
+                FullName = fullName,
+            };
+        }
+
+        _cachedCategories = categories.Values
+            .GroupBy(c => (c.FullName ?? c.Name).Trim().ToLowerInvariant(), StringComparer.Ordinal)
+            .Select(group => group.OrderBy(c => c.Id).First())
+            .OrderBy(c => c.FullName ?? c.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        _categoriesCachedAt = DateTimeOffset.UtcNow;
+        return _cachedCategories;
     }
 
     public async Task<GlpiTicketResult> GetTicketStatusAsync(
@@ -328,12 +458,120 @@ public sealed class GlpiAdapter(
         string requesterEmail,
         CancellationToken cancellationToken)
     {
-        var normalizedEmail = requesterEmail.Trim().ToLowerInvariant();
+        var email = requesterEmail.Trim();
+        var emailLower = email.ToLowerInvariant();
+        var login = emailLower.Split('@')[0];
+
+        foreach (var candidate in new[] { email, emailLower })
+        {
+            if (string.IsNullOrWhiteSpace(candidate))
+            {
+                continue;
+            }
+
+            var byUserEmailRecord = await SearchUserIdByEmailRecordAsync(credentials, candidate, cancellationToken);
+            if (byUserEmailRecord is not null)
+            {
+                return byUserEmailRecord;
+            }
+
+            var byEmailContains = await SearchUserIdAsync(
+                credentials,
+                GlpiSearchFields.UserEmail,
+                candidate,
+                "contains",
+                cancellationToken);
+            if (byEmailContains is not null)
+            {
+                return byEmailContains;
+            }
+
+            var byEmailEquals = await SearchUserIdAsync(
+                credentials,
+                GlpiSearchFields.UserEmail,
+                candidate,
+                "equals",
+                cancellationToken);
+            if (byEmailEquals is not null)
+            {
+                return byEmailEquals;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(login))
+        {
+            return null;
+        }
+
+        foreach (var candidate in new[] { login, email, emailLower })
+        {
+            var byLogin = await SearchUserIdAsync(
+                credentials,
+                GlpiSearchFields.UserLogin,
+                candidate,
+                "equals",
+                cancellationToken);
+            if (byLogin is not null)
+            {
+                return byLogin;
+            }
+        }
+
+        return null;
+    }
+
+    private async Task<string?> SearchUserIdByEmailRecordAsync(
+        GlpiRuntimeCredentials credentials,
+        string email,
+        CancellationToken cancellationToken)
+    {
+        foreach (var searchType in new[] { "equals", "contains" })
+        {
+            var query =
+                $"{BuildUrl(credentials.BaseUrl, "search/UserEmail")}" +
+                $"?criteria[0][field]={GlpiSearchFields.UserEmailRecordEmail}" +
+                $"&criteria[0][searchtype]={searchType}" +
+                $"&criteria[0][value]={Uri.EscapeDataString(email)}" +
+                $"&forcedisplay[0]={GlpiSearchFields.UserEmailRecordUserId}";
+
+            var sessionToken = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
+            using var request = new HttpRequestMessage(HttpMethod.Get, query);
+            ApplySessionHeaders(request, credentials, sessionToken);
+
+            using var response = await httpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                continue;
+            }
+
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+            if (!document.RootElement.TryGetProperty("data", out var data) || data.GetArrayLength() == 0)
+            {
+                continue;
+            }
+
+            var first = data[0];
+            if (first.TryGetProperty(GlpiSearchFields.UserEmailRecordUserId.ToString(), out var idElement))
+            {
+                return idElement.ToString();
+            }
+        }
+
+        return null;
+    }
+
+    private async Task<string?> SearchUserIdAsync(
+        GlpiRuntimeCredentials credentials,
+        int field,
+        string value,
+        string searchType,
+        CancellationToken cancellationToken)
+    {
         var query =
             $"{BuildUrl(credentials.BaseUrl, "search/User")}" +
-            $"?criteria[0][field]={GlpiSearchFields.UserEmail}" +
-            $"&criteria[0][searchtype]=equals" +
-            $"&criteria[0][value]={Uri.EscapeDataString(normalizedEmail)}" +
+            $"?criteria[0][field]={field}" +
+            $"&criteria[0][searchtype]={searchType}" +
+            $"&criteria[0][value]={Uri.EscapeDataString(value)}" +
             $"&forcedisplay[0]={GlpiSearchFields.UserId}";
 
         var sessionToken = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
@@ -494,18 +732,6 @@ public sealed class GlpiAdapter(
             "media" or "média" => 3,
             "baixa" => 2,
             _ => 3,
-        };
-    }
-
-    private static int MapCategoryId(string category)
-    {
-        var normalized = category.Trim().ToLowerInvariant();
-        return normalized switch
-        {
-            "incidente" => 1,
-            "solicitacao" or "solicitação" => 2,
-            "duvida" or "dúvida" => 3,
-            _ => 1,
         };
     }
 }

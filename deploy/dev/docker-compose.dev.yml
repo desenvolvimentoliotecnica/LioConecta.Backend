@@ -1,0 +1,75 @@
+﻿services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lioconecta-dev-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lioconecta
+      POSTGRES_USER: lioconecta
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - lioconecta_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lioconecta -d lioconecta"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: lioconecta-dev-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ./api-publish
+      dockerfile: ../Dockerfile.api.runtime
+    container_name: lioconecta-dev-api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      LIOSNECTA_BOOTSTRAP_DB: Host=postgres;Port=5432;Database=lioconecta;Username=lioconecta;Password=${POSTGRES_PASSWORD}
+    volumes:
+      - lioconecta_media:/app/App_Data
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+
+  workers:
+    build:
+      context: ./workers-publish
+      dockerfile: ../Dockerfile.workers.runtime
+    container_name: lioconecta-dev-workers
+    restart: unless-stopped
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      LIOSNECTA_BOOTSTRAP_DB: Host=postgres;Port=5432;Database=lioconecta;Username=lioconecta;Password=${POSTGRES_PASSWORD}
+    depends_on:
+      api:
+        condition: service_started
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: lioconecta-dev-nginx
+    restart: unless-stopped
+    ports:
+      - "${LIOSNECTA_HTTP_PORT}:80"
+    volumes:
+      - ./frontend-dist:/usr/share/nginx/html:ro
+      - ./nginx/lioconecta.dev.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api:
+        condition: service_started
+
+volumes:
+  lioconecta_pgdata:
+  lioconecta_media:
+

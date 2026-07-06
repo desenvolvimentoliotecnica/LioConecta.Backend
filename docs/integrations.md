@@ -36,9 +36,26 @@ Com `Integrations:UseDevAdapters=true` (padrão em Development), os adapters ret
 | Operação | Endpoint BFF | Quando |
 |----------|--------------|--------|
 | `SearchTicketsByRequesterAsync` | `GET /api/v1/ti/help-desk/tickets/mine` | Acompanhar chamados do usuário logado |
+| `SearchAllTicketsAsync` | `GET /api/v1/ti/help-desk/tickets/all` | Fila completa (TI/Admin) |
 | `GetTicketDetailAsync` | `GET /api/v1/ti/help-desk/tickets/{id}` | Detalhe do chamado |
-| `CreateTicketAsync` | `POST /api/v1/ti/help-desk/tickets` | Abertura de chamado |
+| `GetItilCategoriesAsync` | `GET /api/v1/ti/help-desk/categories` | Dropdown de categorias no modal de abertura |
+| `CreateTicketAsync` | `POST /api/v1/ti/help-desk/tickets` | Abertura de chamado (GLPI primeiro, depois `service_requests`) |
 | Teste de conexão | `POST /api/v1/admin/glpi/test` | Admin — valida `initSession` |
+
+**Pré-requisito para criação:** o colaborador logado deve existir no GLPI com o mesmo e-mail corporativo do portal. Caso contrário a API retorna **422** (`GlpiRequesterNotFoundException`). Falhas de comunicação com o GLPI retornam **502**.
+
+**Payload de criação (`POST /tickets`):**
+
+```json
+{
+  "subject": "VPN instável",
+  "priority": "media",
+  "categoryId": 12,
+  "description": "Descrição com pelo menos 10 caracteres."
+}
+```
+
+`categoryId` vem de `GET /categories` (search `ITILCategory` no GLPI, cache 5 min no adapter).
 
 **Config (portal `/admin/configuracoes-backend`, categoria GLPI — persistido em `app_settings`):**
 

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using LioConecta.Application.Common.Audit;
+using LioConecta.Application.Common.Integrations;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -28,6 +29,8 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
             KeyNotFoundException ex => (StatusCodes.Status404NotFound, "Resource not found", ex.Message),
             UnauthorizedAccessException => (StatusCodes.Status403Forbidden, "Forbidden", "Access to the resource was denied."),
             ArgumentException ex => (StatusCodes.Status400BadRequest, "Bad request", ex.Message),
+            GlpiRequesterNotFoundException ex => (StatusCodes.Status422UnprocessableEntity, "GLPI requester not found", ex.Message),
+            GlpiIntegrationException ex => (StatusCodes.Status502BadGateway, "GLPI integration error", ex.Message),
             InvalidOperationException ex => (StatusCodes.Status409Conflict, "Conflict", ex.Message),
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred",
                 "Não foi possível concluir a operação."),

@@ -1,0 +1,8 @@
+{
+    "fix":  "sessionCorrelation.ts createUuid() fallback + frontend redeploy",
+    "timestamp":  "20260706-172429",
+    "ldapLogin":  "200 OK",
+    "browserLogin":  "redirected to feed as Leonardo Sabino Mendes",
+    "rootCause":  "crypto.randomUUID unavailable on HTTP non-localhost; applyObservabilityHeaders threw before fetch",
+    "url":  "http://10.0.0.79:8091/acesso"
+}

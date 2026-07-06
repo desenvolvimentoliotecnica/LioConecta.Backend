@@ -1,6 +1,6 @@
 # LioConecta Backend
 
-API .NET 8 para a intranet corporativa LioConecta — autenticação Azure AD, PostgreSQL, integrações TOTVS/GLPI/Microsoft Graph e SignalR.
+API .NET 8 para a intranet corporativa LioConecta — autenticação LDAP + JWT do portal, PostgreSQL, integrações TOTVS/GLPI/Microsoft Graph e SignalR.
 
 Repositório front-end: [LioConecta-FrontEnd](https://github.com/desenvolvimentoliotecnica/LioConecta-FrontEnd)
 
@@ -11,7 +11,7 @@ Repositório front-end: [LioConecta-FrontEnd](https://github.com/desenvolvimento
 | API | ASP.NET Core 8, SignalR, Serilog, Swagger |
 | Aplicação | Clean Architecture, FluentValidation, MediatR |
 | Dados | PostgreSQL 16, EF Core 8, Redis 7 |
-| Auth | Azure AD / Entra ID (Microsoft.Identity.Web) |
+| Auth | LDAP corporativo + JWT simétrico do portal (`auth.*` em `app_settings`) |
 | Integrações | TOTVS, GLPI, Microsoft Graph |
 | Workers | Background sync (TOTVS + Graph) |
 
@@ -20,19 +20,49 @@ Repositório front-end: [LioConecta-FrontEnd](https://github.com/desenvolvimento
 - [.NET 8 SDK](https://dotnet.microsoft.com/download)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (PostgreSQL + Redis locais)
 
-## Modo simulação (atual)
+## Autenticação (LDAP + super-admin local)
+
+Em produção o portal usa **somente LDAP** (`auth.provider=ldap`). Um super-admin **local** no banco (`portal_users`) permite bootstrap antes do AD estar configurado.
+
+### Fluxo de bootstrap (primeiro deploy)
+
+1. API sobe e executa seed do super-admin local.
+2. Admin acessa `/acesso` no front e loga com a conta local.
+3. Em `/admin/configuracoes-backend?category=ldap` preenche AD, salva e testa conexão.
+4. Colaboradores passam a logar com credencial LDAP.
+
+### Credencial inicial (super-admin local)
+
+| Campo | Valor |
+|-------|-------|
+| E-mail | `leonardo.mendes@liotecnica.com.br` |
+| Senha | variável `PORTAL_SUPER_ADMIN_PASSWORD` no deploy, ou `ChangeMe@2026` se omitida |
+
+**Altere a senha no primeiro acesso em produção.**
+
+### Endpoints de autenticação
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `POST` | `/api/v1/auth/login` | E-mail + senha → JWT + `MeDto` (anônimo) |
+| `POST` | `/api/v1/auth/logout` | Auditoria de logout (requer token) |
+| `POST` | `/api/v1/admin/ldap/test` | Teste de bind LDAP (requer Admin) |
+
+Configuração LDAP e JWT em `app_settings` (categorias `auth` e `ldap`), editável em **Configurações do Backend**.
+
+## Modo simulação (desenvolvimento)
 
 Por enquanto **não há integração com Azure AD, TOTVS, GLPI ou Graph**. A API opera em modo simulação:
 
 | Config | Valor | Efeito |
 |--------|-------|--------|
 | `Integrations:UseDevAdapters` | `true` | TOTVS/GLPI/Graph retornam dados mock |
-| `AzureAd:ClientId` | vazio | DevAuth — usuário padrão Maria Silva |
-| `Auth:UseDevAuth` | `true` | Endpoints acessíveis sem token real |
+| `auth.provider` | `dev` (Development) | DevAuth — endpoints acessíveis sem token real |
+| `auth.provider` | `ldap` (produção) | JWT do portal com chave `auth.jwt_signing_key` |
 
-O front-end deve usar `VITE_USE_MOCK=false` e apontar para esta API — os dados simulados vêm do seed PostgreSQL + adapters de desenvolvimento.
+O front-end deve usar `VITE_USE_MOCK=false` e apontar para esta API. Para desenvolvimento local sem LDAP, use `VITE_AUTH_MODE=dev` no front.
 
-Quando for integrar sistemas reais, defina `Integrations:UseDevAdapters=false` e configure Azure AD / credenciais (ver `docs/azure-ad-setup.md` e `docs/integrations.md`).
+Quando for integrar sistemas reais, defina `Integrations:UseDevAdapters=false`, `auth.provider=ldap` e configure LDAP / credenciais (ver `docs/integrations.md`).
 
 ## Desenvolvimento local
 
@@ -52,13 +82,9 @@ dotnet run --project src/LioConecta.Workers
 
 A API inicia em `http://localhost:5000` (ou porta configurada). Swagger: `/swagger`.
 
-### Modo dev (sem Azure AD)
+### Modo dev (sem LDAP)
 
-Com `AzureAd:ClientId` vazio, a API usa autenticação de desenvolvimento (usuário Maria Silva). Header opcional:
-
-```
-X-Dev-User-Id: maria-silva
-```
+Com `auth.provider=dev` em Development/Testing, a API usa autenticação de desenvolvimento (usuário Maria Silva, role Admin).
 
 ### Front-end
 
@@ -67,9 +93,10 @@ Configure no `.env` do front:
 ```
 VITE_API_BASE_URL=http://localhost:5000/api/v1
 VITE_USE_MOCK=false
-VITE_AZURE_CLIENT_ID=
-VITE_AZURE_TENANT_ID=
+VITE_AUTH_MODE=dev
 ```
+
+Remova `VITE_AUTH_MODE=dev` (ou defina outro valor) quando for testar login LDAP real em `/acesso`.
 
 ## Estrutura
 
@@ -89,6 +116,7 @@ tests/
 
 | Módulo | Base |
 |--------|------|
+| Autenticação | `POST /api/v1/auth/login`, `POST /api/v1/auth/logout` |
 | Identidade | `GET /api/v1/me` |
 | Pessoas | `GET /api/v1/people`, `/org-chart` |
 | Feed | `GET/POST /api/v1/feed` |
@@ -108,7 +136,9 @@ Variáveis críticas:
 
 - `ConnectionStrings:DefaultConnection` — PostgreSQL
 - `ConnectionStrings:Redis` — Redis (SignalR backplane)
-- `AzureAd:*` — Tenant, ClientId, Audience
+- `auth.jwt_signing_key` — chave JWT do portal (obrigatória com `auth.provider=ldap`)
+- `ldap.*` — servidor AD/LDAP corporativo
+- `PORTAL_SUPER_ADMIN_PASSWORD` — senha bootstrap do super-admin local
 - `Integrations:UseDevAdapters` — `false` em produção
 - `Totvs:*`, `Glpi:*`, `Graph:*` — credenciais reais
 

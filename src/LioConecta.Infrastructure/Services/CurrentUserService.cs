@@ -75,6 +75,15 @@ public sealed class CurrentUserService(
             return person.Id;
         }
 
+        person = await db.People
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == azureAdObjectId, cancellationToken);
+
+        if (person is not null)
+        {
+            return person.Id;
+        }
+
         var fallbackPerson = await ResolvePersonByIdentityClaimsAsync(user, cancellationToken);
         if (fallbackPerson is not null)
         {

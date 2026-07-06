@@ -24,6 +24,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             await EnsurePollSeedAsync(cancellationToken);
             await EnsureEmployeeIdsAsync(cancellationToken);
             await EnsureDevTestUserProfileAsync(cancellationToken);
+            await EnsureSuperAdminPortalUserAsync(cancellationToken);
             await EnsureGraphDirectoryDepartmentLinksAsync(cancellationToken);
             await EnsureTotvsRmConfigurationAsync(cancellationToken);
             await EnsureEmailConfigurationDevDefaultsAsync(cancellationToken);
@@ -264,6 +265,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
         db.Notifications.AddRange(notifications);
 
         await db.SaveChangesAsync(cancellationToken);
+        await EnsureSuperAdminPortalUserAsync(cancellationToken);
         await EnsureGroupsCatalogAsync(cancellationToken);
         logger.LogInformation("Seed completed with {People} people.", people.Length);
     }
@@ -651,6 +653,55 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
         devUser.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Aligned dev test user profile to Leonardo Sabino Mendes ({Slug}).", devUser.Slug);
+    }
+
+    private async Task EnsureSuperAdminPortalUserAsync(CancellationToken cancellationToken)
+    {
+        const string superAdminEmail = "leonardo.mendes@liotecnica.com.br";
+        var person = await db.People.FirstOrDefaultAsync(
+            p => p.Email.ToLower() == superAdminEmail,
+            cancellationToken);
+
+        if (person is null)
+        {
+            logger.LogWarning("Super-admin person {Email} not found; skipping portal_users seed.", superAdminEmail);
+            return;
+        }
+
+        var existing = await db.PortalUsers.FirstOrDefaultAsync(
+            u => u.Email.ToLower() == superAdminEmail,
+            cancellationToken);
+
+        if (existing is not null)
+        {
+            return;
+        }
+
+        var password = Environment.GetEnvironmentVariable("PORTAL_SUPER_ADMIN_PASSWORD");
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            password = "ChangeMe@2026";
+            logger.LogWarning(
+                "PORTAL_SUPER_ADMIN_PASSWORD not set — using default bootstrap password for {Email}.",
+                superAdminEmail);
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        db.PortalUsers.Add(new PortalUser
+        {
+            Id = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffff01"),
+            Email = superAdminEmail,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+            PersonId = person.Id,
+            RolesJson = "[\"Admin\",\"Employee\"]",
+            IsSuperAdmin = true,
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now,
+        });
+
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Seeded super-admin portal user for {Email}.", superAdminEmail);
     }
 
     private async Task EnsureGraphDirectoryDepartmentLinksAsync(CancellationToken cancellationToken)

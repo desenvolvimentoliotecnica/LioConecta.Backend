@@ -6,6 +6,7 @@ using LioConecta.Infrastructure.Configuration;
 using LioConecta.Infrastructure.Integrations.Email;
 using LioConecta.Infrastructure.Integrations.Glpi;
 using LioConecta.Infrastructure.Integrations.Graph;
+using LioConecta.Infrastructure.Integrations.Ldap;
 using LioConecta.Infrastructure.Integrations.Totvs;
 using LioConecta.Application.Common.Audit;
 using LioConecta.Infrastructure.Integrations.TotvsRm;
@@ -98,6 +99,7 @@ public static class DependencyInjection
         services.AddSingleton<GlpiSessionManager>();
         services.AddSingleton<GlpiCredentialsResolver>();
         services.AddSingleton<GlpiUserNameResolver>();
+        services.AddSingleton<LdapSettingsResolver>();
 
         if (settings.GetBool(AppSettingKeys.IntegrationsUseDevAdapters, true))
         {
@@ -164,6 +166,11 @@ public static class DependencyInjection
         services.AddScoped<IGraphConfigurationService, GraphConfigurationService>();
         services.AddScoped<IPlannerConfigurationService, PlannerConfigurationService>();
         services.AddScoped<IGlpiConfigurationService, GlpiConfigurationService>();
+        services.AddScoped<ILdapConfigurationService, LdapConfigurationService>();
+        services.AddScoped<ILdapAuthService, LdapAuthService>();
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IPortalJwtService, PortalJwtService>();
+        services.AddScoped<LdapConnectionTester>();
         services.AddScoped<IPersonPhotoStorageService, PersonPhotoStorageService>();
         services.AddScoped<GraphConnectionTester>();
         services.AddScoped<PlannerConnectionTester>();

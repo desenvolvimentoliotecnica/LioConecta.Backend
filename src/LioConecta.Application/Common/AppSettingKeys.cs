@@ -11,6 +11,20 @@ public static class AppSettingKeys
     public const string AzureAdAudience = "azure_ad.audience";
 
     public const string AuthUseDevAuth = "auth.use_dev_auth";
+    public const string AuthProvider = "auth.provider";
+    public const string AuthJwtSigningKey = "auth.jwt_signing_key";
+    public const string AuthJwtExpiryMinutes = "auth.jwt_expiry_minutes";
+    public const string AuthSuperAdminEmails = "auth.super_admin_emails";
+
+    public const string LdapEnabled = "ldap.enabled";
+    public const string LdapHost = "ldap.host";
+    public const string LdapPort = "ldap.port";
+    public const string LdapUseSsl = "ldap.use_ssl";
+    public const string LdapBindDn = "ldap.bind_dn";
+    public const string LdapBindPassword = "ldap.bind_password";
+    public const string LdapSearchBase = "ldap.search_base";
+    public const string LdapUserFilter = "ldap.user_filter";
+    public const string LdapDomain = "ldap.domain";
 
     public const string CorsAllowedOrigins = "cors.allowed_origins";
 

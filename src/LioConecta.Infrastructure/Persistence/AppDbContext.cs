@@ -49,6 +49,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<EmailMessage> EmailMessages => Set<EmailMessage>();
 
     public DbSet<EmailAttachmentStaging> EmailAttachmentStagings => Set<EmailAttachmentStaging>();
+    public DbSet<PortalUser> PortalUsers => Set<PortalUser>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -76,6 +77,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureWorkerRuns(modelBuilder);
         ConfigureTimesheetPeriodCache(modelBuilder);
         ConfigureEmail(modelBuilder);
+        ConfigurePortalUsers(modelBuilder);
     }
 
     private static void ApplySnakeCaseTableNames(ModelBuilder modelBuilder)
@@ -696,6 +698,23 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasOne(a => a.CreatedBy)
                 .WithMany()
                 .HasForeignKey(a => a.CreatedById)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigurePortalUsers(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PortalUser>(entity =>
+        {
+            entity.Property(u => u.Email).HasMaxLength(256);
+            entity.Property(u => u.PasswordHash).HasMaxLength(512);
+            entity.Property(u => u.RolesJson).HasMaxLength(512);
+
+            entity.HasIndex(u => u.Email).IsUnique();
+
+            entity.HasOne(u => u.Person)
+                .WithMany()
+                .HasForeignKey(u => u.PersonId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

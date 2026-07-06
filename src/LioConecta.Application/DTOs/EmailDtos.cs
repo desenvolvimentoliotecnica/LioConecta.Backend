@@ -163,7 +163,9 @@ public sealed record SmtpSendRequest(
     string Subject,
     string? BodyHtml,
     string? BodyText,
-    IReadOnlyList<EmailAttachmentRecord>? Attachments = null);
+    IReadOnlyList<EmailAttachmentRecord>? Attachments = null,
+    string? FromAddress = null,
+    string? FromName = null);
 
 public sealed record SmtpSendResult(
     bool Success,

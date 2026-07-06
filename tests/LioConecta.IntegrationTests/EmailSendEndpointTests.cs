@@ -62,6 +62,8 @@ public class EmailSendEndpointTests : IClassFixture<LioConectaWebApplicationFact
         var message = await db.EmailMessages.FirstAsync(m => m.Id == result.MessageId);
         Assert.Contains("carlos.mendes@liotecnica.com.br", message.ToAddressesJson);
         Assert.Contains("julia.santos@liotecnica.com.br", message.CcAddressesJson ?? string.Empty);
+        Assert.NotNull(message.CreatedById);
+        Assert.Contains("leonardo.mendes@liotecnica.com.br", message.MetadataJson ?? string.Empty, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

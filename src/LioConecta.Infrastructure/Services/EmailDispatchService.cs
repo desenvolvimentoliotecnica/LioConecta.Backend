@@ -155,6 +155,20 @@ public sealed class EmailDispatchService(
         EmailRuntimeConfiguration config,
         CancellationToken cancellationToken)
     {
+        Person? senderPerson = null;
+        if (message.CreatedById.HasValue)
+        {
+            senderPerson = await db.People
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == message.CreatedById.Value, cancellationToken);
+        }
+
+        var sender = EmailSenderResolver.Resolve(message.MetadataJson, senderPerson);
+        if (message.CreatedById.HasValue && sender is null)
+        {
+            return new SmtpSendResult(false, null, "Remetente sem e-mail cadastrado.");
+        }
+
         var request = new SmtpSendRequest(
             EmailMessageMapper.DeserializeAddresses(message.ToAddressesJson),
             EmailMessageMapper.DeserializeAddresses(message.CcAddressesJson),
@@ -162,7 +176,9 @@ public sealed class EmailDispatchService(
             message.Subject,
             message.BodyHtml,
             message.BodyText,
-            EmailMessageMapper.DeserializeAttachments(message.AttachmentsJson));
+            EmailMessageMapper.DeserializeAttachments(message.AttachmentsJson),
+            sender?.Address,
+            sender?.Name);
 
         return await smtpEmailSender.SendAsync(config, request, cancellationToken);
     }

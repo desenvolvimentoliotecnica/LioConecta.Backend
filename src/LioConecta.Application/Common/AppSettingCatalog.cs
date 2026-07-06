@@ -36,8 +36,8 @@ public static class AppSettingCatalog
             "Lista JSON de URLs do front-end em produção.", "json", false,
             "[\"http://localhost:5173\",\"http://localhost:5174\"]", 1),
 
-        new(AppSettingKeys.IntegrationsUseDevAdapters, "integrations", "Usar adaptadores mock",
-            "Quando true, TOTVS/GLPI/Graph usam implementações de desenvolvimento.", "boolean", false, "true", 1),
+        new(AppSettingKeys.IntegrationsUseDevAdapters, "integrations", "Modo mock (não chama APIs reais)",
+            "Quando Sim, TOTVS/GLPI/Graph usam dados fictícios — o diretório Graph retorna apenas 3 usuários. Defina Não e reinicie a API para integrações reais.", "boolean", false, "true", 1),
 
         new(AppSettingKeys.TotvsBaseUrl, "totvs", "TOTVS — base URL",
             "URL base da API REST TOTVS.", "string", false, "", 1),
@@ -97,6 +97,10 @@ public static class AppSettingCatalog
         new(AppSettingKeys.MediaPostsAllowedContentTypes, "media", "Feed — tipos MIME permitidos",
             "Lista JSON de content-types aceitos no upload do feed.", "json", false,
             "[\"image/jpeg\",\"image/png\",\"image/webp\",\"image/gif\",\"video/mp4\",\"video/webm\"]", 6),
+
+        new(AppSettingKeys.MediaPeopleRootPath, "media", "Pessoas — pasta de fotos de perfil",
+            "Armazenamento local das fotos baixadas do Microsoft Graph (servidas em /media/people).", "string", false,
+            "App_Data/media/people", 7),
 
         new(AppSettingKeys.ObservabilityOtelEnabled, "observability", "OpenTelemetry habilitado",
             "Exporta traces/metrics via OTLP e endpoint Prometheus.", "boolean", false, "true", 1),

@@ -269,6 +269,13 @@ try
         RequestPath = "/posts/medias",
     });
 
+    var peopleMediaRoot = ResolvePeopleMediaRoot(settingsProvider, app.Environment);
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(peopleMediaRoot),
+        RequestPath = "/media/people",
+    });
+
     app.UseAuthentication();
     app.UseAuthorization();
 
@@ -383,6 +390,17 @@ static string ResolveComunicadoMediaRoot(IAppSettingsProvider settings, IWebHost
 static string ResolvePostsMediaRoot(IAppSettingsProvider settings, IWebHostEnvironment environment)
 {
     var configured = settings.GetString(AppSettingKeys.MediaPostsRootPath, "App_Data/posts/medias");
+    var absolute = Path.IsPathRooted(configured)
+        ? configured
+        : Path.Combine(environment.ContentRootPath, configured);
+
+    Directory.CreateDirectory(absolute);
+    return absolute;
+}
+
+static string ResolvePeopleMediaRoot(IAppSettingsProvider settings, IWebHostEnvironment environment)
+{
+    var configured = settings.GetString(AppSettingKeys.MediaPeopleRootPath, "App_Data/media/people");
     var absolute = Path.IsPathRooted(configured)
         ? configured
         : Path.Combine(environment.ContentRootPath, configured);

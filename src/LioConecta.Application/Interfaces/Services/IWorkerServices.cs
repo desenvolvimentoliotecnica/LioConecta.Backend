@@ -66,6 +66,9 @@ public sealed record GraphDirectorySyncResult(
     int Updated,
     int Deactivated,
     int Fetched,
+    int PhotosDownloaded,
+    int PhotosMissing,
+    int PhotosFailed,
     DateTimeOffset SyncedAtUtc);
 
 public interface IWorkerRunContext

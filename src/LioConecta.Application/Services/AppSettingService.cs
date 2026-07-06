@@ -42,6 +42,9 @@ public sealed class AppSettingService(
         AppSettingKeys.AzureAdInstance,
         AppSettingKeys.AuthUseDevAuth,
         AppSettingKeys.IntegrationsUseDevAdapters,
+        AppSettingKeys.GraphTenantId,
+        AppSettingKeys.GraphClientId,
+        AppSettingKeys.GraphClientSecret,
     ];
 
     public async Task<IReadOnlyList<AppSettingCategoryDto>> GetGroupedAsync(

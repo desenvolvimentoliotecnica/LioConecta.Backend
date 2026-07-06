@@ -6,6 +6,8 @@ public interface IGraphAdapter
 {
     Task<IReadOnlyList<GraphDirectoryUser>> GetDirectoryUsersAsync(CancellationToken cancellationToken = default);
 
+    Task<byte[]?> GetUserPhotoBytesAsync(Guid objectId, CancellationToken cancellationToken = default);
+
     Task SyncUserPhotosAsync(CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<GraphDocument>> GetDocumentsAsync(string? category, CancellationToken cancellationToken = default);

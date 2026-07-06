@@ -46,6 +46,9 @@ public sealed class DevGraphAdapter : IGraphAdapter
         return Task.FromResult(users);
     }
 
+    public Task<byte[]?> GetUserPhotoBytesAsync(Guid objectId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<byte[]?>(null);
+
     public Task SyncUserPhotosAsync(CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
 

@@ -58,6 +58,7 @@ Requer GLPI 10+ com API REST habilitada.
 | Operação | Worker / API |
 |----------|--------------|
 | `GetDirectoryUsersAsync` | Worker `graph-directory-sync` → tabela `people`, `GET /api/v1/people/directory` |
+| `GetUserPhotoBytesAsync` | Worker `graph-directory-sync` → cache local `/media/people/{slug}.jpg` |
 | `GetDocumentsAsync` | GraphSyncWorker → módulo Documentos |
 | `GetCalendarEventsAsync` | GraphSyncWorker → Calendário |
 | `GetPlannerTasksAsync` | Activities API |

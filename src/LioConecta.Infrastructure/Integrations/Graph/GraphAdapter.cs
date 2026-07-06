@@ -81,6 +81,38 @@ public sealed class GraphAdapter(
         return users;
     }
 
+    public async Task<byte[]?> GetUserPhotoBytesAsync(
+        Guid objectId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(options.Value.TenantId))
+        {
+            logger.LogWarning("Graph TenantId is not configured.");
+            return null;
+        }
+
+        using var response = await httpClient.GetAsync(
+            $"users/{objectId}/photo/$value",
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            logger.LogDebug(
+                "Graph photo request failed for {ObjectId} ({StatusCode}).",
+                objectId,
+                (int)response.StatusCode);
+            return null;
+        }
+
+        return await response.Content.ReadAsByteArrayAsync(cancellationToken);
+    }
+
     private static GraphDirectoryUser? MapDirectoryUser(JsonElement item, string domain)
     {
         if (!item.TryGetProperty("id", out var idElement)

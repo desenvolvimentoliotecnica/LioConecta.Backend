@@ -1,5 +1,6 @@
 using LioConecta.Application.Common;
 using LioConecta.Application.Interfaces.Integrations;
+using LioConecta.Application.Interfaces.Integrations.Models;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Domain.Entities;
 using LioConecta.Infrastructure.Persistence;
@@ -9,6 +10,7 @@ namespace LioConecta.Infrastructure.Services;
 
 public sealed class GraphDirectorySyncService(
     IGraphAdapter graphAdapter,
+    IPersonPhotoStorageService photoStorage,
     AppDbContext db) : IGraphDirectorySyncService
 {
     public async Task<GraphDirectorySyncResult> SyncDirectoryAsync(
@@ -23,11 +25,12 @@ public sealed class GraphDirectorySyncService(
                 await context.LogWarningAsync("Graph directory sync returned no users.", cancellationToken);
             }
 
-            return new GraphDirectorySyncResult(0, 0, 0, 0, DateTimeOffset.UtcNow);
+            return new GraphDirectorySyncResult(0, 0, 0, 0, 0, 0, 0, DateTimeOffset.UtcNow);
         }
 
         var objectIdToPersonId = new Dictionary<Guid, Guid>();
         var seenObjectIds = new HashSet<Guid>();
+        var reservedSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var created = 0;
         var updated = 0;
 
@@ -58,11 +61,8 @@ public sealed class GraphDirectorySyncService(
                 updated++;
             }
 
-            var slug = PersonSlugHelper.FromEmailOrUpn(user.Mail, user.UserPrincipalName);
-            if (await SlugConflictsAsync(person.Id, slug, cancellationToken))
-            {
-                slug = $"{slug}-{user.ObjectId.ToString("N")[..6]}";
-            }
+            var slug = await ResolveUniqueSlugAsync(person.Id, user, reservedSlugs, cancellationToken);
+            reservedSlugs.Add(slug);
 
             person.AzureAdObjectId = user.ObjectId;
             person.Slug = slug;
@@ -108,17 +108,104 @@ public sealed class GraphDirectorySyncService(
         await db.SaveChangesAsync(cancellationToken);
 
         var deactivated = await DeactivateMissingGraphUsersAsync(seenObjectIds, cancellationToken);
+        var (photosDownloaded, photosMissing, photosFailed) =
+            await SyncPhotosAsync(context, cancellationToken);
         var syncedAt = DateTimeOffset.UtcNow;
         await UpsertSyncTimestampAsync(syncedAt, cancellationToken);
 
         if (context is not null)
         {
             await context.LogInfoAsync(
-                $"Graph directory sync completed: fetched={users.Count}, created={created}, updated={updated}, managers={managerLinks}, deactivated={deactivated}.",
+                $"Graph directory sync completed: fetched={users.Count}, created={created}, updated={updated}, managers={managerLinks}, deactivated={deactivated}, photos={photosDownloaded}, photosMissing={photosMissing}, photosFailed={photosFailed}.",
                 cancellationToken);
         }
 
-        return new GraphDirectorySyncResult(created, updated, deactivated, users.Count, syncedAt);
+        return new GraphDirectorySyncResult(
+            created,
+            updated,
+            deactivated,
+            users.Count,
+            photosDownloaded,
+            photosMissing,
+            photosFailed,
+            syncedAt);
+    }
+
+    private async Task<(int Downloaded, int Missing, int Failed)> SyncPhotosAsync(
+        IWorkerRunContext? context,
+        CancellationToken cancellationToken)
+    {
+        var people = await db.People
+            .Where(p => p.IsActive && p.AzureAdObjectId != null)
+            .ToListAsync(cancellationToken);
+
+        if (people.Count == 0)
+        {
+            return (0, 0, 0);
+        }
+
+        var photoBytes = new Dictionary<Guid, byte[]?>();
+        var failed = 0;
+
+        await Parallel.ForEachAsync(
+            people,
+            new ParallelOptions
+            {
+                MaxDegreeOfParallelism = 10,
+                CancellationToken = cancellationToken,
+            },
+            async (person, ct) =>
+            {
+                try
+                {
+                    var bytes = await graphAdapter.GetUserPhotoBytesAsync(person.AzureAdObjectId!.Value, ct);
+                    lock (photoBytes)
+                    {
+                        photoBytes[person.Id] = bytes;
+                    }
+                }
+                catch (Exception)
+                {
+                    Interlocked.Increment(ref failed);
+                }
+            });
+
+        var downloaded = 0;
+        var missing = 0;
+
+        foreach (var person in people)
+        {
+            if (!photoBytes.TryGetValue(person.Id, out var bytes) || bytes is null || bytes.Length == 0)
+            {
+                missing++;
+                continue;
+            }
+
+            try
+            {
+                person.PhotoUrl = await photoStorage.SaveAsync(person.Slug, bytes, cancellationToken);
+                person.UpdatedAt = DateTimeOffset.UtcNow;
+                downloaded++;
+            }
+            catch (Exception)
+            {
+                failed++;
+            }
+        }
+
+        if (downloaded > 0)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        if (context is not null && downloaded > 0)
+        {
+            await context.LogInfoAsync(
+                $"Graph photo sync stored {downloaded} avatars under /media/people.",
+                cancellationToken);
+        }
+
+        return (downloaded, missing, failed);
     }
 
     private async Task UpsertSyncTimestampAsync(DateTimeOffset syncedAt, CancellationToken cancellationToken)
@@ -143,6 +230,32 @@ public sealed class GraphDirectorySyncService(
         setting.Value = syncedAt.ToString("O");
         setting.UpdatedAt = syncedAt;
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task<string> ResolveUniqueSlugAsync(
+        Guid personId,
+        GraphDirectoryUser user,
+        ISet<string> reservedSlugs,
+        CancellationToken cancellationToken)
+    {
+        var baseSlug = PersonSlugHelper.FromEmailOrUpn(user.Mail, user.UserPrincipalName);
+        var candidates = new[]
+        {
+            baseSlug,
+            $"{baseSlug}-{user.ObjectId.ToString("N")[..6]}",
+            $"{baseSlug}-{user.ObjectId:N}",
+        };
+
+        foreach (var candidate in candidates.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            if (!reservedSlugs.Contains(candidate)
+                && !await SlugConflictsAsync(personId, candidate, cancellationToken))
+            {
+                return candidate;
+            }
+        }
+
+        return $"{baseSlug}-{user.ObjectId:N}";
     }
 
     private async Task<bool> SlugConflictsAsync(Guid personId, string slug, CancellationToken cancellationToken)

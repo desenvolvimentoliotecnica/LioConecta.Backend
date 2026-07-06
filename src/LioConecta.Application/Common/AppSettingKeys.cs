@@ -47,6 +47,8 @@ public static class AppSettingKeys
     public const string MediaPostsMaxSizeBytes = "media.posts.max_size_bytes";
     public const string MediaPostsAllowedContentTypes = "media.posts.allowed_content_types";
 
+    public const string MediaPeopleRootPath = "media.people.root_path";
+
     public const string ObservabilityOtelEnabled = "observability.otel.enabled";
     public const string ObservabilityOtelServiceName = "observability.otel.service_name";
     public const string ObservabilityOtelOtlpEndpoint = "observability.otel.otlp_endpoint";

@@ -155,6 +155,9 @@ public static class DependencyInjection
         services.AddScoped<ITotvsEmployeeSyncService, TotvsEmployeeSyncService>();
         services.AddScoped<IGraphSyncService, GraphSyncService>();
         services.AddScoped<IGraphDirectorySyncService, GraphDirectorySyncService>();
+        services.AddScoped<IGraphConfigurationService, GraphConfigurationService>();
+        services.AddScoped<IPersonPhotoStorageService, PersonPhotoStorageService>();
+        services.AddScoped<GraphConnectionTester>();
         services.AddScoped<IWorkerRunRecorder, WorkerRunRecorder>();
         services.AddScoped<IWorkerTriggerService, WorkerTriggerService>();
 

@@ -117,11 +117,17 @@ public sealed class SmtpEmailSender : ISmtpEmailSender
         CancellationToken cancellationToken)
     {
         var message = new MimeMessage();
-        var fromAddress = string.IsNullOrWhiteSpace(config.FromAddress)
-            ? config.SmtpUsername
-            : config.FromAddress;
+        var fromAddress = !string.IsNullOrWhiteSpace(request.FromAddress)
+            ? request.FromAddress.Trim()
+            : string.IsNullOrWhiteSpace(config.FromAddress)
+                ? config.SmtpUsername
+                : config.FromAddress;
 
-        message.From.Add(new MailboxAddress(config.FromName, fromAddress));
+        var fromName = !string.IsNullOrWhiteSpace(request.FromName)
+            ? request.FromName.Trim()
+            : config.FromName;
+
+        message.From.Add(new MailboxAddress(fromName, fromAddress!));
         message.Subject = request.Subject;
 
         foreach (var to in request.To)

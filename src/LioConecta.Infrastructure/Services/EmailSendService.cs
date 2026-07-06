@@ -27,6 +27,14 @@ public sealed class EmailSendService(
             .FirstOrDefaultAsync(p => p.Id == senderPersonId && p.IsActive, cancellationToken)
             ?? throw new InvalidOperationException("Remetente nao encontrado.");
 
+        if (string.IsNullOrWhiteSpace(sender.Email))
+        {
+            throw new InvalidOperationException("Seu perfil nao possui e-mail cadastrado para envio.");
+        }
+
+        var senderEmail = sender.Email.Trim();
+        var senderName = string.IsNullOrWhiteSpace(sender.Name) ? senderEmail : sender.Name.Trim();
+
         var toAddresses = await ResolveRecipientsAsync(request, sender, cancellationToken);
 
         var cc = EmailAddressValidator.ParseAndValidate(request.Cc);
@@ -49,6 +57,8 @@ public sealed class EmailSendService(
             source = string.IsNullOrWhiteSpace(request.Source) ? "compose" : request.Source.Trim(),
             recipientSlug = request.RecipientSlug,
             senderSlug = sender.Slug,
+            senderEmail,
+            senderName,
             attachmentCount = attachments.Count,
         });
 

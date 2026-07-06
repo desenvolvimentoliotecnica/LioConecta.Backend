@@ -20,9 +20,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Identity.Web;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Events;
+using System.Text;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -45,8 +46,10 @@ try
         .WriteTo.Console());
 
     var useDevAuth = settingsProvider.GetBool(AppSettingKeys.AuthUseDevAuth, builder.Environment.IsDevelopment());
-    var azureClientId = settingsProvider.GetString(AppSettingKeys.AzureAdClientId);
-    var useDevAuthentication = string.IsNullOrWhiteSpace(azureClientId);
+    var authProvider = settingsProvider.GetString(AppSettingKeys.AuthProvider, "ldap").Trim().ToLowerInvariant();
+    var useDevAuthentication = builder.Environment.IsEnvironment("Testing")
+        || (authProvider == "dev" && builder.Environment.IsDevelopment());
+    var jwtSigningKey = settingsProvider.GetString(AppSettingKeys.AuthJwtSigningKey);
 
     builder.Services.AddSingleton<IAppSettingsProvider>(settingsProvider);
     builder.Services.AddApplication();
@@ -72,6 +75,11 @@ try
             options.DefaultAuthenticateScheme = DevAuthDefaults.SchemeName;
             options.DefaultChallengeScheme = DevAuthDefaults.SchemeName;
         }
+        else
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        }
     });
 
     if (useDevAuthentication)
@@ -82,23 +90,21 @@ try
     }
     else
     {
-        var azureConfig = BuildAzureAdConfiguration(settingsProvider);
-        authenticationBuilder.AddMicrosoftIdentityWebApi(azureConfig);
-
-        if (settingsProvider.GetBool(AppSettingKeys.ObservabilityAuthAuditEnabled, true))
+        if (string.IsNullOrWhiteSpace(jwtSigningKey))
         {
-            builder.Services.Configure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+            throw new InvalidOperationException("auth.jwt_signing_key é obrigatório quando auth.provider=ldap.");
+        }
+
+        authenticationBuilder.AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = PortalJwtService.BuildValidationParameters(jwtSigningKey);
+
+            if (settingsProvider.GetBool(AppSettingKeys.ObservabilityAuthAuditEnabled, true))
             {
-                var existing = options.Events ?? new JwtBearerEvents();
                 options.Events = new JwtBearerEvents
                 {
                     OnAuthenticationFailed = async context =>
                     {
-                        if (existing.OnAuthenticationFailed is not null)
-                        {
-                            await existing.OnAuthenticationFailed(context);
-                        }
-
                         var recorder = context.HttpContext.RequestServices
                             .GetRequiredService<IAccessAuditRecorder>();
                         var correlationId = ResolveAuthCorrelationId(context.HttpContext);
@@ -119,11 +125,6 @@ try
                     },
                     OnTokenValidated = async context =>
                     {
-                        if (existing.OnTokenValidated is not null)
-                        {
-                            await existing.OnTokenValidated(context);
-                        }
-
                         var recorder = context.HttpContext.RequestServices
                             .GetRequiredService<IAccessAuditRecorder>();
                         var correlationId = ResolveAuthCorrelationId(context.HttpContext);
@@ -144,8 +145,8 @@ try
                             Path: context.Request.Path.Value));
                     },
                 };
-            });
-        }
+            }
+        });
     }
 
     builder.Services.AddAuthorization(options =>
@@ -164,7 +165,7 @@ try
         options.AddPolicy(AuthPolicies.RequireKioskReader, policy =>
             policy.RequireRole(UserRole.KioskReader.ToString()));
 
-        if (useDevAuth && builder.Environment.IsDevelopment())
+        if ((useDevAuth && builder.Environment.IsDevelopment()) || builder.Environment.IsEnvironment("Testing"))
         {
             options.FallbackPolicy = null;
         }
@@ -315,7 +316,8 @@ try
         await seedDataService.EnsureSeededAsync();
     }
 
-    Log.Information("LioConecta API started. DevAuth={DevAuth}, DevAuthentication={DevAuthentication}",
+    Log.Information("LioConecta API started. AuthProvider={AuthProvider}, DevAuth={DevAuth}, DevAuthentication={DevAuthentication}",
+        authProvider,
         useDevAuth,
         useDevAuthentication);
 
@@ -353,10 +355,13 @@ static async Task<IAppSettingsProvider> CreateSettingsProviderAsync(IWebHostEnvi
 
 static Dictionary<string, string> BuildTestingDefaults()
 {
-    return AppSettingCatalog.All.ToDictionary(
+    var defaults = AppSettingCatalog.All.ToDictionary(
         d => d.Key,
         d => d.DefaultValue,
         StringComparer.OrdinalIgnoreCase);
+
+    defaults[AppSettingKeys.AuthProvider] = "dev";
+    return defaults;
 }
 
 static Microsoft.Extensions.Configuration.IConfiguration BuildAzureAdConfiguration(IAppSettingsProvider settings)

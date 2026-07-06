@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace LioConecta.IntegrationTests;
 
-public sealed class LioConectaWebApplicationFactory : WebApplicationFactory<Program>
+public class LioConectaWebApplicationFactory : WebApplicationFactory<Program>
 {
     private readonly string _databaseName = $"LioConectaTests_{Guid.NewGuid():N}";
 

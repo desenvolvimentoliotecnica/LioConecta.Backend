@@ -58,3 +58,6 @@ publish/
 Thumbs.db
 
 App_Data/
+
+.deploy/
+

@@ -20,6 +20,7 @@ public sealed class FeedRepository(AppDbContext db) : IFeedRepository
             .Include(p => p.Comments).ThenInclude(c => c.Author)
             .Include(p => p.Reactions).ThenInclude(r => r.Person)
             .AsNoTracking()
+            .Where(p => !p.IsDeleted)
             .AsQueryable();
 
         if (cursorCreatedAt.HasValue && cursorId.HasValue)
@@ -55,7 +56,22 @@ public sealed class FeedRepository(AppDbContext db) : IFeedRepository
             .Include(p => p.Comments).ThenInclude(c => c.Author)
             .Include(p => p.Reactions).ThenInclude(r => r.Person)
             .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted, cancellationToken);
+
+    public async Task<bool> SoftDeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var updated = await db.FeedPosts
+            .Where(p => p.Id == id && !p.IsDeleted)
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(p => p.IsDeleted, true)
+                    .SetProperty(p => p.DeletedAt, now)
+                    .SetProperty(p => p.UpdatedAt, now),
+                cancellationToken);
+
+        return updated > 0;
+    }
 
     public async Task AddPostAsync(FeedPost post, CancellationToken cancellationToken = default)
     {
@@ -148,7 +164,7 @@ public sealed class FeedRepository(AppDbContext db) : IFeedRepository
         db.FeedPosts
             .Include(p => p.Author)
             .AsNoTracking()
-            .Where(p => p.Type == PostType.News)
+            .Where(p => p.Type == PostType.News && !p.IsDeleted)
             .OrderByDescending(p => p.CreatedAt)
             .Take(Math.Clamp(limit, 1, 100))
             .ToListAsync(cancellationToken)

@@ -10,7 +10,7 @@ public static class WorkerRegistry
         new(
             WorkerKeys.TotvsEmployeeSync,
             "Sync colaboradores TOTVS",
-            "Sincroniza colaboradores da API REST TOTVS com o cadastro de pessoas.",
+            "Enriquece pessoas com matrícula e data de admissão consultando PFUNC no SQL Server TOTVS RM (corporerm).",
             AppSettingKeys.WorkersTotvsSyncIntervalMinutes,
             30),
         new(

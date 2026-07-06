@@ -4,6 +4,7 @@ using LioConecta.Application.Interfaces.Integrations;
 using LioConecta.Application.Interfaces.Repositories;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Application.Mapping;
+using LioConecta.Domain.Entities;
 
 namespace LioConecta.Application.Services;
 
@@ -261,9 +262,90 @@ public sealed class PersonService(
     public async Task<OrgChartDto> GetOrgChartAsync(CancellationToken cancellationToken = default)
     {
         var people = await personRepository.GetOrgChartPeopleAsync(cancellationToken);
-        var nodes = people.Select(PersonMapper.ToOrgChartNode).ToList();
-        var rootId = people.FirstOrDefault(p => p.ManagerId is null)?.Id;
-        return new OrgChartDto(nodes, rootId);
+        var chartPeople = people.Where(p => p.ManagerId is not null).ToList();
+        var unassignedPeople = people.Where(p => p.ManagerId is null).ToList();
+        var idSet = chartPeople.Select(p => p.Id).ToHashSet();
+        var nodes = chartPeople
+            .Select(p =>
+            {
+                var isOrphan = !idSet.Contains(p.ManagerId!.Value);
+                return PersonMapper.ToOrgChartNode(p, isOrphan);
+            })
+            .ToList();
+
+        var unassignedNodes = unassignedPeople
+            .Select(p => PersonMapper.ToOrgChartNode(p))
+            .ToList();
+
+        var rootIds = chartPeople
+            .Where(p => !idSet.Contains(p.ManagerId!.Value))
+            .Select(p => p.Id)
+            .ToList();
+
+        DateTimeOffset? syncedAt = null;
+        var syncedRaw = settingsProvider.GetString(AppSettingKeys.GraphDirectoryLastSyncUtc);
+        if (DateTimeOffset.TryParse(syncedRaw, out var parsed))
+        {
+            syncedAt = parsed;
+        }
+
+        return new OrgChartDto(
+            nodes,
+            rootIds.FirstOrDefault(),
+            people.Count,
+            rootIds,
+            nodes.Count(n => n.IsOrphan),
+            syncedAt,
+            unassignedNodes,
+            unassignedNodes.Count);
+    }
+
+    public async Task<PersonHierarchyDto?> GetHierarchyAsync(
+        string slug,
+        CancellationToken cancellationToken = default)
+    {
+        var person = await personRepository.GetBySlugAsync(slug, cancellationToken);
+        if (person is null)
+        {
+            return null;
+        }
+
+        var chain = await BuildManagerChainAsync(person, cancellationToken);
+        var peers = person.ManagerId is null
+            ? []
+            : await personRepository.GetPeersAsync(person.Id, person.ManagerId.Value, cancellationToken);
+        var directReports = await personRepository.GetDirectReportsAsync(person.Id, cancellationToken);
+
+        return new PersonHierarchyDto(
+            person.Manager is null ? null : PersonMapper.ToHierarchyMember(person.Manager),
+            chain.Select(PersonMapper.ToHierarchyMember).ToList(),
+            peers.Select(PersonMapper.ToHierarchyMember).ToList(),
+            directReports.Select(PersonMapper.ToHierarchyMember).ToList(),
+            directReports.Count);
+    }
+
+    private async Task<IReadOnlyList<Person>> BuildManagerChainAsync(
+        Person person,
+        CancellationToken cancellationToken)
+    {
+        var chain = new List<Person>();
+        var visited = new HashSet<Guid> { person.Id };
+        var managerId = person.ManagerId;
+
+        while (managerId is not null && !visited.Contains(managerId.Value))
+        {
+            var manager = await personRepository.GetByIdAsync(managerId.Value, cancellationToken);
+            if (manager is null)
+            {
+                break;
+            }
+
+            visited.Add(manager.Id);
+            chain.Insert(0, manager);
+            managerId = manager.ManagerId;
+        }
+
+        return chain;
     }
 
     public async Task<PersonDirectoryDto> GetDirectoryAsync(
@@ -273,11 +355,11 @@ public sealed class PersonService(
     {
         var people = await personRepository.GetDirectoryPeopleAsync(query, departmentId, cancellationToken);
         var departments = people
-            .GroupBy(p => PersonSlugHelper.DepartmentIdFromName(p.Department?.Name ?? p.Dept))
-            .OrderBy(group => group.First().Department?.Name ?? group.First().Dept ?? "Sem departamento")
+            .GroupBy(p => PersonSlugHelper.DepartmentIdFromName(PersonDepartmentHelper.GetName(p)))
+            .OrderBy(group => PersonDepartmentHelper.GetName(group.First()) ?? "Sem departamento")
             .Select(group =>
             {
-                var name = group.First().Department?.Name ?? group.First().Dept ?? "Sem departamento";
+                var name = PersonDepartmentHelper.GetName(group.First()) ?? "Sem departamento";
                 var entries = group
                     .OrderBy(p => p.Name)
                     .Select(PersonMapper.ToDirectoryEntry)

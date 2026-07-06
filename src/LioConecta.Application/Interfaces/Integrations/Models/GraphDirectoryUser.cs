@@ -22,6 +22,8 @@ public sealed class GraphDirectoryUser
 
     public string? EmployeeId { get; init; }
 
+    public DateOnly? EmployeeHireDate { get; init; }
+
     public bool AccountEnabled { get; init; } = true;
 
     public Guid? ManagerObjectId { get; init; }

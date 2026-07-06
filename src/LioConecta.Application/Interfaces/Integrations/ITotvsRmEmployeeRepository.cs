@@ -7,4 +7,7 @@ public interface ITotvsRmEmployeeRepository
     Task<RmEmployeeProfileRecord?> GetProfileByChapaAsync(
         string chapa,
         CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<RmEmployeeAdmissionRecord>> GetActiveAdmissionsAsync(
+        CancellationToken cancellationToken);
 }

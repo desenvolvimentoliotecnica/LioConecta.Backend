@@ -29,11 +29,22 @@ public sealed class DevGraphAdapter : IGraphAdapter
                 JobTitle = "Analista de Produto",
                 Department = "Produto",
                 ManagerObjectId = Guid.Parse("11111111-1111-1111-1111-111111111101"),
+                EmployeeHireDate = new DateOnly(2026, 6, 15),
                 AccountEnabled = true,
             },
             new()
             {
                 ObjectId = Guid.Parse("11111111-1111-1111-1111-111111111103"),
+                DisplayName = "Leonardo Sabino Mendes",
+                UserPrincipalName = "leonardo.mendes@liotecnica.com.br",
+                Mail = "leonardo.mendes@liotecnica.com.br",
+                JobTitle = "Desenvolvedor Sr.",
+                Department = "Sistemas",
+                AccountEnabled = true,
+            },
+            new()
+            {
+                ObjectId = Guid.Parse("11111111-1111-1111-1111-111111111104"),
                 DisplayName = "Patricia Nunes",
                 UserPrincipalName = "patricia.nunes@liotecnica.com.br",
                 Mail = "patricia.nunes@liotecnica.com.br",

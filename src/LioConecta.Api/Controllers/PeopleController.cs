@@ -99,6 +99,15 @@ public sealed class PeopleController(
         return Ok(upcoming);
     }
 
+    [HttpGet("{slug}/hierarchy")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PersonHierarchyDto>> GetHierarchy(string slug, CancellationToken cancellationToken)
+    {
+        var hierarchy = await personService.GetHierarchyAsync(slug, cancellationToken);
+        return hierarchy is null ? NotFound() : Ok(hierarchy);
+    }
+
     [HttpGet("{slug}/profile")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

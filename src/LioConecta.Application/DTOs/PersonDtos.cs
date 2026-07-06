@@ -36,7 +36,9 @@ public sealed record PersonDirectoryEntryDto(
     string? DepartmentName,
     string? Location,
     string? ManagerSlug,
-    bool IsActive);
+    bool IsActive,
+    DateOnly? HireDate = null,
+    string? Phone = null);
 
 public sealed record PersonDirectoryDepartmentDto(
     string Id,
@@ -150,6 +152,20 @@ public sealed record PersonProfileDto(
     IReadOnlyDictionary<string, object?>? PersonalData,
     ViewerContext ViewerContext);
 
+public sealed record PersonHierarchyMemberDto(
+    string Slug,
+    string Name,
+    string? Title,
+    string? PhotoUrl,
+    string? DepartmentName);
+
+public sealed record PersonHierarchyDto(
+    PersonHierarchyMemberDto? Manager,
+    IReadOnlyList<PersonHierarchyMemberDto> Chain,
+    IReadOnlyList<PersonHierarchyMemberDto> Peers,
+    IReadOnlyList<PersonHierarchyMemberDto> DirectReports,
+    int DirectReportsCount);
+
 public sealed record OrgChartNodeDto(
     Guid Id,
     string? OrgChartId,
@@ -159,8 +175,20 @@ public sealed record OrgChartNodeDto(
     string? PhotoUrl,
     string? DepartmentName,
     Guid? ManagerId,
-    IReadOnlyList<string> Tags);
+    IReadOnlyList<string> Tags,
+    bool IsOrphan = false,
+    string? Email = null,
+    string? TeamsUpn = null,
+    string? Phone = null,
+    string? Location = null,
+    DateOnly? HireDate = null);
 
 public sealed record OrgChartDto(
     IReadOnlyList<OrgChartNodeDto> Nodes,
-    Guid? RootId);
+    Guid? RootId,
+    int Total,
+    IReadOnlyList<Guid> RootIds,
+    int OrphanCount,
+    DateTimeOffset? SyncedAtUtc,
+    IReadOnlyList<OrgChartNodeDto> UnassignedNodes,
+    int UnassignedCount);

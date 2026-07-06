@@ -11,6 +11,8 @@ public interface IFeedService
 
     Task<FeedPostDto> CreatePostAsync(CreatePostRequest request, CancellationToken cancellationToken = default);
 
+    Task DeletePostAsync(Guid postId, CancellationToken cancellationToken = default);
+
     Task<CommentDto> AddCommentAsync(Guid postId, CreateCommentRequest request, CancellationToken cancellationToken = default);
 
     Task ReactAsync(Guid postId, ReactionRequest request, CancellationToken cancellationToken = default);

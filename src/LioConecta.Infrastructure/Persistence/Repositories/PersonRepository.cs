@@ -90,9 +90,30 @@ public sealed class PersonRepository(AppDbContext db) : IPersonRepository
 
         return people
             .Where(p => Application.Common.PersonSlugHelper.DepartmentIdFromName(
-                p.Department?.Name ?? p.Dept) == departmentId)
+                Application.Common.PersonDepartmentHelper.GetName(p)) == departmentId)
             .ToList();
     }
+
+    public async Task<IReadOnlyList<Person>> GetPeersAsync(
+        Guid personId,
+        Guid managerId,
+        CancellationToken cancellationToken = default) =>
+        await db.People
+            .AsNoTracking()
+            .Include(p => p.Department)
+            .Where(p => p.IsActive && p.ManagerId == managerId && p.Id != personId)
+            .OrderBy(p => p.Name)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<Person>> GetDirectReportsAsync(
+        Guid personId,
+        CancellationToken cancellationToken = default) =>
+        await db.People
+            .AsNoTracking()
+            .Include(p => p.Department)
+            .Where(p => p.IsActive && p.ManagerId == personId)
+            .OrderBy(p => p.Name)
+            .ToListAsync(cancellationToken);
 
     public async Task AddAsync(Person person, CancellationToken cancellationToken = default)
     {
@@ -104,5 +125,21 @@ public sealed class PersonRepository(AppDbContext db) : IPersonRepository
     {
         db.People.Update(person);
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Person>> GetByAzureObjectIdsAsync(
+        IEnumerable<Guid> objectIds,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = objectIds.Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        return await db.People
+            .AsNoTracking()
+            .Where(p => p.AzureAdObjectId != null && ids.Contains(p.AzureAdObjectId.Value))
+            .ToListAsync(cancellationToken);
     }
 }

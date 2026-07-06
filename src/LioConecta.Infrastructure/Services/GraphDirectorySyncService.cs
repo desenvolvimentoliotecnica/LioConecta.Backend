@@ -69,7 +69,8 @@ public sealed class GraphDirectorySyncService(
             person.Name = user.DisplayName;
             person.Email = email;
             person.Title = user.JobTitle;
-            person.Dept = user.Department;
+            person.Dept = string.IsNullOrWhiteSpace(user.Department) ? null : user.Department.Trim();
+            person.DepartmentId = null;
             person.TeamsUpn = user.UserPrincipalName;
             person.Phone = FirstNonEmpty(user.MobilePhone, user.BusinessPhones.FirstOrDefault());
             person.Location = user.OfficeLocation;
@@ -78,6 +79,11 @@ public sealed class GraphDirectorySyncService(
             if (!string.IsNullOrWhiteSpace(user.EmployeeId) && string.IsNullOrWhiteSpace(person.EmployeeId))
             {
                 person.EmployeeId = user.EmployeeId.Trim();
+            }
+
+            if (user.EmployeeHireDate is not null)
+            {
+                person.HireDate = user.EmployeeHireDate;
             }
 
             person.UpdatedAt = DateTimeOffset.UtcNow;

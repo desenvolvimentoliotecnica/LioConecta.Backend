@@ -18,7 +18,20 @@ public interface IPersonRepository
         string? departmentId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Person>> GetPeersAsync(
+        Guid personId,
+        Guid managerId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Person>> GetDirectReportsAsync(
+        Guid personId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(Person person, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(Person person, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Person>> GetByAzureObjectIdsAsync(
+        IEnumerable<Guid> objectIds,
+        CancellationToken cancellationToken = default);
 }

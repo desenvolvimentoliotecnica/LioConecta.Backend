@@ -9,6 +9,8 @@ public interface IFeedRepository
 
     Task<FeedPost?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
+    Task<bool> SoftDeleteAsync(Guid id, CancellationToken cancellationToken = default);
+
     Task AddPostAsync(FeedPost post, CancellationToken cancellationToken = default);
 
     Task AddPostWithPollAsync(FeedPost post, Poll poll, CancellationToken cancellationToken = default);

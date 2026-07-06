@@ -17,6 +17,10 @@ public class FeedPost : BaseEntity
 
     public bool IsPinned { get; set; }
 
+    public bool IsDeleted { get; set; }
+
+    public DateTimeOffset? DeletedAt { get; set; }
+
     public ICollection<Comment> Comments { get; set; } = [];
 
     public ICollection<Reaction> Reactions { get; set; } = [];

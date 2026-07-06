@@ -47,6 +47,27 @@ public sealed class FeedController(
         return CreatedAtAction(nameof(GetPost), new { id = post.Id }, post);
     }
 
+    [HttpDelete("posts/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> DeletePost(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await feedService.DeletePostAsync(id, cancellationToken);
+            return NoContent();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = exception.Message });
+        }
+    }
+
     [HttpPost("posts/media/upload")]
     [ProducesResponseType(typeof(UploadPostMediaResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

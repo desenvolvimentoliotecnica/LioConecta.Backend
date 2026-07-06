@@ -33,23 +33,23 @@ Com `Integrations:UseDevAdapters=true` (padrão em Development), os adapters ret
 
 **Adapter:** `IGlpiAdapter` → `GlpiAdapter` / `DevGlpiAdapter`
 
-| Operação | Quando |
-|----------|--------|
-| `CreateTicketAsync` | Submissão de solicitação TI/Facilities |
-| `GetTicketStatusAsync` | Polling de status |
+| Operação | Endpoint BFF | Quando |
+|----------|--------------|--------|
+| `SearchTicketsByRequesterAsync` | `GET /api/v1/ti/help-desk/tickets/mine` | Acompanhar chamados do usuário logado |
+| `GetTicketDetailAsync` | `GET /api/v1/ti/help-desk/tickets/{id}` | Detalhe do chamado |
+| `CreateTicketAsync` | `POST /api/v1/ti/help-desk/tickets` | Abertura de chamado |
+| Teste de conexão | `POST /api/v1/admin/glpi/test` | Admin — valida `initSession` |
 
-**Config:**
-```json
-{
-  "Glpi": {
-    "BaseUrl": "https://glpi.internal/apirest.php",
-    "AppToken": "<token>",
-    "UserToken": "<token>"
-  }
-}
-```
+**Config (portal `/admin/configuracoes-backend`, categoria GLPI — persistido em `app_settings`):**
 
-Requer GLPI 10+ com API REST habilitada.
+| Chave | Descrição |
+|-------|-----------|
+| `glpi.base_url` | URL da API (ex.: `https://servicedesk.liotecnica.com.br/api.php/v1`) |
+| `glpi.portal_url` | URL do portal web para links |
+| `glpi.app_token` | App-Token |
+| `glpi.user_token` | User-Token do usuário de serviço |
+
+Credenciais lidas em runtime via `IAppSettingsProvider` (sem `appsettings.json`). Desative `integrations.use_dev_adapters` e reinicie a API para usar o adapter real.
 
 ## Microsoft Graph
 
@@ -61,7 +61,7 @@ Requer GLPI 10+ com API REST habilitada.
 | `GetUserPhotoBytesAsync` | Worker `graph-directory-sync` → cache local `/media/people/{slug}.jpg` |
 | `GetDocumentsAsync` | GraphSyncWorker → módulo Documentos |
 | `GetCalendarEventsAsync` | GraphSyncWorker → Calendário |
-| `GetPlannerTasksAsync` | Activities API |
+| `GetPlannerTasksAsync` | Legado — ver **Microsoft Planner** abaixo |
 | `GetUserPresenceAsync` | Chat presença |
 | `SyncUserPhotosAsync` | Fotos de perfil |
 
@@ -76,9 +76,33 @@ Requer GLPI 10+ com API REST habilitada.
 }
 ```
 
-Permissões Graph: `User.Read.All` (diretório e organograma), `User.ReadBasic.All` (fotos, se aplicável), `User.Read`, `Calendars.Read`, `Tasks.Read`, `Sites.Read.All`, `Presence.Read.All`.
+Permissões Graph: `User.Read.All` (diretório e organograma), `User.ReadBasic.All` (fotos, se aplicável), `User.Read`, `Calendars.Read`, `Tasks.ReadWrite.All` (Planner — application), `Sites.Read.All`, `Presence.Read.All`.
 
 **Worker `graph-directory-sync`:** sincroniza usuários `@liotecnica.com.br` do Entra ID para `people` (identidade primária). O worker `totvs-employee-sync` enriquece `EmployeeId`, `BirthDate` e `HireDate` sem sobrescrever dados Graph. Disparo manual: `POST /api/v1/admin/workers/graph-directory-sync/trigger`. Intervalo padrão: 60 min (`workers.graph_directory_sync_interval_minutes`).
+
+## Microsoft Planner
+
+**Adapter:** `IPlannerAdapter` → `GraphPlannerAdapter` / `DevPlannerAdapter`
+
+| Operação | Endpoint BFF |
+|----------|--------------|
+| Listar tarefas do plano | `GET /api/v1/planner/tasks` |
+| Listar colunas (buckets) | `GET /api/v1/planner/buckets` |
+| Criar tarefa (atribuída ao usuário logado) | `POST /api/v1/planner/tasks` |
+| Atualizar tarefa (somente assignee) | `PATCH /api/v1/planner/tasks/{id}` |
+| Excluir tarefa (somente assignee) | `DELETE /api/v1/planner/tasks/{id}` |
+| Teste admin | `POST /api/v1/admin/planner/test` |
+
+**Config (`app_settings`, categoria `planner` — reutiliza credenciais `graph.*`):**
+
+| Chave | Descrição |
+|-------|-----------|
+| `planner.enabled` | Liga integração em Minhas Atividades |
+| `planner.plan_id` | GUID do plano da equipe |
+| `planner.default_bucket_id` | Coluna padrão para novas tarefas |
+| `planner.plan_title` | Cache do nome do plano (preenchido no teste) |
+
+**Azure AD:** conceder `Tasks.ReadWrite.All` (Application) com admin consent na mesma app registration do Graph sync.
 
 ## Resiliência
 

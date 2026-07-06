@@ -94,6 +94,29 @@ public sealed class FeedService(
         return FeedMapper.ToDto(saved, authorId);
     }
 
+    public async Task DeletePostAsync(Guid postId, CancellationToken cancellationToken = default)
+    {
+        var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
+        var post = await feedRepository.GetByIdAsync(postId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Post {postId} was not found.");
+
+        if (post.AuthorId != personId)
+        {
+            throw new UnauthorizedAccessException("Você só pode excluir publicações criadas por você.");
+        }
+
+        if (post.Type is PostType.Comunicado or PostType.News or PostType.MoodCheck or PostType.Celebration)
+        {
+            throw new UnauthorizedAccessException("Este tipo de publicação não pode ser excluído pelo feed.");
+        }
+
+        var deleted = await feedRepository.SoftDeleteAsync(postId, cancellationToken);
+        if (!deleted)
+        {
+            throw new KeyNotFoundException($"Post {postId} was not found.");
+        }
+    }
+
     private async Task<FeedPostDto> CreatePollPostAsync(
         CreatePostRequest request,
         Guid authorId,

@@ -20,13 +20,21 @@ public static class AppSettingKeys
     public const string TotvsApiKey = "totvs.api_key";
 
     public const string GlpiBaseUrl = "glpi.base_url";
+    public const string GlpiPortalUrl = "glpi.portal_url";
     public const string GlpiAppToken = "glpi.app_token";
     public const string GlpiUserToken = "glpi.user_token";
+    public const string GlpiProfileId = "glpi.profile_id";
 
     public const string GraphTenantId = "graph.tenant_id";
     public const string GraphClientId = "graph.client_id";
     public const string GraphClientSecret = "graph.client_secret";
     public const string GraphDirectoryLastSyncUtc = "graph.directory_last_sync_utc";
+
+    public const string PlannerEnabled = "planner.enabled";
+    public const string PlannerPlanId = "planner.plan_id";
+    public const string PlannerDefaultBucketId = "planner.default_bucket_id";
+    public const string PlannerPlanTitle = "planner.plan_title";
+    public const string PlannerLastSyncUtc = "planner.last_sync_utc";
 
     public const string WorkersTotvsSyncIntervalMinutes = "workers.totvs_sync_interval_minutes";
     public const string WorkersGraphSyncIntervalMinutes = "workers.graph_sync_interval_minutes";

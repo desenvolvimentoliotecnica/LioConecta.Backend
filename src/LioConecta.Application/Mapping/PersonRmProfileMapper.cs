@@ -1,4 +1,5 @@
 using System.Text.Json;
+using LioConecta.Application.Common;
 using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Integrations.Models;
 using LioConecta.Application.Services;
@@ -36,7 +37,9 @@ public static class PersonRmProfileMapper
             showSensitive ? FirstNonEmpty(rm.Telefone, person.Phone) : null,
             location,
             person.PhotoUrl,
-            string.IsNullOrWhiteSpace(rm.SecaoDescricao) ? person.Department?.Name : rm.SecaoDescricao.Trim(),
+            string.IsNullOrWhiteSpace(rm.SecaoDescricao)
+                ? PersonDepartmentHelper.GetName(person)
+                : rm.SecaoDescricao.Trim(),
             string.IsNullOrWhiteSpace(rm.GestorNome) ? person.Manager?.Name : rm.GestorNome.Trim(),
             person.Manager?.Slug,
             string.IsNullOrWhiteSpace(person.TeamsUpn) ? person.Email : person.TeamsUpn,

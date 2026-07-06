@@ -24,6 +24,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             await EnsurePollSeedAsync(cancellationToken);
             await EnsureEmployeeIdsAsync(cancellationToken);
             await EnsureDevTestUserProfileAsync(cancellationToken);
+            await EnsureGraphDirectoryDepartmentLinksAsync(cancellationToken);
             await EnsureTotvsRmConfigurationAsync(cancellationToken);
             await EnsureEmailConfigurationDevDefaultsAsync(cancellationToken);
             logger.LogDebug("Database already contains people; skipping seed.");
@@ -99,7 +100,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
                 "Leonardo Sabino Mendes",
                 title: null,
                 dept: null,
-                SeedIds.DeptProduto,
+                departmentId: null,
                 "leonardo.mendes@liotecnica.com.br",
                 phone: null,
                 location: null,
@@ -600,6 +601,12 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             changed = true;
         }
 
+        if (devUser.DepartmentId is not null)
+        {
+            devUser.DepartmentId = null;
+            changed = true;
+        }
+
         if (!string.IsNullOrWhiteSpace(devUser.Location))
         {
             devUser.Location = null;
@@ -644,6 +651,44 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
         devUser.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Aligned dev test user profile to Leonardo Sabino Mendes ({Slug}).", devUser.Slug);
+    }
+
+    private async Task EnsureGraphDirectoryDepartmentLinksAsync(CancellationToken cancellationToken)
+    {
+        var people = await db.People
+            .Include(p => p.Department)
+            .Where(p => p.DepartmentId != null)
+            .ToListAsync(cancellationToken);
+
+        if (people.Count == 0)
+        {
+            return;
+        }
+
+        var changed = false;
+        foreach (var person in people)
+        {
+            var shouldClear = person.Dept is null
+                || (person.Department is not null
+                    && !string.Equals(person.Dept, person.Department.Name, StringComparison.OrdinalIgnoreCase));
+
+            if (!shouldClear)
+            {
+                continue;
+            }
+
+            person.DepartmentId = null;
+            person.UpdatedAt = DateTimeOffset.UtcNow;
+            changed = true;
+        }
+
+        if (!changed)
+        {
+            return;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Cleared stale department FK links so directory follows Graph Dept field.");
     }
 
     private async Task EnsureTotvsRmConfigurationAsync(CancellationToken cancellationToken)
@@ -733,7 +778,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
         string name,
         string? title,
         string? dept,
-        Guid departmentId,
+        Guid? departmentId,
         string email,
         string? phone,
         string? location,

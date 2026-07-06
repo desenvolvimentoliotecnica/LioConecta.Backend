@@ -1,4 +1,5 @@
 using System.Text.Json;
+using LioConecta.Application.Common;
 using LioConecta.Application.DTOs;
 using LioConecta.Domain.Entities;
 using LioConecta.Domain.Enums;
@@ -139,7 +140,7 @@ public static class PersonMapper
             person.Name,
             person.Title,
             person.PhotoUrl,
-            person.Department?.Name ?? person.Dept,
+            PersonDepartmentHelper.GetName(person),
             person.Location,
             person.Manager?.Slug,
             person.IsActive,
@@ -155,10 +156,12 @@ public static class PersonMapper
             person.PhotoUrl,
             person.Email,
             person.TeamsUpn,
-            person.Department?.Name ?? person.Dept,
+            PersonDepartmentHelper.GetName(person),
             person.Location,
             person.Manager?.Slug,
-            person.IsActive);
+            person.IsActive,
+            person.HireDate,
+            person.Phone);
 
     public static MeDto ToMe(Person person, IReadOnlyList<UserRole> roles)
         => new(
@@ -168,7 +171,7 @@ public static class PersonMapper
             person.Email,
             person.Title,
             person.PhotoUrl,
-            person.Department?.Name,
+            PersonDepartmentHelper.GetName(person),
             roles);
 
     public static PersonProfileDto ToProfile(Person person, ViewerContext viewerContext)
@@ -203,7 +206,7 @@ public static class PersonMapper
             showSensitive ? person.Phone : null,
             person.Location,
             person.PhotoUrl,
-            person.Department?.Name,
+            PersonDepartmentHelper.GetName(person),
             person.Manager?.Name,
             person.Manager?.Slug,
             person.TeamsUpn,
@@ -218,17 +221,34 @@ public static class PersonMapper
             viewerContext);
     }
 
-    public static OrgChartNodeDto ToOrgChartNode(Person person)
+    public static OrgChartNodeDto ToOrgChartNode(Person person, bool isOrphan = false)
         => new(
             person.Id,
             person.OrgChartId,
             person.Slug,
             person.Name,
             person.Title,
-            person.PhotoUrl,
-            person.Department?.Name ?? person.Dept,
+            ResolvePhotoUrl(person),
+            PersonDepartmentHelper.GetName(person),
             person.ManagerId,
-            JsonMapper.DeserializeStringList(person.TagsJson));
+            JsonMapper.DeserializeStringList(person.TagsJson),
+            isOrphan,
+            person.Email,
+            person.TeamsUpn,
+            person.Phone,
+            person.Location,
+            person.HireDate);
+
+    public static PersonHierarchyMemberDto ToHierarchyMember(Person person)
+        => new(
+            person.Slug,
+            person.Name,
+            person.Title,
+            ResolvePhotoUrl(person),
+            PersonDepartmentHelper.GetName(person));
+
+    private static string? ResolvePhotoUrl(Person person) =>
+        string.IsNullOrWhiteSpace(person.PhotoUrl) ? null : person.PhotoUrl.Trim();
 
     private static string MaskEmail(string email)
     {

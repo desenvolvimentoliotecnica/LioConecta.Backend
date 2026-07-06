@@ -26,7 +26,7 @@ public sealed class GraphAdapter(
     ILogger<GraphAdapter> logger) : IGraphAdapter
 {
     private const string DirectoryUserSelect =
-        "id,displayName,userPrincipalName,mail,jobTitle,department,mobilePhone,businessPhones,officeLocation,employeeId,accountEnabled";
+        "id,displayName,userPrincipalName,mail,jobTitle,department,mobilePhone,businessPhones,officeLocation,employeeId,employeeHireDate,accountEnabled";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -166,9 +166,34 @@ public sealed class GraphAdapter(
             BusinessPhones = businessPhones,
             OfficeLocation = ReadString(item, "officeLocation"),
             EmployeeId = ReadString(item, "employeeId"),
+            EmployeeHireDate = ReadDateOnly(item, "employeeHireDate"),
             AccountEnabled = accountEnabled,
             ManagerObjectId = managerObjectId,
         };
+    }
+
+    private static DateOnly? ReadDateOnly(JsonElement item, string propertyName)
+    {
+        if (!item.TryGetProperty(propertyName, out var value)
+            || value.ValueKind != JsonValueKind.String)
+        {
+            return null;
+        }
+
+        var raw = value.GetString();
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
+        if (DateOnly.TryParse(raw, out var dateOnly))
+        {
+            return dateOnly;
+        }
+
+        return DateTimeOffset.TryParse(raw, out var dateTimeOffset)
+            ? DateOnly.FromDateTime(dateTimeOffset.Date)
+            : null;
     }
 
     private static bool BelongsToDomain(string? upn, string? mail, string domain)

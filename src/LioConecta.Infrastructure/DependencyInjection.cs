@@ -88,13 +88,6 @@ public static class DependencyInjection
             ApiKey = settings.GetString(AppSettingKeys.TotvsApiKey),
         }));
 
-        services.AddSingleton<IOptions<GlpiOptions>>(_ => Options.Create(new GlpiOptions
-        {
-            BaseUrl = settings.GetString(AppSettingKeys.GlpiBaseUrl),
-            AppToken = settings.GetString(AppSettingKeys.GlpiAppToken),
-            UserToken = settings.GetString(AppSettingKeys.GlpiUserToken),
-        }));
-
         services.AddSingleton<IOptions<GraphOptions>>(_ => Options.Create(new GraphOptions
         {
             TenantId = settings.GetString(AppSettingKeys.GraphTenantId),
@@ -102,11 +95,16 @@ public static class DependencyInjection
             ClientSecret = settings.GetString(AppSettingKeys.GraphClientSecret),
         }));
 
+        services.AddSingleton<GlpiSessionManager>();
+        services.AddSingleton<GlpiCredentialsResolver>();
+        services.AddSingleton<GlpiUserNameResolver>();
+
         if (settings.GetBool(AppSettingKeys.IntegrationsUseDevAdapters, true))
         {
             services.AddSingleton<ITotvsAdapter, DevTotvsAdapter>();
             services.AddSingleton<IGlpiAdapter, DevGlpiAdapter>();
             services.AddSingleton<IGraphAdapter, DevGraphAdapter>();
+            services.AddSingleton<IPlannerAdapter, DevPlannerAdapter>();
         }
         else
         {
@@ -116,18 +114,26 @@ public static class DependencyInjection
             services.AddHttpClient<ITotvsAdapter, TotvsAdapter>((sp, client) =>
             {
                 var options = sp.GetRequiredService<IOptions<TotvsOptions>>().Value;
-                client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
+                var baseUrl = string.IsNullOrWhiteSpace(options.BaseUrl)
+                    ? "http://127.0.0.1:9/"
+                    : options.BaseUrl.TrimEnd('/') + "/";
+                client.BaseAddress = new Uri(baseUrl);
             });
 
-            services.AddHttpClient<IGlpiAdapter, GlpiAdapter>((sp, client) =>
+            services.AddHttpClient<IGlpiAdapter, GlpiAdapter>(client =>
             {
-                var options = sp.GetRequiredService<IOptions<GlpiOptions>>().Value;
-                client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
+                client.Timeout = TimeSpan.FromSeconds(60);
             });
 
             services.AddHttpClient<IGraphAdapter, GraphAdapter>((sp, client) =>
             {
                 client.BaseAddress = new Uri("https://graph.microsoft.com/v1.0/");
+            }).AddHttpMessageHandler<GraphAuthDelegatingHandler>();
+
+            services.AddHttpClient<IPlannerAdapter, GraphPlannerAdapter>(client =>
+            {
+                client.BaseAddress = new Uri("https://graph.microsoft.com/v1.0/");
+                client.Timeout = TimeSpan.FromSeconds(90);
             }).AddHttpMessageHandler<GraphAuthDelegatingHandler>();
         }
 
@@ -156,8 +162,12 @@ public static class DependencyInjection
         services.AddScoped<IGraphSyncService, GraphSyncService>();
         services.AddScoped<IGraphDirectorySyncService, GraphDirectorySyncService>();
         services.AddScoped<IGraphConfigurationService, GraphConfigurationService>();
+        services.AddScoped<IPlannerConfigurationService, PlannerConfigurationService>();
+        services.AddScoped<IGlpiConfigurationService, GlpiConfigurationService>();
         services.AddScoped<IPersonPhotoStorageService, PersonPhotoStorageService>();
         services.AddScoped<GraphConnectionTester>();
+        services.AddScoped<PlannerConnectionTester>();
+        services.AddScoped<GlpiConnectionTester>();
         services.AddScoped<IWorkerRunRecorder, WorkerRunRecorder>();
         services.AddScoped<IWorkerTriggerService, WorkerTriggerService>();
 

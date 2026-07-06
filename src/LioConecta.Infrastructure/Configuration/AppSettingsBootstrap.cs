@@ -36,47 +36,70 @@ public sealed class AppSettingsSeeder(AppDbContext db)
     public async Task EnsureDefaultsAsync(string bootstrapConnection, CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
-        var existingKeys = await db.AppSettings
-            .AsNoTracking()
-            .Select(s => s.Key)
-            .ToListAsync(cancellationToken);
-
-        var existingSet = existingKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var toAdd = new List<AppSetting>();
+        var toUpdate = new List<AppSetting>();
+
+        var existingRows = await db.AppSettings.ToListAsync(cancellationToken);
+        var rowsByKey = existingRows.ToDictionary(r => r.Key, StringComparer.OrdinalIgnoreCase);
 
         foreach (var def in AppSettingCatalog.All)
         {
-            if (existingSet.Contains(def.Key))
+            if (!rowsByKey.TryGetValue(def.Key, out var row))
             {
+                var defaultValue = def.Key == AppSettingKeys.DatabaseDefaultConnection
+                    ? bootstrapConnection
+                    : def.DefaultValue;
+
+                toAdd.Add(new AppSetting
+                {
+                    Id = Guid.NewGuid(),
+                    Key = def.Key,
+                    Category = def.Category,
+                    Label = def.Label,
+                    Description = def.Description,
+                    Value = defaultValue,
+                    ValueType = def.ValueType,
+                    IsSecret = def.IsSecret,
+                    SortOrder = def.SortOrder,
+                    CreatedAt = now,
+                    UpdatedAt = now,
+                });
                 continue;
             }
 
-            var defaultValue = def.Key == AppSettingKeys.DatabaseDefaultConnection
-                ? bootstrapConnection
-                : def.DefaultValue;
-
-            toAdd.Add(new AppSetting
+            if (row.Label != def.Label
+                || row.Description != def.Description
+                || row.SortOrder != def.SortOrder
+                || row.ValueType != def.ValueType
+                || row.IsSecret != def.IsSecret
+                || row.Category != def.Category)
             {
-                Id = Guid.NewGuid(),
-                Key = def.Key,
-                Category = def.Category,
-                Label = def.Label,
-                Description = def.Description,
-                Value = defaultValue,
-                ValueType = def.ValueType,
-                IsSecret = def.IsSecret,
-                SortOrder = def.SortOrder,
-                CreatedAt = now,
-                UpdatedAt = now,
-            });
+                row.Label = def.Label;
+                row.Description = def.Description;
+                row.SortOrder = def.SortOrder;
+                row.ValueType = def.ValueType;
+                row.IsSecret = def.IsSecret;
+                row.Category = def.Category;
+                row.UpdatedAt = now;
+                toUpdate.Add(row);
+            }
         }
 
-        if (toAdd.Count == 0)
+        if (toAdd.Count == 0 && toUpdate.Count == 0)
         {
             return;
         }
 
-        db.AppSettings.AddRange(toAdd);
+        if (toAdd.Count > 0)
+        {
+            db.AppSettings.AddRange(toAdd);
+        }
+
+        if (toUpdate.Count > 0)
+        {
+            db.AppSettings.UpdateRange(toUpdate);
+        }
+
         await db.SaveChangesAsync(cancellationToken);
     }
 

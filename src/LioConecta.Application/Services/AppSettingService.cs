@@ -25,6 +25,7 @@ public sealed class AppSettingService(
             ["totvs"] = ("TOTVS", "ERP — endpoints e credenciais."),
             ["glpi"] = ("GLPI", "Service desk — endpoints e tokens."),
             ["graph"] = ("Microsoft Graph", "SharePoint, calendário, Planner e presença."),
+            ["planner"] = ("Microsoft Planner", "Plano da equipe exibido em Minhas Atividades — reutiliza credenciais Graph."),
             ["workers"] = ("Workers", "Intervalos de sincronização em background."),
             ["serilog"] = ("Logging", "Níveis de log Serilog."),
             ["media"] = ("Mídia", "Uploads locais de imagens de comunicados (até migrar para S3/SharePoint)."),

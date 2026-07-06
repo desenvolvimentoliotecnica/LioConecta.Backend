@@ -40,3 +40,14 @@ public sealed class RmEmployeeProfileRecord
 
     public string? Conta { get; set; }
 }
+
+public sealed class RmEmployeeAdmissionRecord
+{
+    public string Chapa { get; set; } = string.Empty;
+
+    public DateTime? DataAdmissao { get; set; }
+
+    public DateTime? DataNascimento { get; set; }
+
+    public string? EmailPessoal { get; set; }
+}

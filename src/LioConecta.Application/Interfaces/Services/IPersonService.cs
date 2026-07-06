@@ -12,6 +12,8 @@ public interface IPersonService
 
     Task<OrgChartDto> GetOrgChartAsync(CancellationToken cancellationToken = default);
 
+    Task<PersonHierarchyDto?> GetHierarchyAsync(string slug, CancellationToken cancellationToken = default);
+
     Task<PersonDirectoryDto> GetDirectoryAsync(
         string? query,
         string? departmentId,

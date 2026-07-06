@@ -69,6 +69,41 @@ public sealed class TotvsRmEmployeeRepository(
         }
     }
 
+    public async Task<IReadOnlyList<RmEmployeeAdmissionRecord>> GetActiveAdmissionsAsync(
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT
+                LTRIM(RTRIM(F.CHAPA)) AS Chapa,
+                F.DATAADMISSAO AS DataAdmissao,
+                P.DTNASCIMENTO AS DataNascimento,
+                LTRIM(RTRIM(P.EMAIL)) AS EmailPessoal
+            FROM dbo.PFUNC F WITH (NOLOCK)
+            LEFT JOIN dbo.PPESSOA P WITH (NOLOCK)
+                ON P.CODIGO = F.CODPESSOA
+            WHERE F.CODCOLIGADA = @CodColigada
+              AND (F.CODSITUACAO IS NULL OR F.CODSITUACAO = 'A')
+              AND (F.DATAADMISSAO IS NOT NULL OR P.DTNASCIMENTO IS NOT NULL);
+            """;
+
+        try
+        {
+            var rows = await QueryListAsync(
+                "PFUNC admissions",
+                cancellationToken,
+                connection => connection.QueryAsync<RmEmployeeAdmissionRecord>(sql, new
+                {
+                    CodColigada = TotvsRmConstants.CodColigada,
+                }));
+
+            return rows?.ToList() ?? [];
+        }
+        catch (TotvsRmIntegrationException)
+        {
+            return [];
+        }
+    }
+
     private async Task<T?> QueryAsync<T>(
         string operationLabel,
         string chapa,
@@ -96,6 +131,34 @@ public sealed class TotvsRmEmployeeRepository(
                 chapa);
 
             return default;
+        }
+    }
+
+    private async Task<IEnumerable<T>?> QueryListAsync<T>(
+        string operationLabel,
+        CancellationToken cancellationToken,
+        Func<SqlConnection, Task<IEnumerable<T>>> queryFactory)
+    {
+        var runtime = await configurationService.GetRuntimeConfigurationAsync(cancellationToken);
+        if (!runtime.IsEnabled || string.IsNullOrWhiteSpace(runtime.Password))
+        {
+            return null;
+        }
+
+        try
+        {
+            await using var connection = TotvsRmConnectionFactory.CreateConnection(runtime);
+            await connection.OpenAsync(cancellationToken);
+            return await queryFactory(connection);
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(
+                exception,
+                "Falha ao consultar TOTVS RM ({OperationLabel}).",
+                operationLabel);
+
+            return null;
         }
     }
 }

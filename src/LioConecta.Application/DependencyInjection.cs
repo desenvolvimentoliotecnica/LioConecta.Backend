@@ -26,6 +26,8 @@ public static class DependencyInjection
         services.AddScoped<IPayslipService, PayslipService>();
         services.AddScoped<IBenefitService, BenefitService>();
         services.AddScoped<ILeaveService, LeaveService>();
+        services.AddScoped<IHelpDeskService, HelpDeskService>();
+        services.AddScoped<IPlannerService, PlannerService>();
         services.AddScoped<IPollClosureService, PollClosureService>();
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<IObservabilityIngestionService, ObservabilityIngestionService>();

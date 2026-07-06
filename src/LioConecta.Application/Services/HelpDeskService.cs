@@ -139,6 +139,7 @@ public sealed class HelpDeskService(
             subject,
             description,
             priority,
+            request.EntityId,
             request.CategoryId,
             person.Email,
             cancellationToken);
@@ -153,6 +154,7 @@ public sealed class HelpDeskService(
         {
             ["subject"] = subject,
             ["priority"] = priority,
+            ["entityId"] = request.EntityId,
             ["categoryId"] = request.CategoryId,
             ["description"] = description,
         };
@@ -175,12 +177,53 @@ public sealed class HelpDeskService(
             glpiResult.Url);
     }
 
-    public async Task<IReadOnlyList<HelpDeskItilCategoryDto>> GetCategoriesAsync(
+    public async Task<IReadOnlyList<HelpDeskAreaDto>> GetAreasAsync(
         CancellationToken cancellationToken = default)
     {
-        var categories = await glpiAdapter.GetItilCategoriesAsync(cancellationToken);
-        return categories
-            .Select(c => new HelpDeskItilCategoryDto(c.Id, c.Name, c.FullName))
+        var definitions = HelpDeskAreaCatalog.Parse(
+            appSettings.GetString(AppSettingKeys.HelpDeskGlpiAreas));
+        var allCategories = await glpiAdapter.GetAllItilCategoriesAsync(cancellationToken);
+
+        return definitions
+            .Select(area =>
+            {
+                var areaCategories = HelpDeskAreaCatalog.ResolveAreaCategories(area, allCategories);
+                var serviceCount = HelpDeskAreaCatalog.CountSelectableServices(area, areaCategories);
+                return new HelpDeskAreaDto(area.Id, area.Name, area.Icon, serviceCount, area.EntityId);
+            })
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<HelpDeskGlpiEntityDto>> GetEntitiesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var entities = await glpiAdapter.GetEntitiesAsync(cancellationToken);
+        return entities
+            .Select(e => new HelpDeskGlpiEntityDto(e.Id, e.Name, e.FullName, e.ParentId, e.HasChildren))
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<HelpDeskItilCategoryDto>> GetCategoriesAsync(
+        string areaId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(areaId))
+        {
+            throw new ArgumentException("Área inválida.");
+        }
+
+        var definitions = HelpDeskAreaCatalog.Parse(
+            appSettings.GetString(AppSettingKeys.HelpDeskGlpiAreas));
+        var area = definitions.FirstOrDefault(item =>
+                        item.Id.Equals(areaId.Trim(), StringComparison.OrdinalIgnoreCase))
+            ?? throw new ArgumentException("Área não encontrada.");
+
+        var allCategories = await glpiAdapter.GetAllItilCategoriesAsync(cancellationToken);
+        var areaCategories = HelpDeskAreaCatalog.ResolveAreaCategories(area, allCategories);
+        var built = HelpDeskItilCategoryTreeBuilder.Build(areaCategories, dedupeByLabel: false);
+
+        return built
+            .Select(c => new HelpDeskItilCategoryDto(c.Id, c.Name, c.FullName, c.ParentId, c.HasChildren, c.EntityId))
             .ToList();
     }
 

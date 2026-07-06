@@ -28,6 +28,11 @@ public static class HelpDeskTicketCreateValidator
             throw new ArgumentException($"Descrição deve ter pelo menos {MinDescriptionLength} caracteres.");
         }
 
+        if (request.EntityId <= 0)
+        {
+            throw new ArgumentException("Entidade inválida.");
+        }
+
         if (request.CategoryId <= 0)
         {
             throw new ArgumentException("Categoria inválida.");

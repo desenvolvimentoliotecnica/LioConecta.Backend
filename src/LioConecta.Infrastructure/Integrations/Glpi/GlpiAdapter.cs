@@ -21,8 +21,9 @@ public sealed class GlpiAdapter(
     private const int MaxTickets = 100;
     private static readonly TimeSpan CategoryCacheDuration = TimeSpan.FromMinutes(5);
 
-    private IReadOnlyList<GlpiItilCategory>? _cachedCategories;
-    private DateTimeOffset _categoriesCachedAt = DateTimeOffset.MinValue;
+    private IReadOnlyList<GlpiEntity>? _cachedEntities;
+    private DateTimeOffset _entitiesCachedAt = DateTimeOffset.MinValue;
+    private readonly Dictionary<int, (IReadOnlyList<GlpiItilCategory> Categories, DateTimeOffset CachedAt)> _categoriesByEntity = new();
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -33,6 +34,7 @@ public sealed class GlpiAdapter(
         string title,
         string description,
         string priority,
+        int entityId,
         int categoryId,
         string requesterEmail,
         CancellationToken cancellationToken = default)
@@ -41,6 +43,11 @@ public sealed class GlpiAdapter(
         if (string.IsNullOrWhiteSpace(credentials.BaseUrl))
         {
             throw new GlpiIntegrationException("GLPI não configurado. Informe glpi.base_url no portal admin.");
+        }
+
+        if (entityId <= 0)
+        {
+            throw new ArgumentException("Entidade inválida.");
         }
 
         if (categoryId <= 0)
@@ -70,6 +77,7 @@ public sealed class GlpiAdapter(
                     ["priority"] = priorityLevel,
                     ["urgency"] = priorityLevel,
                     ["type"] = 2,
+                    ["entities_id"] = entityId,
                     ["itilcategories_id"] = categoryId,
                     ["_users_id_requester"] = requesterId,
                 },
@@ -79,7 +87,7 @@ public sealed class GlpiAdapter(
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 await sessionManager.InvalidateSessionAsync(httpClient, credentials, cancellationToken);
-                return await CreateTicketAsync(title, description, priority, categoryId, requesterEmail, cancellationToken);
+                return await CreateTicketAsync(title, description, priority, entityId, categoryId, requesterEmail, cancellationToken);
             }
 
             if (!response.IsSuccessStatusCode)
@@ -126,13 +134,13 @@ public sealed class GlpiAdapter(
         }
     }
 
-    public async Task<IReadOnlyList<GlpiItilCategory>> GetItilCategoriesAsync(
+    public async Task<IReadOnlyList<GlpiEntity>> GetEntitiesAsync(
         CancellationToken cancellationToken = default)
     {
-        if (_cachedCategories is not null &&
-            DateTimeOffset.UtcNow - _categoriesCachedAt < CategoryCacheDuration)
+        if (_cachedEntities is not null &&
+            DateTimeOffset.UtcNow - _entitiesCachedAt < CategoryCacheDuration)
         {
-            return _cachedCategories;
+            return _cachedEntities;
         }
 
         var credentials = credentialsResolver.Resolve();
@@ -142,80 +150,266 @@ public sealed class GlpiAdapter(
             return [];
         }
 
-        var query =
-            $"{BuildUrl(credentials.BaseUrl, "search/ITILCategory")}" +
-            $"?forcedisplay[0]={GlpiSearchFields.ItilCategoryId}" +
-            $"&forcedisplay[1]={GlpiSearchFields.ItilCategoryName}" +
-            $"&forcedisplay[2]={GlpiSearchFields.ItilCategoryCompleteName}" +
-            "&range=0-499" +
-            "&sort=1&order=ASC";
-
         var sessionToken = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
-        using var request = new HttpRequestMessage(HttpMethod.Get, query);
-        ApplySessionHeaders(request, credentials, sessionToken);
+        var rawEntities = await LoadEntitiesFromApiAsync(credentials, sessionToken, cancellationToken);
 
-        using var response = await httpClient.SendAsync(request, cancellationToken);
-        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-        {
-            await sessionManager.InvalidateSessionAsync(httpClient, credentials, cancellationToken);
-            return await GetItilCategoriesAsync(cancellationToken);
-        }
+        _cachedEntities = HelpDeskGlpiEntityTreeBuilder.Build(rawEntities);
+        _entitiesCachedAt = DateTimeOffset.UtcNow;
+        return _cachedEntities;
+    }
 
-        if (!response.IsSuccessStatusCode)
+    public async Task<IReadOnlyList<GlpiItilCategory>> GetAllItilCategoriesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var credentials = credentialsResolver.Resolve();
+        if (string.IsNullOrWhiteSpace(credentials.BaseUrl))
         {
-            var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            logger.LogWarning("GLPI ITILCategory search failed: {Status} {Body}", (int)response.StatusCode, body);
-            return _cachedCategories ?? [];
-        }
-
-        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
-        if (!document.RootElement.TryGetProperty("data", out var dataElement))
-        {
+            logger.LogWarning("GLPI BaseUrl is not configured.");
             return [];
         }
 
-        var categories = new Dictionary<int, GlpiItilCategory>();
-        foreach (var row in dataElement.EnumerateArray())
+        var sessionToken = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
+        var rawCategories = await LoadItilCategoriesFromApiAsync(credentials, sessionToken, cancellationToken);
+        return HelpDeskItilCategoryTreeBuilder.Build(rawCategories, dedupeByLabel: false);
+    }
+
+    public async Task<IReadOnlyList<GlpiItilCategory>> GetItilCategoriesAsync(
+        int entityId,
+        CancellationToken cancellationToken = default)
+    {
+        if (entityId <= 0)
         {
-            var idRaw = ReadRowField(row, GlpiSearchFields.ItilCategoryId);
-            if (!int.TryParse(idRaw, out var id) || id <= 0)
-            {
-                continue;
-            }
-
-            if (categories.ContainsKey(id))
-            {
-                continue;
-            }
-
-            var name = ReadRowField(row, GlpiSearchFields.ItilCategoryName);
-            var fullName = ReadRowField(row, GlpiSearchFields.ItilCategoryCompleteName);
-            if (string.IsNullOrWhiteSpace(fullName))
-            {
-                fullName = name;
-            }
-
-            if (string.IsNullOrWhiteSpace(fullName))
-            {
-                continue;
-            }
-
-            categories[id] = new GlpiItilCategory
-            {
-                Id = id,
-                Name = string.IsNullOrWhiteSpace(name) ? fullName : name,
-                FullName = fullName,
-            };
+            throw new ArgumentException("Entidade inválida.");
         }
 
-        _cachedCategories = categories.Values
-            .GroupBy(c => (c.FullName ?? c.Name).Trim().ToLowerInvariant(), StringComparer.Ordinal)
-            .Select(group => group.OrderBy(c => c.Id).First())
-            .OrderBy(c => c.FullName ?? c.Name, StringComparer.OrdinalIgnoreCase)
+        if (_categoriesByEntity.TryGetValue(entityId, out var cached) &&
+            DateTimeOffset.UtcNow - cached.CachedAt < CategoryCacheDuration)
+        {
+            return cached.Categories;
+        }
+
+        var credentials = credentialsResolver.Resolve();
+        if (string.IsNullOrWhiteSpace(credentials.BaseUrl))
+        {
+            logger.LogWarning("GLPI BaseUrl is not configured.");
+            return [];
+        }
+
+        var sessionToken = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
+        var rawCategories = await LoadItilCategoriesFromApiAsync(credentials, sessionToken, cancellationToken);
+        var filtered = rawCategories
+            .Where(c => c.EntityId == entityId)
             .ToList();
-        _categoriesCachedAt = DateTimeOffset.UtcNow;
-        return _cachedCategories;
+
+        var built = HelpDeskItilCategoryTreeBuilder.Build(filtered, dedupeByLabel: false);
+        _categoriesByEntity[entityId] = (built, DateTimeOffset.UtcNow);
+        return built;
     }
+
+    private async Task<List<GlpiEntity>> LoadEntitiesFromApiAsync(
+        GlpiRuntimeCredentials credentials,
+        string sessionToken,
+        CancellationToken cancellationToken)
+    {
+        const int pageSize = 500;
+        var results = new List<GlpiEntity>();
+        var start = 0;
+
+        while (true)
+        {
+            var url = $"{BuildUrl(credentials.BaseUrl, "Entity")}?range={start}-{start + pageSize - 1}";
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            ApplySessionHeaders(request, credentials, sessionToken);
+
+            using var response = await httpClient.SendAsync(request, cancellationToken);
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                await sessionManager.InvalidateSessionAsync(httpClient, credentials, cancellationToken);
+                sessionToken = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
+                continue;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(cancellationToken);
+                logger.LogWarning("GLPI Entity list failed: {Status} {Body}", (int)response.StatusCode, body);
+                break;
+            }
+
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Array || root.GetArrayLength() == 0)
+            {
+                break;
+            }
+
+            var pageCount = 0;
+            foreach (var item in root.EnumerateArray())
+            {
+                pageCount++;
+                var entity = MapEntityItem(item);
+                if (entity is not null)
+                {
+                    results.Add(entity);
+                }
+            }
+
+            if (pageCount < pageSize)
+            {
+                break;
+            }
+
+            start += pageSize;
+        }
+
+        return results;
+    }
+
+    private static GlpiEntity? MapEntityItem(JsonElement item)
+    {
+        if (!item.TryGetProperty("id", out var idElement) ||
+            !idElement.TryGetInt32(out var id) ||
+            id <= 0)
+        {
+            return null;
+        }
+
+        var name = ReadJsonString(item, "name");
+        var fullName = ReadJsonString(item, "completename");
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            fullName = name;
+        }
+
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            return null;
+        }
+
+        int? parentId = null;
+        if (item.TryGetProperty("entities_id", out var parentElement) &&
+            parentElement.TryGetInt32(out var parentRaw))
+        {
+            parentId = HelpDeskGlpiEntityTreeBuilder.NormalizeParentId(parentRaw);
+        }
+
+        return new GlpiEntity
+        {
+            Id = id,
+            Name = string.IsNullOrWhiteSpace(name) ? fullName : name,
+            FullName = fullName,
+            ParentId = parentId,
+        };
+    }
+
+    private async Task<List<GlpiItilCategory>> LoadItilCategoriesFromApiAsync(
+        GlpiRuntimeCredentials credentials,
+        string sessionToken,
+        CancellationToken cancellationToken)
+    {
+        const int pageSize = 500;
+        var results = new List<GlpiItilCategory>();
+        var start = 0;
+
+        while (true)
+        {
+            var url = $"{BuildUrl(credentials.BaseUrl, "ITILCategory")}?range={start}-{start + pageSize - 1}";
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            ApplySessionHeaders(request, credentials, sessionToken);
+
+            using var response = await httpClient.SendAsync(request, cancellationToken);
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                await sessionManager.InvalidateSessionAsync(httpClient, credentials, cancellationToken);
+                sessionToken = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
+                continue;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(cancellationToken);
+                logger.LogWarning("GLPI ITILCategory list failed: {Status} {Body}", (int)response.StatusCode, body);
+                break;
+            }
+
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Array || root.GetArrayLength() == 0)
+            {
+                break;
+            }
+
+            var pageCount = 0;
+            foreach (var item in root.EnumerateArray())
+            {
+                pageCount++;
+                var category = MapItilCategoryItem(item);
+                if (category is not null)
+                {
+                    results.Add(category);
+                }
+            }
+
+            if (pageCount < pageSize)
+            {
+                break;
+            }
+
+            start += pageSize;
+        }
+
+        return results;
+    }
+
+    private static GlpiItilCategory? MapItilCategoryItem(JsonElement item)
+    {
+        if (!item.TryGetProperty("id", out var idElement) ||
+            !idElement.TryGetInt32(out var id) ||
+            id <= 0)
+        {
+            return null;
+        }
+
+        var name = ReadJsonString(item, "name");
+        var fullName = ReadJsonString(item, "completename");
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            fullName = name;
+        }
+
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            return null;
+        }
+
+        int? parentId = null;
+        if (item.TryGetProperty("itilcategories_id", out var parentElement) &&
+            parentElement.TryGetInt32(out var parentRaw))
+        {
+            parentId = HelpDeskItilCategoryTreeBuilder.NormalizeParentId(parentRaw);
+        }
+
+        var entityId = 0;
+        if (item.TryGetProperty("entities_id", out var entityElement) &&
+            entityElement.TryGetInt32(out var entityRaw))
+        {
+            entityId = entityRaw;
+        }
+
+        return new GlpiItilCategory
+        {
+            Id = id,
+            Name = string.IsNullOrWhiteSpace(name) ? fullName : name,
+            FullName = fullName,
+            ParentId = parentId,
+            EntityId = entityId,
+        };
+    }
+
+    private static string ReadJsonString(JsonElement item, string property) =>
+        item.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()?.Trim() ?? string.Empty
+            : string.Empty;
 
     public async Task<GlpiTicketResult> GetTicketStatusAsync(
         string ticketId,

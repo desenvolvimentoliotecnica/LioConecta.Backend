@@ -1,7 +1,6 @@
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Domain.Enums;
 using LioConecta.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
@@ -12,7 +11,7 @@ namespace LioConecta.Infrastructure.Services;
 public sealed class CurrentUserService(
     IHttpContextAccessor httpContextAccessor,
     AppDbContext db,
-    IWebHostEnvironment environment) : ICurrentUserService
+    IHostEnvironment environment) : ICurrentUserService
 {
     public const string DevUserIdHeader = "X-Dev-User-Id";
 

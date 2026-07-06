@@ -299,11 +299,11 @@ try
     }
     else
     {
-        app.MapHealthChecks("/health");
+        app.MapHealthChecks("/health").AllowAnonymous();
         app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
         {
             Predicate = check => check.Tags.Contains("ready"),
-        });
+        }).AllowAnonymous();
     }
 
     if (!app.Environment.IsEnvironment("Testing"))

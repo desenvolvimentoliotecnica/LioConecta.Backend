@@ -38,8 +38,9 @@ Com `Integrations:UseDevAdapters=true` (padrão em Development), os adapters ret
 | `SearchTicketsByRequesterAsync` | `GET /api/v1/ti/help-desk/tickets/mine` | Acompanhar chamados do usuário logado |
 | `SearchAllTicketsAsync` | `GET /api/v1/ti/help-desk/tickets/all` | Fila completa (TI/Admin) |
 | `GetTicketDetailAsync` | `GET /api/v1/ti/help-desk/tickets/{id}` | Detalhe do chamado |
-| `GetItilCategoriesAsync` | `GET /api/v1/ti/help-desk/categories` | Dropdown de categorias no modal de abertura |
-| `CreateTicketAsync` | `POST /api/v1/ti/help-desk/tickets` | Abertura de chamado (GLPI primeiro, depois `service_requests`) |
+| `GetAreasAsync` | `GET /api/v1/ti/help-desk/areas` | Wizard passo 1 — áreas (como app mobile: TI, Custo, Princing, Financeira) |
+| `GetItilCategoriesAsync` | `GET /api/v1/ti/help-desk/categories?areaId=` | Wizard passo 2 — serviços da área |
+| `CreateTicketAsync` | `POST /api/v1/ti/help-desk/tickets` | Abertura de chamado (`entities_id` + `itilcategories_id`) |
 | Teste de conexão | `POST /api/v1/admin/glpi/test` | Admin — valida `initSession` |
 
 **Pré-requisito para criação:** o colaborador logado deve existir no GLPI com o mesmo e-mail corporativo do portal. Caso contrário a API retorna **422** (`GlpiRequesterNotFoundException`). Falhas de comunicação com o GLPI retornam **502**.
@@ -50,12 +51,31 @@ Com `Integrations:UseDevAdapters=true` (padrão em Development), os adapters ret
 {
   "subject": "VPN instável",
   "priority": "media",
+  "entityId": 2,
   "categoryId": 12,
   "description": "Descrição com pelo menos 10 caracteres."
 }
 ```
 
-`categoryId` vem de `GET /categories` (search `ITILCategory` no GLPI, cache 5 min no adapter).
+`areaId` vem de `GET /areas` (passo 1). `entityId` e `categoryId` vêm da área e do serviço escolhidos. Configure o mapeamento em `helpdesk.glpi_areas` (portal admin → GLPI).
+
+Resposta de entidades (lista plana):
+
+```json
+[
+  { "id": 1, "name": "Liotécnica", "fullName": "Liotécnica", "parentId": null, "hasChildren": true },
+  { "id": 2, "name": "Matriz", "fullName": "Liotécnica > Matriz", "parentId": 1, "hasChildren": false }
+]
+```
+
+Resposta de categorias (lista plana, filtrada por entidade):
+
+```json
+[
+  { "id": 1, "name": "TI", "fullName": "TI", "parentId": null, "hasChildren": true },
+  { "id": 10, "name": "Web e Aplicações", "fullName": "TI > Web e Aplicações", "parentId": 1, "hasChildren": false, "entityId": 2 }
+]
+```
 
 **Config (portal `/admin/configuracoes-backend`, categoria GLPI — persistido em `app_settings`):**
 

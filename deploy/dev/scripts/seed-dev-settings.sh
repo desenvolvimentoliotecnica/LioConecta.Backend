@@ -5,9 +5,7 @@ ORIGIN="http://10.0.0.79:${PORT}"
 CORS="[\"${ORIGIN}\",\"http://localhost:5173\"]"
 echo "Seeding DEV app_settings (origin=${ORIGIN})..."
 docker exec lioconecta-dev-postgres psql -U lioconecta -d lioconecta -v ON_ERROR_STOP=1 <<SQL
-UPDATE app_settings SET value = 'redis:6379', updated_at = NOW() WHERE key = 'redis.connection';
-UPDATE app_settings SET value = 'true', updated_at = NOW() WHERE key = 'auth.use_dev_auth';
-UPDATE app_settings SET value = 'true', updated_at = NOW() WHERE key = 'integrations.use_dev_adapters';
-UPDATE app_settings SET value = '${CORS}', updated_at = NOW() WHERE key = 'cors.allowed_origins';
+UPDATE app_settings SET "Value" = 'redis:6379', "UpdatedAt" = NOW() WHERE "Key" = 'redis.connection';
+UPDATE app_settings SET "Value" = '${CORS}', "UpdatedAt" = NOW() WHERE "Key" = 'cors.allowed_origins';
 SQL
 echo "DEV settings seeded."

@@ -28,13 +28,31 @@ public sealed record HelpDeskKnowledgeArticleDto(
 public sealed record CreateHelpDeskTicketRequestDto(
     string Subject,
     string Priority,
+    int EntityId,
     int CategoryId,
     string Description);
+
+public sealed record HelpDeskAreaDto(
+    string Id,
+    string Name,
+    string Icon,
+    int ServiceCount,
+    int EntityId);
+
+public sealed record HelpDeskGlpiEntityDto(
+    int Id,
+    string Name,
+    string? FullName,
+    int? ParentId,
+    bool HasChildren);
 
 public sealed record HelpDeskItilCategoryDto(
     int Id,
     string Name,
-    string? FullName);
+    string? FullName,
+    int? ParentId,
+    bool HasChildren,
+    int EntityId);
 
 public sealed record HelpDeskTicketResultDto(
     Guid RequestId,

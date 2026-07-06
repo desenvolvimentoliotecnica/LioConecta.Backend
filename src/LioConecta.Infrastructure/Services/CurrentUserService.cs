@@ -70,12 +70,18 @@ public sealed class CurrentUserService(
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.AzureAdObjectId == azureAdObjectId, cancellationToken);
 
-        if (person is null)
+        if (person is not null)
         {
-            throw new InvalidOperationException($"No person profile is linked to Azure AD object id {azureAdObjectId}.");
+            return person.Id;
         }
 
-        return person.Id;
+        var fallbackPerson = await ResolvePersonByIdentityClaimsAsync(user, cancellationToken);
+        if (fallbackPerson is not null)
+        {
+            return fallbackPerson.Id;
+        }
+
+        throw new InvalidOperationException($"No person profile is linked to Azure AD object id {azureAdObjectId}.");
     }
 
     public Task<IReadOnlyList<UserRole>> GetRolesAsync(CancellationToken cancellationToken = default)
@@ -113,10 +119,17 @@ public sealed class CurrentUserService(
         Guid targetPersonId,
         CancellationToken cancellationToken = default)
     {
-        var viewerId = await GetPersonIdAsync(cancellationToken);
-        if (viewerId == targetPersonId)
+        try
         {
-            return ViewerContext.Self;
+            var viewerId = await GetPersonIdAsync(cancellationToken);
+            if (viewerId == targetPersonId)
+            {
+                return ViewerContext.Self;
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            // Authenticated user not linked to people yet — fall back to role-based visibility.
         }
 
         var roles = await GetRolesAsync(cancellationToken);
@@ -131,6 +144,35 @@ public sealed class CurrentUserService(
         }
 
         return ViewerContext.Colleague;
+    }
+
+    private async Task<Domain.Entities.Person?> ResolvePersonByIdentityClaimsAsync(
+        ClaimsPrincipal user,
+        CancellationToken cancellationToken)
+    {
+        var slugClaim = user.FindFirstValue("person_slug");
+        if (!string.IsNullOrWhiteSpace(slugClaim))
+        {
+            var bySlug = await db.People
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Slug == slugClaim, cancellationToken);
+            if (bySlug is not null)
+            {
+                return bySlug;
+            }
+        }
+
+        var email = user.FindFirstValue("preferred_username")
+            ?? user.FindFirstValue(ClaimTypes.Email);
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            var normalizedEmail = email.Trim().ToLowerInvariant();
+            return await db.People
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Email.ToLower() == normalizedEmail, cancellationToken);
+        }
+
+        return null;
     }
 
     private async Task<Domain.Entities.Person?> ResolvePersonByDevHeaderAsync(

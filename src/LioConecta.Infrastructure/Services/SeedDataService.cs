@@ -558,12 +558,6 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
 
         var changed = false;
 
-        if (!string.Equals(devUser.Slug, "leonardo-sabino-mendes", StringComparison.Ordinal))
-        {
-            devUser.Slug = "leonardo-sabino-mendes";
-            changed = true;
-        }
-
         if (!string.Equals(devUser.Name, "Leonardo Sabino Mendes", StringComparison.Ordinal))
         {
             devUser.Name = "Leonardo Sabino Mendes";

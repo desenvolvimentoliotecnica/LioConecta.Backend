@@ -10,7 +10,7 @@ namespace LioConecta.Application.Services;
 public sealed class ChatService(
     IAppSettingsProvider settingsProvider,
     ICurrentUserService currentUserService,
-    IUserTeamsTokenService teamsTokenService,
+    IUserGraphTokenService graphTokenService,
     ITeamsChatAdapter teamsChatAdapter,
     IChatBroadcaster chatBroadcaster) : IChatService
 {
@@ -44,7 +44,7 @@ public sealed class ChatService(
     {
         var enabled = settingsProvider.GetBool(AppSettingKeys.ChatTeamsEnabled, false);
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
-        var linked = await teamsTokenService.HasLinkedAccountAsync(personId, cancellationToken);
+        var linked = await graphTokenService.HasLinkedAccountAsync(personId, cancellationToken);
 
         return new ChatStatusDto(
             Enabled: enabled,
@@ -64,7 +64,7 @@ public sealed class ChatService(
         }
 
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
-        await teamsTokenService.StoreTokensAsync(
+        await graphTokenService.StoreTokensAsync(
             personId,
             request.AccessToken.Trim(),
             request.RefreshToken.Trim(),
@@ -76,7 +76,7 @@ public sealed class ChatService(
     public async Task UnlinkAccountAsync(CancellationToken cancellationToken = default)
     {
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
-        await teamsTokenService.UnlinkAsync(personId, cancellationToken);
+        await graphTokenService.UnlinkAsync(personId, cancellationToken);
     }
 
     public async Task<IReadOnlyList<ChatConversationDto>> GetConversationsAsync(
@@ -179,7 +179,7 @@ public sealed class ChatService(
     private async Task<string> GetUserAccessTokenAsync(CancellationToken cancellationToken)
     {
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
-        return await teamsTokenService.GetValidAccessTokenAsync(personId, cancellationToken);
+        return await graphTokenService.GetValidAccessTokenAsync(personId, cancellationToken);
     }
 
     private void EnsureChatEnabled()

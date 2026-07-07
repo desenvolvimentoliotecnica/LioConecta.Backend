@@ -426,15 +426,6 @@ public static class GroupMapper
 
 public static class CalendarMapper
 {
-    public static CalendarEventDto ToDto(CalendarEvent calendarEvent)
-        => new(
-            calendarEvent.Id,
-            calendarEvent.Title,
-            calendarEvent.StartAt,
-            calendarEvent.EndAt,
-            calendarEvent.Location,
-            calendarEvent.Source);
-
     public static CafeteriaMenuDto ToDto(CafeteriaMenu menu)
         => new(menu.Date, JsonMapper.DeserializeStringList(menu.ItemsJson));
 }

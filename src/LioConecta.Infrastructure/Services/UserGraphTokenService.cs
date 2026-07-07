@@ -10,10 +10,10 @@ using Microsoft.Extensions.Logging;
 
 namespace LioConecta.Infrastructure.Services;
 
-public sealed class UserTeamsTokenService(
+public sealed class UserGraphTokenService(
     IUserTeamsTokenRepository tokenRepository,
     IAppSettingsProvider settingsProvider,
-    ILogger<UserTeamsTokenService> logger) : IUserTeamsTokenService
+    ILogger<UserGraphTokenService> logger) : IUserGraphTokenService, IUserTeamsTokenService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -26,6 +26,19 @@ public sealed class UserTeamsTokenService(
         return token is not null && !string.IsNullOrWhiteSpace(token.EncryptedRefreshToken);
     }
 
+    public async Task<bool> HasScopeAsync(Guid personId, string scope, CancellationToken cancellationToken = default)
+    {
+        var token = await tokenRepository.GetByPersonIdAsync(personId, cancellationToken);
+        if (token is null)
+        {
+            return false;
+        }
+
+        var scopes = DeserializeScopes(token.ScopesJson);
+        var normalized = NormalizeScope(scope);
+        return scopes.Any(s => string.Equals(NormalizeScope(s), normalized, StringComparison.OrdinalIgnoreCase));
+    }
+
     public async Task StoreTokensAsync(
         Guid personId,
         string accessToken,
@@ -36,25 +49,32 @@ public sealed class UserTeamsTokenService(
     {
         var encryptionKey = RequireEncryptionKey();
         var now = DateTimeOffset.UtcNow;
+        var existing = await tokenRepository.GetByPersonIdAsync(personId, cancellationToken);
+        var mergedScopes = MergeScopes(
+            existing is null ? [] : DeserializeScopes(existing.ScopesJson),
+            scopes ?? []);
+
+        string encryptedRefresh;
+        if (string.IsNullOrWhiteSpace(refreshToken) && existing is not null)
+        {
+            encryptedRefresh = existing.EncryptedRefreshToken;
+        }
+        else
+        {
+            encryptedRefresh = SecretProtector.Protect(refreshToken, encryptionKey);
+        }
 
         var entity = new UserTeamsToken
         {
-            Id = Guid.NewGuid(),
+            Id = existing?.Id ?? Guid.NewGuid(),
             PersonId = personId,
             EncryptedAccessToken = SecretProtector.Protect(accessToken, encryptionKey),
-            EncryptedRefreshToken = SecretProtector.Protect(refreshToken, encryptionKey),
+            EncryptedRefreshToken = encryptedRefresh,
             ExpiresAt = expiresAt,
-            ScopesJson = JsonSerializer.Serialize(scopes ?? [], JsonOptions),
-            CreatedAt = now,
+            ScopesJson = JsonSerializer.Serialize(mergedScopes, JsonOptions),
+            CreatedAt = existing?.CreatedAt ?? now,
             UpdatedAt = now
         };
-
-        var existing = await tokenRepository.GetByPersonIdAsync(personId, cancellationToken);
-        if (existing is not null)
-        {
-            entity.Id = existing.Id;
-            entity.CreatedAt = existing.CreatedAt;
-        }
 
         await tokenRepository.UpsertAsync(entity, cancellationToken);
     }
@@ -62,7 +82,7 @@ public sealed class UserTeamsTokenService(
     public async Task<string> GetValidAccessTokenAsync(Guid personId, CancellationToken cancellationToken = default)
     {
         var token = await tokenRepository.GetByPersonIdAsync(personId, cancellationToken)
-            ?? throw new InvalidOperationException("Conta Microsoft Teams não vinculada.");
+            ?? throw new InvalidOperationException("Conta Microsoft não vinculada.");
 
         var encryptionKey = RequireEncryptionKey();
         var accessToken = SecretProtector.Unprotect(token.EncryptedAccessToken, encryptionKey);
@@ -93,14 +113,20 @@ public sealed class UserTeamsTokenService(
 
     private string RequireEncryptionKey()
     {
-        var key = settingsProvider.GetString(AppSettingKeys.ChatTeamsTokenEncryptionKey);
-        if (string.IsNullOrWhiteSpace(key))
+        var calendarKey = settingsProvider.GetString(AppSettingKeys.CalendarTokenEncryptionKey);
+        if (!string.IsNullOrWhiteSpace(calendarKey))
         {
-            throw new InvalidOperationException(
-                $"App setting '{AppSettingKeys.ChatTeamsTokenEncryptionKey}' is required for Teams chat tokens.");
+            return calendarKey;
         }
 
-        return key;
+        var chatKey = settingsProvider.GetString(AppSettingKeys.ChatTeamsTokenEncryptionKey);
+        if (!string.IsNullOrWhiteSpace(chatKey))
+        {
+            return chatKey;
+        }
+
+        throw new InvalidOperationException(
+            $"Configure '{AppSettingKeys.CalendarTokenEncryptionKey}' (calendário) ou '{AppSettingKeys.ChatTeamsTokenEncryptionKey}' (chat) para armazenar tokens Microsoft delegados.");
     }
 
     private async Task<(string AccessToken, string? RefreshToken, DateTimeOffset ExpiresAt)> RefreshAccessTokenAsync(
@@ -114,7 +140,7 @@ public sealed class UserTeamsTokenService(
 
         if (string.IsNullOrWhiteSpace(tenantId) || string.IsNullOrWhiteSpace(clientId))
         {
-            throw new InvalidOperationException("Azure AD tenant e client ID são obrigatórios para renovar tokens Teams.");
+            throw new InvalidOperationException("Azure AD tenant e client ID são obrigatórios para renovar tokens Microsoft.");
         }
 
         using var client = new HttpClient();
@@ -140,9 +166,9 @@ public sealed class UserTeamsTokenService(
 
         if (!response.IsSuccessStatusCode)
         {
-            logger.LogWarning("Teams token refresh failed ({StatusCode}): {Body}", (int)response.StatusCode, body);
+            logger.LogWarning("Microsoft token refresh failed ({StatusCode}): {Body}", (int)response.StatusCode, body);
             throw new InvalidOperationException(
-                "Não foi possível renovar o token Microsoft Teams. Vincule a conta novamente.");
+                "Não foi possível renovar o token Microsoft. Vincule a conta novamente.");
         }
 
         using var document = JsonDocument.Parse(body);
@@ -163,10 +189,34 @@ public sealed class UserTeamsTokenService(
 
     private string ResolveRefreshScopes()
     {
-        var raw = settingsProvider.GetString(AppSettingKeys.ChatTeamsDelegatedScopes);
+        var allScopes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        AddScopesFromSetting(allScopes, AppSettingKeys.ChatTeamsDelegatedScopes, [
+            "Chat.ReadWrite", "User.Read", "offline_access"
+        ]);
+        AddScopesFromSetting(allScopes, AppSettingKeys.CalendarDelegatedScopes, [
+            "Calendars.ReadWrite", "User.Read", "offline_access"
+        ]);
+
+        if (allScopes.Count == 0)
+        {
+            return "https://graph.microsoft.com/Calendars.ReadWrite https://graph.microsoft.com/User.Read offline_access";
+        }
+
+        return string.Join(' ', allScopes.Select(NormalizeScope));
+    }
+
+    private void AddScopesFromSetting(HashSet<string> target, string key, string[] defaults)
+    {
+        var raw = settingsProvider.GetString(key);
         if (string.IsNullOrWhiteSpace(raw))
         {
-            return "https://graph.microsoft.com/Chat.ReadWrite https://graph.microsoft.com/User.Read offline_access";
+            foreach (var scope in defaults)
+            {
+                target.Add(NormalizeScope(scope));
+            }
+
+            return;
         }
 
         try
@@ -174,14 +224,63 @@ public sealed class UserTeamsTokenService(
             var scopes = JsonSerializer.Deserialize<string[]>(raw, JsonOptions) ?? [];
             if (scopes.Length == 0)
             {
-                return "https://graph.microsoft.com/Chat.ReadWrite https://graph.microsoft.com/User.Read offline_access";
+                foreach (var scope in defaults)
+                {
+                    target.Add(NormalizeScope(scope));
+                }
+
+                return;
             }
 
-            return string.Join(' ', scopes.Select(NormalizeScope));
+            foreach (var scope in scopes)
+            {
+                target.Add(NormalizeScope(scope));
+            }
         }
         catch (JsonException)
         {
-            return raw;
+            target.Add(NormalizeScope(raw));
+        }
+    }
+
+    private static IReadOnlyList<string> MergeScopes(
+        IReadOnlyList<string> existing,
+        IReadOnlyList<string> incoming)
+    {
+        var merged = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var scope in existing)
+        {
+            if (!string.IsNullOrWhiteSpace(scope))
+            {
+                merged.Add(NormalizeScope(scope));
+            }
+        }
+
+        foreach (var scope in incoming)
+        {
+            if (!string.IsNullOrWhiteSpace(scope))
+            {
+                merged.Add(NormalizeScope(scope));
+            }
+        }
+
+        return merged.ToList();
+    }
+
+    private static IReadOnlyList<string> DeserializeScopes(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return [];
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<string[]>(json, JsonOptions) ?? [];
+        }
+        catch (JsonException)
+        {
+            return [];
         }
     }
 
@@ -191,6 +290,11 @@ public sealed class UserTeamsTokenService(
         if (trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
         {
             return trimmed;
+        }
+
+        if (string.Equals(trimmed, "offline_access", StringComparison.OrdinalIgnoreCase))
+        {
+            return "offline_access";
         }
 
         return $"https://graph.microsoft.com/{trimmed}";

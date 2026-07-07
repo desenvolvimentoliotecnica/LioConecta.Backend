@@ -27,6 +27,7 @@ public sealed class AppSettingService(
             ["graph"] = ("Microsoft Graph", "SharePoint, calendário, Planner e presença."),
             ["chat"] = ("Microsoft Teams Chat", "Chat via Microsoft Graph — reutiliza credenciais Graph e Azure AD para MSAL."),
             ["planner"] = ("Microsoft Planner", "Plano da equipe exibido em Minhas Atividades — reutiliza credenciais Graph."),
+            ["calendar"] = ("Calendário Outlook", "Agenda corporativa via Microsoft Graph — reutiliza Azure AD e tokens delegados."),
             ["workers"] = ("Workers", "Intervalos de sincronização em background."),
             ["serilog"] = ("Logging", "Níveis de log Serilog."),
             ["media"] = ("Mídia", "Uploads locais de imagens de comunicados (até migrar para S3/SharePoint)."),
@@ -60,6 +61,7 @@ public sealed class AppSettingService(
         AppSettingKeys.GraphClientId,
         AppSettingKeys.GraphClientSecret,
         AppSettingKeys.ChatTeamsTokenEncryptionKey,
+        AppSettingKeys.CalendarTokenEncryptionKey,
     ];
 
     public async Task<IReadOnlyList<AppSettingCategoryDto>> GetGroupedAsync(
@@ -204,12 +206,13 @@ public sealed class AppSettingService(
         "graph" => 10,
         "chat" => 11,
         "planner" => 12,
-        "workers" => 13,
-        "serilog" => 14,
-        "media" => 15,
-        "benefits" => 16,
-        "leave" => 17,
-        "observability" => 18,
+        "calendar" => 13,
+        "workers" => 14,
+        "serilog" => 15,
+        "media" => 16,
+        "benefits" => 17,
+        "leave" => 18,
+        "observability" => 19,
         _ => 99,
     };
 }

@@ -17,14 +17,13 @@ public sealed class PlannerService(
 {
     public async Task<PlannerTasksResponseDto> GetTasksAsync(CancellationToken cancellationToken = default)
     {
-        var usesDevAdapters = settingsProvider.GetBool(AppSettingKeys.IntegrationsUseDevAdapters, true);
         var plannerEnabled = settingsProvider.GetBool(AppSettingKeys.PlannerEnabled, false);
         var planId = settingsProvider.GetString(AppSettingKeys.PlannerPlanId);
         var planTitle = settingsProvider.GetString(AppSettingKeys.PlannerPlanTitle);
 
         if (!plannerEnabled)
         {
-            return new PlannerTasksResponseDto([], usesDevAdapters, false, planTitle);
+            return new PlannerTasksResponseDto([], false, false, planTitle);
         }
 
         if (string.IsNullOrWhiteSpace(planId))
@@ -43,7 +42,7 @@ public sealed class PlannerService(
             .OrderByDescending(t => t.DueDate ?? t.StartDate ?? t.CreatedAt)
             .ToList();
 
-        return new PlannerTasksResponseDto(mapped, usesDevAdapters, true, planTitle);
+        return new PlannerTasksResponseDto(mapped, false, true, planTitle);
     }
 
     public async Task<IReadOnlyList<PlannerBucketDto>> GetBucketsAsync(CancellationToken cancellationToken = default)

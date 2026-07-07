@@ -22,9 +22,9 @@ public static class HelpDeskAreaCatalog
         """
         [
           {"id":"ti","name":"Área TI","icon":"laptop","entityId":1,"categoryRootIds":[],"serviceCount":21},
-          {"id":"custo","name":"Área CUSTO","icon":"money","entityId":1,"categoryRootIds":[],"serviceCount":1},
-          {"id":"pricing","name":"Área PRINCING","icon":"clipboard","entityId":1,"categoryRootIds":[],"serviceCount":6},
-          {"id":"financeira","name":"Área Financeira","icon":"money","entityId":1,"categoryRootIds":[],"serviceCount":2}
+          {"id":"custo","name":"Área CUSTO","icon":"money","entityId":1,"categoryRootIds":[2001],"serviceCount":1},
+          {"id":"pricing","name":"Área PRINCING","icon":"clipboard","entityId":1,"categoryRootIds":[2002,2003],"serviceCount":6},
+          {"id":"financeira","name":"Área Financeira","icon":"money","entityId":1,"categoryRootIds":[2004,2005],"serviceCount":2}
         ]
         """;
 
@@ -55,9 +55,19 @@ public static class HelpDeskAreaCatalog
         HelpDeskAreaDefinition area,
         IReadOnlyList<GlpiItilCategory> allCategories)
     {
+        if (allCategories.Count == 0)
+        {
+            return [];
+        }
+
         var scoped = allCategories
             .Where(category => category.EntityId == area.EntityId || category.EntityId == 0)
             .ToList();
+
+        if (scoped.Count == 0)
+        {
+            scoped = allCategories.ToList();
+        }
 
         if (area.CategoryRootIds.Count == 0)
         {

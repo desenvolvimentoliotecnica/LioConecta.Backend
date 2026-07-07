@@ -67,9 +67,6 @@ public static class AppSettingCatalog
             "Lista JSON de URLs do front-end em produção.", "json", false,
             "[\"http://localhost:5173\",\"http://localhost:5174\"]", 1),
 
-        new(AppSettingKeys.IntegrationsUseDevAdapters, "integrations", "Modo mock (não chama APIs reais)",
-            "Quando Sim, TOTVS/GLPI/Graph usam dados fictícios — o diretório Graph retorna apenas 3 usuários. Defina Não e reinicie a API para integrações reais.", "boolean", false, "true", 1),
-
         new(AppSettingKeys.TotvsBaseUrl, "totvs", "TOTVS — base URL",
             "URL base da API REST TOTVS.", "string", false, "", 1),
         new(AppSettingKeys.TotvsApiKey, "totvs", "TOTVS — API key",
@@ -87,7 +84,7 @@ public static class AppSettingCatalog
         new(AppSettingKeys.GlpiProfileId, "glpi", "GLPI — perfil ativo (profiles_id)",
             "ID do perfil após initSession. Use 0 para manter o perfil padrão do usuário de serviço. Se informar um ID que o usuário não possui (ex.: Super-Admin=4), a API ignora e usa o perfil da sessão. Para o token da infra, Gestor=7 costuma funcionar.", "integer", false, "0", 5),
         new(AppSettingKeys.HelpDeskGlpiAreas, "glpi", "Help Desk — áreas do catálogo (JSON)",
-            "Lista de áreas exibidas no wizard (como no app mobile): id, name, icon, entityId, categoryRootIds e serviceCount opcional. Infra deve informar os IDs de categoria raiz de cada área.", "json", false,
+            "Lista de áreas exibidas no wizard (como no app mobile): id, name, icon, entityId, categoryRootIds e serviceCount opcional. Área TI com categoryRootIds vazio carrega o catálogo ITIL completo da entidade.", "json", false,
             HelpDeskAreaCatalog.DefaultAreasJson, 6),
 
         new(AppSettingKeys.GraphTenantId, "graph", "Microsoft Graph — tenant ID",

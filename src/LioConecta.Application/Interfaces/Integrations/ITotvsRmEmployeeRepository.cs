@@ -10,4 +10,8 @@ public interface ITotvsRmEmployeeRepository
 
     Task<IReadOnlyList<RmEmployeeAdmissionRecord>> GetActiveAdmissionsAsync(
         CancellationToken cancellationToken);
+
+    Task<RmEmployeeCareerHistoryData> GetCareerHistoryByChapaAsync(
+        string chapa,
+        CancellationToken cancellationToken);
 }

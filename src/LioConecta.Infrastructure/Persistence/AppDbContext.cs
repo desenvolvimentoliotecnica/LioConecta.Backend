@@ -50,6 +50,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<EmailAttachmentStaging> EmailAttachmentStagings => Set<EmailAttachmentStaging>();
     public DbSet<PortalUser> PortalUsers => Set<PortalUser>();
+    public DbSet<OrgChartSettings> OrgChartSettings => Set<OrgChartSettings>();
+    public DbSet<OrgDepartment> OrgDepartments => Set<OrgDepartment>();
+    public DbSet<OrgDepartmentMapping> OrgDepartmentMappings => Set<OrgDepartmentMapping>();
+    public DbSet<OrgPosition> OrgPositions => Set<OrgPosition>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -78,6 +82,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureTimesheetPeriodCache(modelBuilder);
         ConfigureEmail(modelBuilder);
         ConfigurePortalUsers(modelBuilder);
+        ConfigureOrgChartGovernance(modelBuilder);
     }
 
     private static void ApplySnakeCaseTableNames(ModelBuilder modelBuilder)
@@ -716,6 +721,72 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany()
                 .HasForeignKey(u => u.PersonId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureOrgChartGovernance(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<OrgChartSettings>(entity =>
+        {
+            entity.Property(s => s.EditAllowedRolesJson).HasMaxLength(1024);
+            entity.Property(s => s.EditAllowedEmailsJson).HasMaxLength(4096);
+            entity.Property(s => s.ViewFullAllowedRolesJson).HasMaxLength(1024);
+
+            entity.HasOne(s => s.UpdatedBy)
+                .WithMany()
+                .HasForeignKey(s => s.UpdatedById)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<OrgDepartment>(entity =>
+        {
+            entity.Property(d => d.Name).HasMaxLength(256);
+            entity.HasIndex(d => d.Name);
+            entity.HasIndex(d => d.ParentDepartmentId);
+
+            entity.HasOne(d => d.ParentDepartment)
+                .WithMany(d => d.ChildDepartments)
+                .HasForeignKey(d => d.ParentDepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<OrgDepartmentMapping>(entity =>
+        {
+            entity.Property(m => m.SourceName).HasMaxLength(256);
+            entity.HasIndex(m => m.SourceName).IsUnique();
+            entity.HasIndex(m => m.OrgDepartmentId);
+
+            entity.HasOne(m => m.OrgDepartment)
+                .WithMany()
+                .HasForeignKey(m => m.OrgDepartmentId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<OrgPosition>(entity =>
+        {
+            entity.Property(p => p.Title).HasMaxLength(256);
+            entity.Property(p => p.DepartmentName).HasMaxLength(256);
+            entity.Property(p => p.Source).HasConversion<int>();
+
+            entity.HasIndex(p => p.PersonId).IsUnique();
+            entity.HasIndex(p => p.ManagerPositionId);
+            entity.HasIndex(p => p.OrgDepartmentId);
+            entity.HasIndex(p => new { p.IsVisible, p.SortOrder });
+
+            entity.HasOne(p => p.Person)
+                .WithMany()
+                .HasForeignKey(p => p.PersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(p => p.OrgDepartment)
+                .WithMany()
+                .HasForeignKey(p => p.OrgDepartmentId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(p => p.ManagerPosition)
+                .WithMany(p => p.DirectReports)
+                .HasForeignKey(p => p.ManagerPositionId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 

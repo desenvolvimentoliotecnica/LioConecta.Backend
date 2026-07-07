@@ -78,11 +78,6 @@ public static class DependencyInjection
 
     private static void RegisterIntegrations(IServiceCollection services, IAppSettingsProvider settings)
     {
-        services.AddSingleton<IOptions<IntegrationsOptions>>(_ => Options.Create(new IntegrationsOptions
-        {
-            UseDevAdapters = settings.GetBool(AppSettingKeys.IntegrationsUseDevAdapters, true),
-        }));
-
         services.AddSingleton<IOptions<TotvsOptions>>(_ => Options.Create(new TotvsOptions
         {
             BaseUrl = settings.GetString(AppSettingKeys.TotvsBaseUrl),
@@ -100,44 +95,33 @@ public static class DependencyInjection
         services.AddSingleton<GlpiCredentialsResolver>();
         services.AddSingleton<GlpiUserNameResolver>();
         services.AddSingleton<LdapSettingsResolver>();
+        services.AddSingleton<GraphTokenProvider>();
+        services.AddTransient<GraphAuthDelegatingHandler>();
 
-        if (settings.GetBool(AppSettingKeys.IntegrationsUseDevAdapters, true))
+        services.AddHttpClient<IGlpiAdapter, GlpiAdapter>(client =>
         {
-            services.AddSingleton<ITotvsAdapter, DevTotvsAdapter>();
-            services.AddSingleton<IGlpiAdapter, DevGlpiAdapter>();
-            services.AddSingleton<IGraphAdapter, DevGraphAdapter>();
-            services.AddSingleton<IPlannerAdapter, DevPlannerAdapter>();
-        }
-        else
+            client.Timeout = TimeSpan.FromSeconds(60);
+        });
+
+        services.AddHttpClient<ITotvsAdapter, TotvsAdapter>((sp, client) =>
         {
-            services.AddSingleton<GraphTokenProvider>();
-            services.AddTransient<GraphAuthDelegatingHandler>();
+            var options = sp.GetRequiredService<IOptions<TotvsOptions>>().Value;
+            var baseUrl = string.IsNullOrWhiteSpace(options.BaseUrl)
+                ? "http://127.0.0.1:9/"
+                : options.BaseUrl.TrimEnd('/') + "/";
+            client.BaseAddress = new Uri(baseUrl);
+        });
 
-            services.AddHttpClient<ITotvsAdapter, TotvsAdapter>((sp, client) =>
-            {
-                var options = sp.GetRequiredService<IOptions<TotvsOptions>>().Value;
-                var baseUrl = string.IsNullOrWhiteSpace(options.BaseUrl)
-                    ? "http://127.0.0.1:9/"
-                    : options.BaseUrl.TrimEnd('/') + "/";
-                client.BaseAddress = new Uri(baseUrl);
-            });
+        services.AddHttpClient<IGraphAdapter, GraphAdapter>((sp, client) =>
+        {
+            client.BaseAddress = new Uri("https://graph.microsoft.com/v1.0/");
+        }).AddHttpMessageHandler<GraphAuthDelegatingHandler>();
 
-            services.AddHttpClient<IGlpiAdapter, GlpiAdapter>(client =>
-            {
-                client.Timeout = TimeSpan.FromSeconds(60);
-            });
-
-            services.AddHttpClient<IGraphAdapter, GraphAdapter>((sp, client) =>
-            {
-                client.BaseAddress = new Uri("https://graph.microsoft.com/v1.0/");
-            }).AddHttpMessageHandler<GraphAuthDelegatingHandler>();
-
-            services.AddHttpClient<IPlannerAdapter, GraphPlannerAdapter>(client =>
-            {
-                client.BaseAddress = new Uri("https://graph.microsoft.com/v1.0/");
-                client.Timeout = TimeSpan.FromSeconds(90);
-            }).AddHttpMessageHandler<GraphAuthDelegatingHandler>();
-        }
+        services.AddHttpClient<IPlannerAdapter, GraphPlannerAdapter>(client =>
+        {
+            client.BaseAddress = new Uri("https://graph.microsoft.com/v1.0/");
+            client.Timeout = TimeSpan.FromSeconds(90);
+        }).AddHttpMessageHandler<GraphAuthDelegatingHandler>();
 
         services.AddScoped<ITotvsRmTimesheetRepository, TotvsRmTimesheetRepository>();
         services.AddScoped<ITotvsRmPayslipRepository, TotvsRmPayslipRepository>();
@@ -154,6 +138,7 @@ public static class DependencyInjection
         services.AddScoped<SeedDataService>();
         services.AddScoped<ITotvsRmConfigurationService, TotvsRmConfigurationService>();
         services.AddScoped<IEmailConfigurationService, EmailConfigurationService>();
+        services.AddScoped<IOrgChartGovernanceService, OrgChartGovernanceService>();
         services.AddScoped<IEmailQueueService, EmailQueueService>();
         services.AddScoped<IEmailDispatchService, EmailDispatchService>();
         services.AddScoped<IEmailAdminService, EmailAdminService>();
@@ -184,12 +169,5 @@ public static class DependencyInjection
             services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(_ =>
                 StackExchange.Redis.ConnectionMultiplexer.Connect(redisConnection));
         }
-    }
-
-    public sealed class IntegrationsOptions
-    {
-        public const string SectionName = "Integrations";
-
-        public bool UseDevAdapters { get; set; } = true;
     }
 }

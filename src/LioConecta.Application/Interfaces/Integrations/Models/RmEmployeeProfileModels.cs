@@ -51,3 +51,41 @@ public sealed class RmEmployeeAdmissionRecord
 
     public string? EmailPessoal { get; set; }
 }
+
+public sealed class RmEmployeeFunctionHistoryRecord
+{
+    public DateTime EventDate { get; set; }
+
+    public string? CodFuncao { get; set; }
+
+    public string? FuncaoDescricao { get; set; }
+
+    public string? CargoDescricao { get; set; }
+}
+
+public sealed class RmEmployeeSectionHistoryRecord
+{
+    public DateTime EventDate { get; set; }
+
+    public string? CodSecao { get; set; }
+
+    public string? SecaoDescricao { get; set; }
+}
+
+public sealed class RmEmployeeSalaryHistoryRecord
+{
+    public DateTime EventDate { get; set; }
+
+    public decimal? Salario { get; set; }
+
+    public string? Motivo { get; set; }
+}
+
+public sealed class RmEmployeeCareerHistoryData
+{
+    public IReadOnlyList<RmEmployeeFunctionHistoryRecord> FunctionHistory { get; init; } = [];
+
+    public IReadOnlyList<RmEmployeeSectionHistoryRecord> SectionHistory { get; init; } = [];
+
+    public IReadOnlyList<RmEmployeeSalaryHistoryRecord> SalaryHistory { get; init; } = [];
+}

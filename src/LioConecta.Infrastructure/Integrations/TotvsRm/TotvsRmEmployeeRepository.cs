@@ -104,6 +104,160 @@ public sealed class TotvsRmEmployeeRepository(
         }
     }
 
+    public async Task<RmEmployeeCareerHistoryData> GetCareerHistoryByChapaAsync(
+        string chapa,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await QueryAsync(
+                "career history",
+                chapa,
+                cancellationToken,
+                async connection =>
+                {
+                    var functionHistory = await QueryFunctionHistoryAsync(connection, chapa, cancellationToken);
+                    var sectionHistory = await QuerySectionHistoryAsync(connection, chapa, cancellationToken);
+                    var salaryHistory = await QuerySalaryHistoryAsync(connection, chapa, cancellationToken);
+
+                    return new RmEmployeeCareerHistoryData
+                    {
+                        FunctionHistory = functionHistory,
+                        SectionHistory = sectionHistory,
+                        SalaryHistory = salaryHistory,
+                    };
+                });
+
+            return result ?? new RmEmployeeCareerHistoryData();
+        }
+        catch (TotvsRmIntegrationException)
+        {
+            return new RmEmployeeCareerHistoryData();
+        }
+    }
+
+    private static async Task<IReadOnlyList<RmEmployeeFunctionHistoryRecord>> QueryFunctionHistoryAsync(
+        SqlConnection connection,
+        string chapa,
+        CancellationToken cancellationToken)
+    {
+        var sqlTemplate = """
+            SELECT
+                H.DTMUDANCA AS EventDate,
+                LTRIM(RTRIM(H.CODFUNCAO)) AS CodFuncao,
+                LTRIM(RTRIM(FN.NOME)) AS FuncaoDescricao,
+                LTRIM(RTRIM(C.NOME)) AS CargoDescricao
+            FROM dbo.{0} H WITH (NOLOCK)
+            LEFT JOIN dbo.PFUNCAO FN WITH (NOLOCK)
+                ON FN.CODCOLIGADA = H.CODCOLIGADA AND FN.CODIGO = H.CODFUNCAO
+            LEFT JOIN dbo.PCARGO C WITH (NOLOCK)
+                ON C.CODCOLIGADA = FN.CODCOLIGADA AND C.CODIGO = FN.CARGO
+            WHERE H.CODCOLIGADA = @CodColigada
+              AND H.CHAPA = @Chapa
+              AND H.DTMUDANCA IS NOT NULL
+            ORDER BY H.DTMUDANCA ASC;
+            """;
+
+        foreach (var tableName in new[]
+                 {
+                     TotvsRmConstants.FunctionHistoryTableName,
+                     TotvsRmConstants.FunctionHistoryFallbackTableName,
+                 })
+        {
+            try
+            {
+                var sql = string.Format(sqlTemplate, tableName);
+                var rows = await connection.QueryAsync<RmEmployeeFunctionHistoryRecord>(
+                    sql,
+                    new
+                    {
+                        CodColigada = TotvsRmConstants.CodColigada,
+                        Chapa = chapa,
+                    });
+
+                return rows.ToList();
+            }
+            catch (SqlException exception) when (exception.Number is 208 or 3701)
+            {
+                // Invalid object name — try fallback table.
+            }
+        }
+
+        return [];
+    }
+
+    private static async Task<IReadOnlyList<RmEmployeeSectionHistoryRecord>> QuerySectionHistoryAsync(
+        SqlConnection connection,
+        string chapa,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT
+                H.DTMUDANCA AS EventDate,
+                LTRIM(RTRIM(H.CODSECAO)) AS CodSecao,
+                LTRIM(RTRIM(S.DESCRICAO)) AS SecaoDescricao
+            FROM dbo.PFHSTSEC H WITH (NOLOCK)
+            LEFT JOIN dbo.PSECAO S WITH (NOLOCK)
+                ON S.CODCOLIGADA = H.CODCOLIGADA AND S.CODIGO = H.CODSECAO
+            WHERE H.CODCOLIGADA = @CodColigada
+              AND H.CHAPA = @Chapa
+              AND H.DTMUDANCA IS NOT NULL
+            ORDER BY H.DTMUDANCA ASC;
+            """;
+
+        try
+        {
+            var rows = await connection.QueryAsync<RmEmployeeSectionHistoryRecord>(
+                sql,
+                new
+                {
+                    CodColigada = TotvsRmConstants.CodColigada,
+                    Chapa = chapa,
+                });
+
+            return rows.ToList();
+        }
+        catch (SqlException exception) when (exception.Number is 208 or 3701)
+        {
+            return [];
+        }
+    }
+
+    private static async Task<IReadOnlyList<RmEmployeeSalaryHistoryRecord>> QuerySalaryHistoryAsync(
+        SqlConnection connection,
+        string chapa,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT
+                H.DTMUDANCA AS EventDate,
+                H.SALARIO AS Salario,
+                LTRIM(RTRIM(H.MOTIVO)) AS Motivo
+            FROM dbo.PFHSTSAL H WITH (NOLOCK)
+            WHERE H.CODCOLIGADA = @CodColigada
+              AND H.CHAPA = @Chapa
+              AND H.DTMUDANCA IS NOT NULL
+            ORDER BY H.DTMUDANCA ASC;
+            """;
+
+        try
+        {
+            var rows = await connection.QueryAsync<RmEmployeeSalaryHistoryRecord>(
+                sql,
+                new
+                {
+                    CodColigada = TotvsRmConstants.CodColigada,
+                    Chapa = chapa,
+                });
+
+            return rows.ToList();
+        }
+        catch (SqlException exception) when (exception.Number is 208 or 3701)
+        {
+            return [];
+        }
+    }
+
     private async Task<T?> QueryAsync<T>(
         string operationLabel,
         string chapa,

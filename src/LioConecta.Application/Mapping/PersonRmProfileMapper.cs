@@ -13,7 +13,9 @@ public static class PersonRmProfileMapper
     public static PersonProfileDto ApplyRmProfile(
         Person person,
         RmEmployeeProfileRecord rm,
-        ViewerContext viewerContext)
+        RmEmployeeCareerHistoryData careerHistory,
+        ViewerContext viewerContext,
+        bool includeSalaryValues)
     {
         var showSensitive = viewerContext is ViewerContext.Self or ViewerContext.HR or ViewerContext.Admin;
         var hireDate = rm.DataAdmissao.HasValue
@@ -21,7 +23,14 @@ public static class PersonRmProfileMapper
             : person.HireDate;
         var location = FormatCityState(rm.Cidade, rm.Estado) ?? person.Location;
 
-        var personalData = BuildPersonalData(rm, showSensitive, hireDate, rm.FuncaoDescricao, rm.SecaoDescricao);
+        var personalData = BuildPersonalData(
+            rm,
+            careerHistory,
+            showSensitive,
+            includeSalaryValues,
+            hireDate,
+            rm.FuncaoDescricao,
+            rm.SecaoDescricao);
         PersonProfileEditor.MergeEditableFields(person, personalData);
         var skills = JsonMapper.DeserializeSkills(person.SkillsJson);
         var bio = PersonProfileEditor.ReadBio(PersonProfileEditor.LoadPersonalData(person))
@@ -71,7 +80,9 @@ public static class PersonRmProfileMapper
 
     private static Dictionary<string, object?> BuildPersonalData(
         RmEmployeeProfileRecord rm,
+        RmEmployeeCareerHistoryData careerHistory,
         bool showSensitive,
+        bool includeSalaryValues,
         DateOnly? hireDate,
         string? roleTitle,
         string? department)
@@ -143,17 +154,11 @@ public static class PersonRmProfileMapper
                 ["projectsCount"] = 0,
             };
 
-            data["history"] = new List<Dictionary<string, object?>>
+            var history = PersonRmCareerHistoryBuilder.Build(rm, careerHistory, includeSalaryValues);
+            if (history.Count > 0)
             {
-                new(StringComparer.OrdinalIgnoreCase)
-                {
-                    ["type"] = "admission",
-                    ["title"] = roleTitle ?? string.Empty,
-                    ["date"] = hireDate.Value.Year.ToString(),
-                    ["dept"] = department ?? string.Empty,
-                    ["note"] = "Admissão registrada no TOTVS RM.",
-                },
-            };
+                data["history"] = history;
+            }
         }
 
         return data;

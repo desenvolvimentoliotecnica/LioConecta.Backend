@@ -14,8 +14,7 @@ public sealed class GlpiConfigurationService(
         TestGlpiConnectionRequest request,
         CancellationToken cancellationToken = default)
     {
-        var usesDevAdapters = settingsProvider.GetBool(AppSettingKeys.IntegrationsUseDevAdapters, true);
         var credentials = credentialsResolver.Resolve(request.BaseUrl, request.AppToken, request.UserToken);
-        return await connectionTester.TestAsync(credentials, usesDevAdapters, cancellationToken);
+        return await connectionTester.TestAsync(credentials, cancellationToken);
     }
 }

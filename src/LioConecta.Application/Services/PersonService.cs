@@ -5,6 +5,7 @@ using LioConecta.Application.Interfaces.Repositories;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Application.Mapping;
 using LioConecta.Domain.Entities;
+using LioConecta.Domain.Enums;
 
 namespace LioConecta.Application.Services;
 
@@ -33,13 +34,20 @@ public sealed class PersonService(
         }
 
         var viewerContext = await currentUserService.GetViewerContextAsync(person.Id, cancellationToken);
+        var includeSalaryValues = await ResolveIncludeCareerSalaryValuesAsync(viewerContext, cancellationToken);
         var chapa = TotvsRmChapaNormalizer.Normalize(person.EmployeeId);
         if (!string.IsNullOrWhiteSpace(chapa))
         {
             var rmProfile = await employeeRepository.GetProfileByChapaAsync(chapa, cancellationToken);
             if (rmProfile is not null)
             {
-                return PersonRmProfileMapper.ApplyRmProfile(person, rmProfile, viewerContext);
+                var rmCareerHistory = await employeeRepository.GetCareerHistoryByChapaAsync(chapa, cancellationToken);
+                return PersonRmProfileMapper.ApplyRmProfile(
+                    person,
+                    rmProfile,
+                    rmCareerHistory,
+                    viewerContext,
+                    includeSalaryValues);
             }
         }
 
@@ -376,5 +384,35 @@ public sealed class PersonService(
         }
 
         return new PersonDirectoryDto(syncedAt, people.Count, departments);
+    }
+
+    private async Task<bool> ResolveIncludeCareerSalaryValuesAsync(
+        ViewerContext viewerContext,
+        CancellationToken cancellationToken)
+    {
+        var roles = await currentUserService.GetRolesAsync(cancellationToken);
+        Person? viewer = null;
+        var viewerHasDirectReports = false;
+
+        try
+        {
+            var viewerId = await currentUserService.GetPersonIdAsync(cancellationToken);
+            viewer = await personRepository.GetByIdAsync(viewerId, cancellationToken);
+            if (viewer is not null)
+            {
+                var directReports = await personRepository.GetDirectReportsAsync(viewerId, cancellationToken);
+                viewerHasDirectReports = directReports.Count > 0;
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            // Viewer not linked to people — rely on role/context only.
+        }
+
+        return CareerSalaryVisibility.CanViewSalaryValues(
+            viewerContext,
+            roles,
+            viewer,
+            viewerHasDirectReports);
     }
 }

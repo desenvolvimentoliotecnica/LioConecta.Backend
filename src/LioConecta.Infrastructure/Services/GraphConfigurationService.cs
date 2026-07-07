@@ -15,9 +15,8 @@ public sealed class GraphConfigurationService(
         TestGraphConnectionRequest request,
         CancellationToken cancellationToken = default)
     {
-        var usesDevAdapters = settingsProvider.GetBool(AppSettingKeys.IntegrationsUseDevAdapters, true);
         var credentials = ResolveCredentials(request);
-        return await connectionTester.TestAsync(credentials, usesDevAdapters, cancellationToken);
+        return await connectionTester.TestAsync(credentials, cancellationToken);
     }
 
     private GraphRuntimeCredentials ResolveCredentials(TestGraphConnectionRequest request)

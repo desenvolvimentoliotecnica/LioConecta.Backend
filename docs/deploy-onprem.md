@@ -91,7 +91,7 @@ Configure monitoramento para alertar se readiness falhar por > 2 minutos.
 | GLPI | `Glpi:BaseUrl`, tokens REST | API v10+ |
 | Graph | App registration + client secret | Delta sync recomendado |
 
-Definir `Integrations:UseDevAdapters=false` em produção.
+Configure credenciais reais em `app_settings` (Configurações do Backend). Não há modo mock de integrações.
 
 ## Backup
 

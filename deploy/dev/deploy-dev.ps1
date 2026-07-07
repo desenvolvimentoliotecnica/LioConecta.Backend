@@ -49,8 +49,15 @@ Copy-Item -Force (Join-Path $ScriptDir "docker-compose.dev.yml") $staging
 Copy-Item -Recurse -Force (Join-Path $ScriptDir "nginx") $staging
 Copy-Item -Force (Join-Path $ScriptDir "scripts\seed-dev-settings.sh") (Join-Path $staging "seed-dev-settings.sh")
 New-Item -ItemType Directory -Path (Join-Path $staging "scripts") -Force | Out-Null
-Copy-Item -Force (Join-Path $ScriptDir "scripts\fix-audit-events.sql") (Join-Path $staging "scripts\fix-audit-events.sql")
-Copy-Item -Force (Join-Path $ScriptDir "scripts\apply-db-fixes.sh") (Join-Path $staging "scripts\apply-db-fixes.sh")
+foreach ($sh in @("seed-dev-glpi-settings.sh", "seed-dev-glpi-settings.sql", "fix-audit-events.sql", "apply-db-fixes.sh")) {
+  $src = Join-Path $ScriptDir "scripts\$sh"
+  $dst = Join-Path $staging "scripts\$sh"
+  $text = [IO.File]::ReadAllText($src) -replace "`r`n", "`n"
+  [IO.File]::WriteAllText($dst, $text)
+}
+# Normalize LF for root seed script too
+$seedPath = Join-Path $staging "seed-dev-settings.sh"
+[IO.File]::WriteAllText($seedPath, ([IO.File]::ReadAllText($seedPath) -replace "`r`n", "`n"))
 Set-Content -Path (Join-Path $staging ".env") -Value "POSTGRES_PASSWORD=$pgPass`nLIOSNECTA_HTTP_PORT=$httpPort" -Encoding ASCII
 $sshTarget = "$user@$hostName"
 $sshArgs = @("-i", $sshKey, "-o", "StrictHostKeyChecking=accept-new", "-o", "BatchMode=yes")
@@ -91,6 +98,8 @@ try {
 }
 Write-Host "Seeding DEV settings..."
 ssh @sshArgs $sshTarget "cd $remoteDir/current; LIOSNECTA_HTTP_PORT=$httpPort bash seed-dev-settings.sh"
+Write-Host "Migrating GLPI settings from local dev export..."
+ssh @sshArgs $sshTarget "cd $remoteDir/current; chmod +x scripts/seed-dev-glpi-settings.sh; bash scripts/seed-dev-glpi-settings.sh"
 ssh @sshArgs $sshTarget "cd $remoteDir/current; docker compose -f docker-compose.dev.yml restart api workers nginx"
 Start-Sleep -Seconds 10
 $health = Invoke-WebRequest -Uri "$baseUrl/health" -UseBasicParsing

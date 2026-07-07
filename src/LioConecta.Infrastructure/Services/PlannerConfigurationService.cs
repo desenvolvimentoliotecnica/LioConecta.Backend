@@ -17,23 +17,8 @@ public sealed class PlannerConfigurationService(
         TestPlannerConnectionRequest request,
         CancellationToken cancellationToken = default)
     {
-        var usesDevAdapters = settingsProvider.GetBool(AppSettingKeys.IntegrationsUseDevAdapters, true);
         var plannerEnabled = settingsProvider.GetBool(AppSettingKeys.PlannerEnabled, false);
         var planId = FirstNonEmpty(request.PlanId, settingsProvider.GetString(AppSettingKeys.PlannerPlanId));
-
-        if (usesDevAdapters)
-        {
-            return new PlannerConnectionTestResponse(
-                false,
-                "Adaptadores mock estão ativos — Planner usa dados fictícios.",
-                "Em Configurações do Backend → Integrações, defina «Modo mock» como Não (false) e reinicie a API.",
-                UsesDevAdapters: true,
-                PlannerEnabled: plannerEnabled,
-                PlanId: planId,
-                PlanTitle: "Teste Leo (mock)",
-                BucketCount: 3,
-                TaskCount: 3);
-        }
 
         if (!plannerEnabled)
         {

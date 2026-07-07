@@ -3,6 +3,7 @@ using System;
 using LioConecta.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LioConecta.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260707123805_AddOrgChartGovernance")]
+    partial class AddOrgChartGovernance
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1540,39 +1543,6 @@ namespace LioConecta.Infrastructure.Migrations
                     b.ToTable("org_departments");
                 });
 
-            modelBuilder.Entity("LioConecta.Domain.Entities.OrgDepartmentMapping", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid?>("OrgDepartmentId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("SourceName")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OrgDepartmentId");
-
-                    b.HasIndex("SourceName")
-                        .IsUnique();
-
-                    b.ToTable("org_department_mappings");
-                });
-
             modelBuilder.Entity("LioConecta.Domain.Entities.OrgPosition", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2660,16 +2630,6 @@ namespace LioConecta.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("ParentDepartment");
-                });
-
-            modelBuilder.Entity("LioConecta.Domain.Entities.OrgDepartmentMapping", b =>
-                {
-                    b.HasOne("LioConecta.Domain.Entities.OrgDepartment", "OrgDepartment")
-                        .WithMany()
-                        .HasForeignKey("OrgDepartmentId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("OrgDepartment");
                 });
 
             modelBuilder.Entity("LioConecta.Domain.Entities.OrgPosition", b =>

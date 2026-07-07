@@ -171,6 +171,40 @@ public sealed class GlpiSessionManager(ILogger<GlpiSessionManager> logger)
         logger.LogDebug("GLPI perfil ativo definido para profiles_id={ProfileId}", credentials.ProfileId);
     }
 
+    public async Task EnsureActiveEntityAsync(
+        HttpClient httpClient,
+        GlpiRuntimeCredentials credentials,
+        string sessionToken,
+        int entityId,
+        CancellationToken cancellationToken)
+    {
+        if (entityId <= 0)
+        {
+            return;
+        }
+
+        var changeUrl = BuildUrl(credentials.BaseUrl, "changeActiveEntities");
+        using var request = new HttpRequestMessage(HttpMethod.Post, changeUrl);
+        request.Headers.Add("App-Token", credentials.AppToken);
+        request.Headers.Add("Session-Token", sessionToken);
+        request.Content = JsonContent.Create(new
+        {
+            entities_id = entityId,
+            is_recursive = true,
+        });
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            logger.LogWarning(
+                "GLPI changeActiveEntities ignorado para entities_id={EntityId}: {Status} {Body}",
+                entityId,
+                (int)response.StatusCode,
+                TrimBody(body));
+        }
+    }
+
     private async Task TryKillSessionAsync(
         HttpClient httpClient,
         GlpiRuntimeCredentials credentials,
@@ -206,31 +240,21 @@ public sealed class GlpiConnectionTester(GlpiSessionManager sessionManager, ILog
 {
     public async Task<GlpiConnectionTestResponse> TestAsync(
         GlpiRuntimeCredentials credentials,
-        bool usesDevAdapters,
         CancellationToken cancellationToken)
     {
-        if (usesDevAdapters)
-        {
-            return new GlpiConnectionTestResponse(
-                false,
-                "Adaptadores mock estão ativos — o GLPI real não é consultado.",
-                "Em Configurações do Backend → Integrações, defina «Modo mock» como Não (false) e reinicie a API.",
-                UsesDevAdapters: true);
-        }
-
         if (string.IsNullOrWhiteSpace(credentials.BaseUrl))
         {
-            return Fail(usesDevAdapters, "URL base do GLPI não informada.", null);
+            return Fail("URL base do GLPI não informada.", null);
         }
 
         if (string.IsNullOrWhiteSpace(credentials.AppToken))
         {
-            return Fail(usesDevAdapters, "App token do GLPI não informado.", null);
+            return Fail("App token do GLPI não informado.", null);
         }
 
         if (string.IsNullOrWhiteSpace(credentials.UserToken))
         {
-            return Fail(usesDevAdapters, "User token do GLPI não informado.", null);
+            return Fail("User token do GLPI não informado.", null);
         }
 
         try
@@ -254,13 +278,10 @@ public sealed class GlpiConnectionTester(GlpiSessionManager sessionManager, ILog
                 detail += " Verifique se o app token (Lioconecta) e o user token (glpi_system_service) não estão invertidos.";
             }
 
-            return Fail(
-                usesDevAdapters,
-                "Não foi possível autenticar no GLPI.",
-                detail);
+            return Fail("Não foi possível autenticar no GLPI.", detail);
         }
     }
 
-    private static GlpiConnectionTestResponse Fail(bool usesDevAdapters, string message, string? detail) =>
-        new(false, message, detail, usesDevAdapters);
+    private static GlpiConnectionTestResponse Fail(string message, string? detail) =>
+        new(false, message, detail, UsesDevAdapters: false);
 }

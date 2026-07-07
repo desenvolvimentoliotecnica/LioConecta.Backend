@@ -50,19 +50,18 @@ Em produção o portal usa **somente LDAP** (`auth.provider=ldap`). Um super-adm
 
 Configuração LDAP e JWT em `app_settings` (categorias `auth` e `ldap`), editável em **Configurações do Backend**.
 
-## Modo simulação (desenvolvimento)
+## Integrações externas
 
-Por enquanto **não há integração com Azure AD, TOTVS, GLPI ou Graph**. A API opera em modo simulação:
+TOTVS, GLPI, Microsoft Graph e Planner usam **sempre APIs reais**. Configure credenciais em Configurações do Backend e reinicie a API após alterar secrets.
 
 | Config | Valor | Efeito |
 |--------|-------|--------|
-| `Integrations:UseDevAdapters` | `true` | TOTVS/GLPI/Graph retornam dados mock |
 | `auth.provider` | `dev` (Development) | DevAuth — endpoints acessíveis sem token real |
 | `auth.provider` | `ldap` (produção) | JWT do portal com chave `auth.jwt_signing_key` |
 
 O front-end deve usar `VITE_USE_MOCK=false` e apontar para esta API. Para desenvolvimento local sem LDAP, use `VITE_AUTH_MODE=dev` no front.
 
-Quando for integrar sistemas reais, defina `Integrations:UseDevAdapters=false`, `auth.provider=ldap` e configure LDAP / credenciais (ver `docs/integrations.md`).
+Ver `docs/integrations.md` para credenciais de cada sistema.
 
 ## Desenvolvimento local
 
@@ -139,8 +138,7 @@ Variáveis críticas:
 - `auth.jwt_signing_key` — chave JWT do portal (obrigatória com `auth.provider=ldap`)
 - `ldap.*` — servidor AD/LDAP corporativo
 - `PORTAL_SUPER_ADMIN_PASSWORD` — senha bootstrap do super-admin local
-- `Integrations:UseDevAdapters` — `false` em produção
-- `Totvs:*`, `Glpi:*`, `Graph:*` — credenciais reais
+- `Totvs:*`, `Glpi:*`, `Graph:*` — credenciais reais (sempre consultadas; sem modo mock)
 
 ## Migrations
 

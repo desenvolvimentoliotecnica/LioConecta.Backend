@@ -15,6 +15,42 @@ public class HelpDeskAreaCatalogTests
     }
 
     [Fact]
+    public void ResolveAreaCategories_TiArea_ReturnsEntityCatalog()
+    {
+        var all = Enumerable.Range(1, 21)
+            .Select(id => new GlpiItilCategory
+            {
+                Id = id,
+                Name = $"Serviço {id}",
+                FullName = $"Serviço {id}",
+                ParentId = null,
+                EntityId = 1,
+            })
+            .ToList();
+
+        var area = HelpDeskAreaCatalog.Parse(null).First(item => item.Id == "ti");
+        var scoped = HelpDeskAreaCatalog.ResolveAreaCategories(area, all);
+
+        Assert.Equal(21, scoped.Count);
+        Assert.Equal(21, scoped.Count(category => category.ParentId is null));
+    }
+
+    [Fact]
+    public void ResolveAreaCategories_FallsBackWhenEntityFilterEmpty()
+    {
+        var all = new List<GlpiItilCategory>
+        {
+            new() { Id = 99, Name = "Legado", ParentId = null, EntityId = 2 },
+        };
+
+        var area = HelpDeskAreaCatalog.Parse(null).First(item => item.Id == "ti");
+        var scoped = HelpDeskAreaCatalog.ResolveAreaCategories(area, all);
+
+        Assert.Single(scoped);
+        Assert.Equal(99, scoped[0].Id);
+    }
+
+    [Fact]
     public void ResolveAreaCategories_FiltersByConfiguredRoots()
     {
         var all = new List<GlpiItilCategory>

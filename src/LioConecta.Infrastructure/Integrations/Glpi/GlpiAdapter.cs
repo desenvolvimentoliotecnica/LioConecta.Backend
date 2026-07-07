@@ -169,6 +169,7 @@ public sealed class GlpiAdapter(
         }
 
         var sessionToken = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
+        await sessionManager.EnsureActiveEntityAsync(httpClient, credentials, sessionToken, 1, cancellationToken);
         var rawCategories = await LoadItilCategoriesFromApiAsync(credentials, sessionToken, cancellationToken);
         return HelpDeskItilCategoryTreeBuilder.Build(rawCategories, dedupeByLabel: false);
     }
@@ -196,6 +197,7 @@ public sealed class GlpiAdapter(
         }
 
         var sessionToken = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
+        await sessionManager.EnsureActiveEntityAsync(httpClient, credentials, sessionToken, 1, cancellationToken);
         var rawCategories = await LoadItilCategoriesFromApiAsync(credentials, sessionToken, cancellationToken);
         var filtered = rawCategories
             .Where(c => c.EntityId == entityId)

@@ -11,33 +11,21 @@ public sealed class GraphConnectionTester(ILogger<GraphConnectionTester> logger)
 
     public async Task<GraphConnectionTestResponse> TestAsync(
         GraphRuntimeCredentials credentials,
-        bool usesDevAdapters,
         CancellationToken cancellationToken)
     {
-        if (usesDevAdapters)
-        {
-            return new GraphConnectionTestResponse(
-                false,
-                "Adaptadores mock estão ativos — o worker de diretório usa dados fictícios (3 usuários).",
-                "Em Configurações do Backend → Integrações, defina «Modo mock» como Não (false) e reinicie a API.",
-                UsesDevAdapters: true,
-                DomainUserCount: null,
-                TenantUserCount: null);
-        }
-
         if (string.IsNullOrWhiteSpace(credentials.TenantId))
         {
-            return Fail(usesDevAdapters, "Tenant ID do Graph não informado.", null);
+            return Fail("Tenant ID do Graph não informado.", null);
         }
 
         if (string.IsNullOrWhiteSpace(credentials.ClientId))
         {
-            return Fail(usesDevAdapters, "Client ID do Graph não informado.", null);
+            return Fail("Client ID do Graph não informado.", null);
         }
 
         if (string.IsNullOrWhiteSpace(credentials.ClientSecret))
         {
-            return Fail(usesDevAdapters, "Client secret do Graph não informado.", null);
+            return Fail("Client secret do Graph não informado.", null);
         }
 
         try
@@ -62,7 +50,6 @@ public sealed class GraphConnectionTester(ILogger<GraphConnectionTester> logger)
                 if (!response.IsSuccessStatusCode)
                 {
                     return Fail(
-                        usesDevAdapters,
                         "Microsoft Graph rejeitou a consulta de usuários.",
                         $"HTTP {(int)response.StatusCode}: {TryReadGraphError(body)}");
                 }
@@ -106,17 +93,13 @@ public sealed class GraphConnectionTester(ILogger<GraphConnectionTester> logger)
         {
             logger.LogWarning(exception, "Falha ao testar conexão Microsoft Graph.");
             return Fail(
-                usesDevAdapters,
                 "Não foi possível autenticar ou consultar o Microsoft Graph.",
                 exception.Message);
         }
     }
 
-    private static GraphConnectionTestResponse Fail(
-        bool usesDevAdapters,
-        string message,
-        string? detail) =>
-        new(false, message, detail, usesDevAdapters, null, null);
+    private static GraphConnectionTestResponse Fail(string message, string? detail) =>
+        new(false, message, detail, UsesDevAdapters: false, null, null);
 
     private static async Task<string> AcquireTokenAsync(
         GraphRuntimeCredentials credentials,

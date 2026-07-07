@@ -8,6 +8,8 @@ namespace LioConecta.Infrastructure.Integrations.Glpi;
 
 public sealed class GlpiSessionManager(ILogger<GlpiSessionManager> logger)
 {
+    private const int SessionDefaultProfileSentinel = -1;
+
     private readonly SemaphoreSlim _lock = new(1, 1);
     private string? _sessionToken;
     private string? _sessionKey;
@@ -98,10 +100,20 @@ public sealed class GlpiSessionManager(ILogger<GlpiSessionManager> logger)
         }
     }
 
-    private bool ProfileMatches(int? profileId) =>
-        profileId is null or <= 0
-            ? _activeProfileId is null
-            : _activeProfileId == profileId;
+    private bool ProfileMatches(int? profileId)
+    {
+        if (profileId is null or <= 0)
+        {
+            return _activeProfileId is null or SessionDefaultProfileSentinel;
+        }
+
+        if (_activeProfileId == profileId)
+        {
+            return true;
+        }
+
+        return _activeProfileId == SessionDefaultProfileSentinel;
+    }
 
     private async Task EnsureActiveProfileAsync(
         HttpClient httpClient,
@@ -129,14 +141,30 @@ public sealed class GlpiSessionManager(ILogger<GlpiSessionManager> logger)
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
+            if (response.StatusCode is System.Net.HttpStatusCode.NotFound
+                or System.Net.HttpStatusCode.Forbidden)
+            {
+                logger.LogWarning(
+                    "GLPI changeActiveProfile ignorado: profiles_id={ProfileId} indisponível para o usuário de serviço ({Status}). Usando perfil padrão da sessão. Defina glpi.profile_id=0 ou um ID válido (ex.: Gestor=7). Resposta: {Body}",
+                    credentials.ProfileId,
+                    (int)response.StatusCode,
+                    TrimBody(body));
+                _activeProfileId = SessionDefaultProfileSentinel;
+                return;
+            }
+
             throw new InvalidOperationException(
                 $"GLPI changeActiveProfile falhou ({(int)response.StatusCode}): {TrimBody(body)}");
         }
 
         if (!body.Trim().Equals("true", StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException(
-                $"GLPI não aceitou o perfil {credentials.ProfileId}: {TrimBody(body)}");
+            logger.LogWarning(
+                "GLPI não aceitou profiles_id={ProfileId}: {Body}. Mantendo perfil padrão da sessão.",
+                credentials.ProfileId,
+                TrimBody(body));
+            _activeProfileId = SessionDefaultProfileSentinel;
+            return;
         }
 
         _activeProfileId = credentials.ProfileId;

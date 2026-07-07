@@ -85,7 +85,7 @@ public static class AppSettingCatalog
         new(AppSettingKeys.GlpiUserToken, "glpi", "GLPI — user token (glpi_system_service)",
             "Remote access key do usuário de serviço glpi_system_service (header Authorization: user_token …).", "secret", true, "", 4),
         new(AppSettingKeys.GlpiProfileId, "glpi", "GLPI — perfil ativo (profiles_id)",
-            "ID do perfil GLPI usado após initSession. O usuário de serviço inicia em Self-Service (1) e não enxerga a fila — use Super-Admin (4) para listar chamados.", "integer", false, "4", 5),
+            "ID do perfil após initSession. Use 0 para manter o perfil padrão do usuário de serviço. Se informar um ID que o usuário não possui (ex.: Super-Admin=4), a API ignora e usa o perfil da sessão. Para o token da infra, Gestor=7 costuma funcionar.", "integer", false, "0", 5),
         new(AppSettingKeys.HelpDeskGlpiAreas, "glpi", "Help Desk — áreas do catálogo (JSON)",
             "Lista de áreas exibidas no wizard (como no app mobile): id, name, icon, entityId, categoryRootIds e serviceCount opcional. Infra deve informar os IDs de categoria raiz de cada área.", "json", false,
             HelpDeskAreaCatalog.DefaultAreasJson, 6),

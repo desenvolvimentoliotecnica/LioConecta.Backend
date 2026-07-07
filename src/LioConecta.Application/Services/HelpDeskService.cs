@@ -6,6 +6,7 @@ using LioConecta.Application.Interfaces.Integrations.Models;
 using LioConecta.Application.Interfaces.Repositories;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Domain.Enums;
+using Microsoft.Extensions.Logging;
 
 namespace LioConecta.Application.Services;
 
@@ -15,7 +16,8 @@ public sealed class HelpDeskService(
     ICurrentUserService currentUserService,
     IPersonRepository personRepository,
     IAppSettingsProvider appSettings,
-    IGlpiAdapter glpiAdapter) : IHelpDeskService
+    IGlpiAdapter glpiAdapter,
+    ILogger<HelpDeskService> logger) : IHelpDeskService
 {
     public const string HelpDeskType = "servicos-help-desk";
 
@@ -182,7 +184,18 @@ public sealed class HelpDeskService(
     {
         var definitions = HelpDeskAreaCatalog.Parse(
             appSettings.GetString(AppSettingKeys.HelpDeskGlpiAreas));
-        var allCategories = await glpiAdapter.GetAllItilCategoriesAsync(cancellationToken);
+
+        IReadOnlyList<GlpiItilCategory> allCategories = [];
+        try
+        {
+            allCategories = await glpiAdapter.GetAllItilCategoriesAsync(cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(
+                exception,
+                "Falha ao consultar categorias GLPI para contagem de áreas; usando serviceCount configurado.");
+        }
 
         return definitions
             .Select(area =>

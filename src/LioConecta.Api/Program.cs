@@ -55,6 +55,7 @@ try
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(settingsProvider);
     builder.Services.AddScoped<INotificationBroadcaster, SignalRNotificationBroadcaster>();
+    builder.Services.AddScoped<IChatBroadcaster, SignalRChatBroadcaster>();
     if (builder.Environment.IsDevelopment())
     {
         builder.Services.AddHostedService<TotvsSyncWorker>();

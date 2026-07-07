@@ -61,6 +61,7 @@ public static class DependencyInjection
         services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IChatRepository, ChatRepository>();
+        services.AddScoped<IUserTeamsTokenRepository, UserTeamsTokenRepository>();
         services.AddScoped<ICalendarRepository, CalendarRepository>();
         services.AddScoped<IAnalyticsRepository, AnalyticsRepository>();
         services.AddScoped<IUserPreferenceRepository, UserPreferenceRepository>();
@@ -123,6 +124,12 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(90);
         }).AddHttpMessageHandler<GraphAuthDelegatingHandler>();
 
+        services.AddHttpClient<ITeamsChatAdapter, TeamsChatGraphAdapter>(client =>
+        {
+            client.BaseAddress = new Uri("https://graph.microsoft.com/v1.0/");
+            client.Timeout = TimeSpan.FromSeconds(60);
+        });
+
         services.AddScoped<ITotvsRmTimesheetRepository, TotvsRmTimesheetRepository>();
         services.AddScoped<ITotvsRmPayslipRepository, TotvsRmPayslipRepository>();
         services.AddScoped<ITotvsRmEmployeeRepository, TotvsRmEmployeeRepository>();
@@ -150,6 +157,8 @@ public static class DependencyInjection
         services.AddScoped<IGraphDirectorySyncService, GraphDirectorySyncService>();
         services.AddScoped<IGraphConfigurationService, GraphConfigurationService>();
         services.AddScoped<IPlannerConfigurationService, PlannerConfigurationService>();
+        services.AddScoped<IChatConfigurationService, ChatConfigurationService>();
+        services.AddScoped<IUserTeamsTokenService, UserTeamsTokenService>();
         services.AddScoped<IGlpiConfigurationService, GlpiConfigurationService>();
         services.AddScoped<ILdapConfigurationService, LdapConfigurationService>();
         services.AddScoped<ILdapAuthService, LdapAuthService>();
@@ -158,6 +167,7 @@ public static class DependencyInjection
         services.AddScoped<LdapConnectionTester>();
         services.AddScoped<IPersonPhotoStorageService, PersonPhotoStorageService>();
         services.AddScoped<GraphConnectionTester>();
+        services.AddScoped<TeamsChatConnectionTester>();
         services.AddScoped<PlannerConnectionTester>();
         services.AddScoped<GlpiConnectionTester>();
         services.AddScoped<IWorkerRunRecorder, WorkerRunRecorder>();

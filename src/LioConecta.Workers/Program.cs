@@ -35,6 +35,7 @@ try
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(settingsProvider);
     builder.Services.AddSingleton<INotificationBroadcaster, NoOpNotificationBroadcaster>();
+    builder.Services.AddSingleton<IChatBroadcaster, NoOpChatBroadcaster>();
 
     builder.Services.AddHostedService<TotvsSyncWorker>();
     builder.Services.AddHostedService<GraphSyncWorker>();

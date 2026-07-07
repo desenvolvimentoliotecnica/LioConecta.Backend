@@ -45,6 +45,16 @@ public static class AppSettingKeys
     public const string GraphClientSecret = "graph.client_secret";
     public const string GraphDirectoryLastSyncUtc = "graph.directory_last_sync_utc";
 
+    public const string ChatTeamsEnabled = "chat.teams.enabled";
+    public const string ChatTeamsAuthMode = "chat.teams.auth_mode";
+    public const string ChatTeamsDelegatedScopes = "chat.teams.delegated_scopes";
+    public const string ChatTeamsIncludeGroupChats = "chat.teams.include_group_chats";
+    public const string ChatTeamsPollingIntervalSeconds = "chat.teams.polling_interval_seconds";
+    public const string ChatTeamsSignalREnabled = "chat.teams.signalr_enabled";
+    public const string ChatTeamsTokenEncryptionKey = "chat.teams.token_encryption_key";
+    public const string ChatTeamsLastTestUtc = "chat.teams.last_test_utc";
+    public const string ChatTeamsLastTestMessage = "chat.teams.last_test_message";
+
     public const string PlannerEnabled = "planner.enabled";
     public const string PlannerPlanId = "planner.plan_id";
     public const string PlannerDefaultBucketId = "planner.default_bucket_id";

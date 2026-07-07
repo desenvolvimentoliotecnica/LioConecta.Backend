@@ -49,6 +49,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<EmailMessage> EmailMessages => Set<EmailMessage>();
 
     public DbSet<EmailAttachmentStaging> EmailAttachmentStagings => Set<EmailAttachmentStaging>();
+    public DbSet<UserTeamsToken> UserTeamsTokens => Set<UserTeamsToken>();
     public DbSet<PortalUser> PortalUsers => Set<PortalUser>();
     public DbSet<OrgChartSettings> OrgChartSettings => Set<OrgChartSettings>();
     public DbSet<OrgDepartment> OrgDepartments => Set<OrgDepartment>();
@@ -82,6 +83,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureTimesheetPeriodCache(modelBuilder);
         ConfigureEmail(modelBuilder);
         ConfigurePortalUsers(modelBuilder);
+        ConfigureUserTeamsTokens(modelBuilder);
         ConfigureOrgChartGovernance(modelBuilder);
     }
 
@@ -720,6 +722,24 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasOne(u => u.Person)
                 .WithMany()
                 .HasForeignKey(u => u.PersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureUserTeamsTokens(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<UserTeamsToken>(entity =>
+        {
+            entity.HasIndex(t => t.PersonId).IsUnique();
+            entity.HasIndex(t => t.ExpiresAt);
+
+            entity.Property(t => t.EncryptedAccessToken).HasMaxLength(8192);
+            entity.Property(t => t.EncryptedRefreshToken).HasMaxLength(8192);
+            entity.Property(t => t.ScopesJson).HasMaxLength(2048);
+
+            entity.HasOne(t => t.Person)
+                .WithMany()
+                .HasForeignKey(t => t.PersonId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

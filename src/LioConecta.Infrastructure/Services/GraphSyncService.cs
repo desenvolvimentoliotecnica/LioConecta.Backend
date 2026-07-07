@@ -50,54 +50,13 @@ public sealed class GraphSyncService(
         IWorkerRunContext? context,
         CancellationToken cancellationToken)
     {
-        var referencePerson = await db.People
-            .Where(p => p.IsActive)
-            .OrderBy(p => p.CreatedAt)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (referencePerson is null)
-        {
-            if (context is not null)
-            {
-                await context.LogWarningAsync("Graph calendar sync skipped: no active people in database.", cancellationToken);
-            }
-
-            return;
-        }
-
-        var from = DateTimeOffset.UtcNow.Date;
-        var to = from.AddDays(30);
-        var events = await graphAdapter.GetCalendarEventsAsync(referencePerson.Id, from, to, cancellationToken);
-
-        foreach (var evt in events)
-        {
-            var existing = await db.CalendarEvents
-                .FirstOrDefaultAsync(e => e.ExternalId == evt.ExternalId, cancellationToken);
-
-            if (existing is null)
-            {
-                existing = new CalendarEvent
-                {
-                    Id = Guid.NewGuid(),
-                    CreatedAt = DateTimeOffset.UtcNow
-                };
-                db.CalendarEvents.Add(existing);
-            }
-
-            existing.Title = evt.Title;
-            existing.StartAt = evt.StartAt.ToUniversalTime();
-            existing.EndAt = evt.EndAt.ToUniversalTime();
-            existing.Location = evt.Location;
-            existing.Source = "Outlook";
-            existing.ExternalId = evt.ExternalId;
-            existing.UpdatedAt = DateTimeOffset.UtcNow;
-        }
-
-        await db.SaveChangesAsync(cancellationToken);
-
         if (context is not null)
         {
-            await context.LogInfoAsync($"Graph calendar sync completed: {events.Count} events.", cancellationToken);
+            await context.LogInfoAsync(
+                "Graph calendar cache sync skipped: delegated Outlook calendar is served live via /api/v1/calendar.",
+                cancellationToken);
         }
+
+        await Task.CompletedTask;
     }
 }

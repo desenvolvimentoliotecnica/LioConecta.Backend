@@ -61,6 +61,16 @@ public static class AppSettingKeys
     public const string PlannerPlanTitle = "planner.plan_title";
     public const string PlannerLastSyncUtc = "planner.last_sync_utc";
 
+    public const string CalendarEnabled = "calendar.enabled";
+    public const string CalendarDelegatedScopes = "calendar.delegated_scopes";
+    public const string CalendarDefaultView = "calendar.default_view";
+    public const string CalendarShowBirthdays = "calendar.show_birthdays";
+    public const string CalendarShowCafeteriaMenu = "calendar.show_cafeteria_menu";
+    public const string CalendarMaxParallelCalendars = "calendar.max_parallel_calendars";
+    public const string CalendarTokenEncryptionKey = "calendar.token_encryption_key";
+    public const string CalendarLastTestUtc = "calendar.last_test_utc";
+    public const string CalendarLastTestMessage = "calendar.last_test_message";
+
     public const string WorkersTotvsSyncIntervalMinutes = "workers.totvs_sync_interval_minutes";
     public const string WorkersGraphSyncIntervalMinutes = "workers.graph_sync_interval_minutes";
     public const string WorkersGraphDirectorySyncIntervalMinutes = "workers.graph_directory_sync_interval_minutes";

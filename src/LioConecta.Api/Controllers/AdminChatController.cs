@@ -14,10 +14,12 @@ public sealed class AdminChatController(IChatConfigurationService chatConfigurat
     [HttpPost("test")]
     [ProducesResponseType(typeof(ChatConnectionTestResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<ChatConnectionTestResponse>> Test(
-        [FromBody] TestChatConnectionRequest request,
+        [FromBody] TestChatConnectionRequest? request,
         CancellationToken cancellationToken)
     {
-        var result = await chatConfigurationService.TestConnectionAsync(request, cancellationToken);
+        var result = await chatConfigurationService.TestConnectionAsync(
+            request ?? new TestChatConnectionRequest(null, null, null),
+            cancellationToken);
         return Ok(result);
     }
 }

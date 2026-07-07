@@ -130,6 +130,12 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(60);
         });
 
+        services.AddHttpClient<ICalendarGraphAdapter, CalendarGraphAdapter>(client =>
+        {
+            client.BaseAddress = new Uri("https://graph.microsoft.com/v1.0/");
+            client.Timeout = TimeSpan.FromSeconds(90);
+        });
+
         services.AddScoped<ITotvsRmTimesheetRepository, TotvsRmTimesheetRepository>();
         services.AddScoped<ITotvsRmPayslipRepository, TotvsRmPayslipRepository>();
         services.AddScoped<ITotvsRmEmployeeRepository, TotvsRmEmployeeRepository>();
@@ -157,8 +163,11 @@ public static class DependencyInjection
         services.AddScoped<IGraphDirectorySyncService, GraphDirectorySyncService>();
         services.AddScoped<IGraphConfigurationService, GraphConfigurationService>();
         services.AddScoped<IPlannerConfigurationService, PlannerConfigurationService>();
+        services.AddScoped<ICalendarConfigurationService, CalendarConfigurationService>();
         services.AddScoped<IChatConfigurationService, ChatConfigurationService>();
-        services.AddScoped<IUserTeamsTokenService, UserTeamsTokenService>();
+        services.AddScoped<UserGraphTokenService>();
+        services.AddScoped<IUserGraphTokenService>(sp => sp.GetRequiredService<UserGraphTokenService>());
+        services.AddScoped<IUserTeamsTokenService>(sp => sp.GetRequiredService<UserGraphTokenService>());
         services.AddScoped<IGlpiConfigurationService, GlpiConfigurationService>();
         services.AddScoped<ILdapConfigurationService, LdapConfigurationService>();
         services.AddScoped<ILdapAuthService, LdapAuthService>();
@@ -169,6 +178,7 @@ public static class DependencyInjection
         services.AddScoped<GraphConnectionTester>();
         services.AddScoped<TeamsChatConnectionTester>();
         services.AddScoped<PlannerConnectionTester>();
+        services.AddScoped<CalendarConnectionTester>();
         services.AddScoped<GlpiConnectionTester>();
         services.AddScoped<IWorkerRunRecorder, WorkerRunRecorder>();
         services.AddScoped<IWorkerTriggerService, WorkerTriggerService>();

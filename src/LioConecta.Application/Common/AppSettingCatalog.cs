@@ -228,5 +228,8 @@ public static class AppSettingCatalog
 
         ..BenefitPortalSettingCatalog.ToAppSettingDefinitions(),
         ..LeavePortalSettingCatalog.ToAppSettingDefinitions(),
+        ..FacilitiesMenuSettingCatalog.ToAppSettingDefinitions(),
+        ..LoopSettingCatalog.ToAppSettingDefinitions(),
+        ..PortalUiSettingCatalog.ToAppSettingDefinitions(),
     ];
 }

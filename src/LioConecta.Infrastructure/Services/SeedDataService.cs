@@ -21,6 +21,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             await EnsurePayslipsCatalogAsync(cancellationToken);
             await EnsureBenefitsCatalogAsync(cancellationToken);
             await EnsureLeaveCatalogAsync(cancellationToken);
+            await EnsureFacilitiesMenuCatalogAsync(cancellationToken);
             await EnsurePollSeedAsync(cancellationToken);
             await EnsureEmployeeIdsAsync(cancellationToken);
             await EnsureDevTestUserProfileAsync(cancellationToken);
@@ -267,6 +268,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
         await db.SaveChangesAsync(cancellationToken);
         await EnsureSuperAdminPortalUserAsync(cancellationToken);
         await EnsureGroupsCatalogAsync(cancellationToken);
+        await EnsureFacilitiesMenuCatalogAsync(cancellationToken);
         logger.LogInformation("Seed completed with {People} people.", people.Length);
     }
 
@@ -435,6 +437,41 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
 
         await db.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Seeded leave catalog for Maria Silva.");
+    }
+
+    private async Task EnsureFacilitiesMenuCatalogAsync(CancellationToken cancellationToken)
+    {
+        var seedTime = DateTimeOffset.UtcNow.AddDays(-1);
+        var added = 0;
+
+        foreach (var entry in FacilitiesMenuCatalogSeed.Entries)
+        {
+            var existsById = await db.CafeteriaMenus.AnyAsync(m => m.Id == entry.Id, cancellationToken);
+            if (existsById)
+            {
+                continue;
+            }
+
+            var existsByDate = await db.CafeteriaMenus.AnyAsync(m => m.Date == entry.Date, cancellationToken);
+            if (existsByDate)
+            {
+                continue;
+            }
+
+            db.CafeteriaMenus.Add(FacilitiesMenuCatalogSeed.ToEntity(entry, seedTime));
+            added++;
+        }
+
+        if (added == 0)
+        {
+            return;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation(
+            "Seeded {Count} cafeteria menu day(s) for week starting {WeekStart:yyyy-MM-dd}.",
+            added,
+            FacilitiesMenuCatalogSeed.WeekStart);
     }
 
     private async Task EnsureArchivedAtBackfillAsync(CancellationToken cancellationToken)

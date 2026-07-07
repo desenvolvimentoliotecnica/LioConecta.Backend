@@ -110,4 +110,15 @@ public static class AppSettingKeys
     public const string ObservabilityRetentionAggregatesDays = "observability.retention.aggregates_days";
     public const string ObservabilityRetentionEnabled = "observability.retention.enabled";
     public const string ObservabilityPrivacyIpMode = "observability.privacy.ip_mode";
+
+    public const string FacilitiesMenuAllowedRoles = "facilities.menu.allowed_roles";
+    public const string FacilitiesMenuAllowedEmails = "facilities.menu.allowed_emails";
+    public const string FacilitiesMenuEmailRecipients = "facilities.menu.email_recipients";
+
+    public const string LoopEnabled = "loop.enabled";
+    public const string LoopAllowedRoles = "loop.allowed_roles";
+    public const string LoopAllowedEmails = "loop.allowed_emails";
+
+    public const string PortalUiMaturityBadgesEnabled = "portal.ui.maturity_badges_enabled";
+    public const string PortalUiMaturityRoadmap = "portal.ui.maturity_roadmap";
 }

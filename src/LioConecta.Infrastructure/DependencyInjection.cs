@@ -63,6 +63,7 @@ public static class DependencyInjection
         services.AddScoped<IChatRepository, ChatRepository>();
         services.AddScoped<IUserTeamsTokenRepository, UserTeamsTokenRepository>();
         services.AddScoped<ICalendarRepository, CalendarRepository>();
+        services.AddScoped<IFacilitiesMenuRepository, FacilitiesMenuRepository>();
         services.AddScoped<IAnalyticsRepository, AnalyticsRepository>();
         services.AddScoped<IUserPreferenceRepository, UserPreferenceRepository>();
         services.AddScoped<ISearchRepository, SearchRepository>();
@@ -152,6 +153,7 @@ public static class DependencyInjection
         services.AddScoped<ITotvsRmConfigurationService, TotvsRmConfigurationService>();
         services.AddScoped<IEmailConfigurationService, EmailConfigurationService>();
         services.AddScoped<IOrgChartGovernanceService, OrgChartGovernanceService>();
+        services.AddScoped<IFacilitiesMenuService, FacilitiesMenuService>();
         services.AddScoped<IEmailQueueService, EmailQueueService>();
         services.AddScoped<IEmailDispatchService, EmailDispatchService>();
         services.AddScoped<IEmailAdminService, EmailAdminService>();

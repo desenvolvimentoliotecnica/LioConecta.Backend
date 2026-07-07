@@ -31,5 +31,5 @@ public interface ICalendarService
 
     Task DeleteEventAsync(string eventId, CancellationToken cancellationToken = default);
 
-    Task<CafeteriaMenuDto?> GetCafeteriaMenuAsync(DateOnly date, CancellationToken cancellationToken = default);
+    Task<DailyMenuDto?> GetCafeteriaMenuAsync(DateOnly date, CancellationToken cancellationToken = default);
 }

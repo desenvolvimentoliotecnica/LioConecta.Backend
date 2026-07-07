@@ -100,10 +100,41 @@ try
         {
             options.TokenValidationParameters = PortalJwtService.BuildValidationParameters(jwtSigningKey);
 
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    var path = context.HttpContext.Request.Path;
+                    if (!path.StartsWithSegments("/hubs"))
+                    {
+                        return Task.CompletedTask;
+                    }
+
+                    var token = context.Request.Query["access_token"].ToString();
+                    if (string.IsNullOrWhiteSpace(token))
+                    {
+                        var authHeader = context.Request.Headers.Authorization.ToString();
+                        if (authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                        {
+                            token = authHeader["Bearer ".Length..].Trim();
+                        }
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(token))
+                    {
+                        context.Token = token;
+                    }
+
+                    return Task.CompletedTask;
+                },
+            };
+
             if (settingsProvider.GetBool(AppSettingKeys.ObservabilityAuthAuditEnabled, true))
             {
+                var hubMessageReceived = options.Events.OnMessageReceived;
                 options.Events = new JwtBearerEvents
                 {
+                    OnMessageReceived = hubMessageReceived,
                     OnAuthenticationFailed = async context =>
                     {
                         var recorder = context.HttpContext.RequestServices

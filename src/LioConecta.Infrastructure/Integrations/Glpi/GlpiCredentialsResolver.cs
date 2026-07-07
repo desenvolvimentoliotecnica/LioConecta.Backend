@@ -62,12 +62,12 @@ public sealed class GlpiCredentialsResolver(IAppSettingsProvider settingsProvide
     {
         if (string.IsNullOrWhiteSpace(raw))
         {
-            return 4;
+            return null;
         }
 
         return int.TryParse(raw.Trim(), out var profileId) && profileId > 0
             ? profileId
-            : 4;
+            : null;
     }
 
     private static string DerivePortalUrl(string baseUrl)

@@ -28,4 +28,14 @@ public interface ITotvsRmPayslipRepository
         int mesComp,
         int nroPeriodo,
         CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<RmIncomeStatementLineRecord>> GetIncomeStatementLinesAsync(
+        string chapa,
+        int anoComp,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<RmFgtsDepositRecord>> GetFgtsDepositsAsync(
+        string chapa,
+        int maxMonths,
+        CancellationToken cancellationToken);
 }

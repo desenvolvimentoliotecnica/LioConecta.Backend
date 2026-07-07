@@ -31,6 +31,11 @@ public interface IPayslipSyncService
         Guid personId,
         CancellationToken cancellationToken);
 
+    Task<bool> SyncIncomeStatementAsync(
+        Guid personId,
+        int year,
+        CancellationToken cancellationToken);
+
     Task<int> SyncAllActivePeopleAsync(
         IWorkerRunContext? context,
         CancellationToken cancellationToken);

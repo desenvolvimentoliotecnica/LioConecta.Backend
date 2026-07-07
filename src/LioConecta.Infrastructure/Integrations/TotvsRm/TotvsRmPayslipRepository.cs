@@ -200,6 +200,83 @@ public sealed class TotvsRmPayslipRepository(
         }
     }
 
+    public Task<IReadOnlyList<RmIncomeStatementLineRecord>> GetIncomeStatementLinesAsync(
+        string chapa,
+        int anoComp,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT
+                F.MESCOMP AS MesComp,
+                SUM(CASE WHEN E.PROVDESCBASE = 'P' THEN F.VALOR ELSE 0 END) AS TotalPaid,
+                SUM(CASE
+                    WHEN E.PROVDESCBASE = 'D' AND (
+                        LTRIM(RTRIM(F.CODEVENTO)) IN ('202', '0202')
+                        OR LTRIM(RTRIM(E.DESCRICAO)) LIKE '%IRRF%'
+                        OR LTRIM(RTRIM(E.DESCRICAO)) LIKE '%IMPOSTO DE RENDA%'
+                    ) THEN F.VALOR
+                    ELSE 0
+                END) AS TotalWithheld
+            FROM dbo.PFFINANC F WITH (NOLOCK)
+            INNER JOIN dbo.PEVENTO E WITH (NOLOCK)
+                ON E.CODCOLIGADA = F.CODCOLIGADA AND E.CODIGO = F.CODEVENTO
+            WHERE F.CODCOLIGADA = @CodColigada
+              AND F.CHAPA = @Chapa
+              AND F.ANOCOMP = @AnoComp
+            GROUP BY F.MESCOMP
+            ORDER BY F.MESCOMP;
+            """;
+
+        return QueryAsync(
+            TotvsRmConstants.PayrollFinanceTableName,
+            chapa,
+            async connection =>
+            {
+                var rows = await connection.QueryAsync<RmIncomeStatementLineRecord>(sql, new
+                {
+                    CodColigada = TotvsRmConstants.CodColigada,
+                    Chapa = chapa,
+                    AnoComp = anoComp
+                });
+                return (IReadOnlyList<RmIncomeStatementLineRecord>)rows.ToList();
+            },
+            cancellationToken);
+    }
+
+    public Task<IReadOnlyList<RmFgtsDepositRecord>> GetFgtsDepositsAsync(
+        string chapa,
+        int maxMonths,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT TOP (@MaxMonths)
+                PER.ANOCOMP AS AnoComp,
+                PER.MESCOMP AS MesComp,
+                COALESCE(PER.VLRFGTS, PER.FGTSMES, PER.VALORFGTS, PER.FGTS, 0) AS FgtsAmount,
+                COALESCE(PER.BASEFGTS, 0) AS BaseFgts
+            FROM dbo.PFPERFF PER WITH (NOLOCK)
+            WHERE PER.CODCOLIGADA = @CodColigada
+              AND PER.CHAPA = @Chapa
+              AND COALESCE(PER.VLRFGTS, PER.FGTSMES, PER.VALORFGTS, PER.FGTS, 0) > 0
+            ORDER BY PER.ANOCOMP DESC, PER.MESCOMP DESC, PER.NROPERIODO DESC;
+            """;
+
+        return QueryAsync(
+            TotvsRmConstants.PayrollPeriodTableName,
+            chapa,
+            async connection =>
+            {
+                var rows = await connection.QueryAsync<RmFgtsDepositRecord>(sql, new
+                {
+                    CodColigada = TotvsRmConstants.CodColigada,
+                    Chapa = chapa,
+                    MaxMonths = maxMonths
+                });
+                return (IReadOnlyList<RmFgtsDepositRecord>)rows.ToList();
+            },
+            cancellationToken);
+    }
+
     private async Task<T> QueryAsync<T>(
         string operationLabel,
         string chapa,

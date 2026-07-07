@@ -84,7 +84,94 @@ public sealed class PayslipSyncService(
                 cancellationToken);
         }
 
+        await SyncIncomeStatementsForPersonAsync(
+            personId,
+            chapa,
+            eligibleSummaries,
+            cancellationToken);
+
+        await payslipRepository.DeleteIncomeStatementsWithoutSourceAsync(personId, Source, cancellationToken);
+
         return new PayslipSyncResultDto(synced, "ok", "live", syncedAt);
+    }
+
+    public async Task<bool> SyncIncomeStatementAsync(
+        Guid personId,
+        int year,
+        CancellationToken cancellationToken)
+    {
+        var person = await personRepository.GetByIdAsync(personId, cancellationToken);
+        if (person is null || string.IsNullOrWhiteSpace(person.EmployeeId))
+        {
+            return false;
+        }
+
+        var chapa = TotvsRmChapaNormalizer.Normalize(person.EmployeeId);
+        if (string.IsNullOrWhiteSpace(chapa))
+        {
+            return false;
+        }
+
+        return await UpsertIncomeStatementFromRmAsync(personId, chapa, year, cancellationToken);
+    }
+
+    private async Task SyncIncomeStatementsForPersonAsync(
+        Guid personId,
+        string chapa,
+        IReadOnlyList<RmPayslipSummaryRecord> eligibleSummaries,
+        CancellationToken cancellationToken)
+    {
+        var years = eligibleSummaries
+            .Select(summary => summary.AnoComp)
+            .Distinct()
+            .OrderByDescending(year => year);
+
+        foreach (var year in years)
+        {
+            try
+            {
+                await UpsertIncomeStatementFromRmAsync(personId, chapa, year, cancellationToken);
+            }
+            catch (TotvsRmIntegrationException)
+            {
+                // Income statement sync is best-effort per year during bulk sync.
+            }
+        }
+    }
+
+    private async Task<bool> UpsertIncomeStatementFromRmAsync(
+        Guid personId,
+        string chapa,
+        int year,
+        CancellationToken cancellationToken)
+    {
+        var lines = await totvsRmPayslipRepository.GetIncomeStatementLinesAsync(
+            chapa,
+            year,
+            cancellationToken);
+
+        if (lines.Count == 0)
+        {
+            return false;
+        }
+
+        var dtoLines = lines
+            .Where(line => line.MesComp is >= 1 and <= 12)
+            .Select(line => new IncomeStatementLineDto(line.MesComp, line.TotalPaid, line.TotalWithheld))
+            .OrderBy(line => line.Month)
+            .ToList();
+
+        var statement = new IncomeStatement
+        {
+            PersonId = personId,
+            Year = year,
+            TotalPaid = dtoLines.Sum(line => line.Paid),
+            TotalWithheld = dtoLines.Sum(line => line.Withheld),
+            LinesJson = JsonSerializer.Serialize(dtoLines, JsonOptions)
+        };
+
+        await payslipRepository.UpsertIncomeStatementAsync(statement, cancellationToken);
+        return true;
     }
 
     public async Task<int> SyncAllActivePeopleAsync(
@@ -115,7 +202,7 @@ public sealed class PayslipSyncService(
 
                 await LogInfoAsync(
                     context,
-                    $"Holerites sincronizados para {person.Name}: {result.SyncedCount} envelope(s).",
+                    $"Holerites sincronizados para {person.Name} (CHAPA {TotvsRmChapaNormalizer.Normalize(person.EmployeeId)}): {result.SyncedCount} envelope(s), syncedAt={result.SyncedAt:O}.",
                     cancellationToken);
             }
             catch (TotvsRmIntegrationException exception)

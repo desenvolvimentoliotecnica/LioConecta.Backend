@@ -211,9 +211,10 @@ public sealed class TotvsRmPayslipRepository(
                 SUM(CASE WHEN E.PROVDESCBASE = 'P' THEN F.VALOR ELSE 0 END) AS TotalPaid,
                 SUM(CASE
                     WHEN E.PROVDESCBASE = 'D' AND (
-                        LTRIM(RTRIM(F.CODEVENTO)) IN ('202', '0202')
+                        LTRIM(RTRIM(F.CODEVENTO)) IN ('202', '0202', '203', '0203', '204', '0204', '561', '0561', '562', '0562')
                         OR LTRIM(RTRIM(E.DESCRICAO)) LIKE '%IRRF%'
-                        OR LTRIM(RTRIM(E.DESCRICAO)) LIKE '%IMPOSTO DE RENDA%'
+                        OR LTRIM(RTRIM(E.DESCRICAO)) LIKE '%IRF %'
+                        OR LTRIM(RTRIM(E.DESCRICAO)) LIKE '%IRF(%'
                     ) THEN F.VALOR
                     ELSE 0
                 END) AS TotalWithheld

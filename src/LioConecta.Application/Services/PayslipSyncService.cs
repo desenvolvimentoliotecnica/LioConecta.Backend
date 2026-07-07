@@ -91,6 +91,10 @@ public sealed class PayslipSyncService(
             cancellationToken);
 
         await payslipRepository.DeleteIncomeStatementsWithoutSourceAsync(personId, Source, cancellationToken);
+        await payslipRepository.DeleteIncomeStatementsBeforeYearAsync(
+            personId,
+            admissionDate?.Year ?? 0,
+            cancellationToken);
 
         return new PayslipSyncResultDto(synced, "ok", "live", syncedAt);
     }
@@ -158,8 +162,28 @@ public sealed class PayslipSyncService(
         var dtoLines = lines
             .Where(line => line.MesComp is >= 1 and <= 12)
             .Select(line => new IncomeStatementLineDto(line.MesComp, line.TotalPaid, line.TotalWithheld))
+            .Where(line => line.Paid > 0m || line.Withheld > 0m)
             .OrderBy(line => line.Month)
             .ToList();
+
+        var person = await personRepository.GetByIdAsync(personId, cancellationToken);
+        var admissionDate = person is null || string.IsNullOrWhiteSpace(person.EmployeeId)
+            ? null
+            : (await employeeRepository.GetProfileByChapaAsync(chapa, cancellationToken))?.DataAdmissao?.Date;
+
+        dtoLines = PayslipCompetenceRules
+            .FilterIncomeLinesByAdmission(dtoLines, year, admissionDate, line => line.Month)
+            .ToList();
+
+        var cachedPayslips = await payslipRepository.ListAsync(personId, year, null, 24, cancellationToken);
+        dtoLines = PayslipIncomeStatementRules
+            .EnrichWithheldFromPayslips(dtoLines, cachedPayslips, year)
+            .ToList();
+
+        if (dtoLines.Count == 0)
+        {
+            return false;
+        }
 
         var statement = new IncomeStatement
         {
@@ -255,6 +279,23 @@ public sealed class PayslipSyncService(
         var gross = earnings.Sum(item => item.Amount);
         var deductionsTotal = deductions.Sum(item => item.Amount);
         var net = gross - deductionsTotal;
+        var period = await totvsRmPayslipRepository.GetPayslipPeriodAsync(
+            chapa,
+            summary.AnoComp,
+            summary.MesComp,
+            summary.NroPeriodo,
+            cancellationToken);
+
+        if (period is not null)
+        {
+            PayslipRmMapper.NormalizePayslipPeriod(period);
+        }
+
+        var baseFgts = period?.BaseFgts ?? gross;
+        var fgtsDeposit = string.Equals(paymentType, "ADIANTAMENTO", StringComparison.OrdinalIgnoreCase)
+            ? period?.FgtsAmount ?? 0m
+            : PayslipRmMapper.ResolveFgtsAmount(baseFgts, period?.FgtsAmount ?? 0m);
+
         var publishedAt = summary.PaymentDate.HasValue
             ? new DateTimeOffset(DateTime.SpecifyKind(summary.PaymentDate.Value, DateTimeKind.Unspecified), TimeSpan.Zero)
             : new DateTimeOffset(summary.AnoComp, summary.MesComp, DateTime.DaysInMonth(summary.AnoComp, summary.MesComp), 0, 0, 0, TimeSpan.Zero);
@@ -273,7 +314,8 @@ public sealed class PayslipSyncService(
             DeductionsJson = JsonSerializer.Serialize(deductions, JsonOptions),
             PublishedAt = publishedAt,
             SyncedAtUtc = syncedAt,
-            Source = Source
+            Source = Source,
+            FgtsDepositAmount = Math.Round(fgtsDeposit, 2)
         };
 
         await payslipRepository.UpsertAsync(payslip, cancellationToken);

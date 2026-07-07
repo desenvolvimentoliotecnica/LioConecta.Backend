@@ -17,9 +17,14 @@ public interface IPayslipService
     Task<PayslipDetailDto?> GetDetailAsync(
         int year,
         int month,
+        string? paymentType = null,
         CancellationToken cancellationToken = default);
 
-    Task<byte[]> GetPdfAsync(int year, int month, CancellationToken cancellationToken = default);
+    Task<byte[]> GetPdfAsync(
+        int year,
+        int month,
+        string? paymentType = null,
+        CancellationToken cancellationToken = default);
 
     Task<PayslipComparativoDto?> GetComparativoAsync(
         int fromYear,
@@ -35,6 +40,10 @@ public interface IPayslipService
     Task<DescontosConsultaDto> GetDescontosConsultaAsync(CancellationToken cancellationToken = default);
 
     Task<RubricasConsultaDto> GetRubricasConsultaAsync(CancellationToken cancellationToken = default);
+
+    Task<byte[]> GetComprovantePdfAsync(CancellationToken cancellationToken = default);
+
+    Task<byte[]> GetCartaConsignacaoPdfAsync(CancellationToken cancellationToken = default);
 
     Task<PayslipRequestResultDto> CreateRequestAsync(
         CreatePayslipRequestDto request,

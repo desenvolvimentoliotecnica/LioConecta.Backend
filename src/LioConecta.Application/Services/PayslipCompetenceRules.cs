@@ -31,4 +31,30 @@ internal static class PayslipCompetenceRules
         var currentCompetence = reference.Year * 100 + reference.Month;
         return competence > currentCompetence;
     }
+
+    public static IReadOnlyList<TLine> FilterIncomeLinesByAdmission<TLine>(
+        IReadOnlyList<TLine> lines,
+        int year,
+        DateTime? admissionDate,
+        Func<TLine, int> monthSelector)
+    {
+        if (admissionDate is null)
+        {
+            return lines;
+        }
+
+        if (year < admissionDate.Value.Year)
+        {
+            return [];
+        }
+
+        if (year > admissionDate.Value.Year)
+        {
+            return lines;
+        }
+
+        return lines
+            .Where(line => monthSelector(line) >= admissionDate.Value.Month)
+            .ToList();
+    }
 }

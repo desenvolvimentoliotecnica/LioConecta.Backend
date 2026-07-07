@@ -58,16 +58,16 @@ public sealed class ChatService(
     {
         EnsureChatEnabled();
 
-        if (string.IsNullOrWhiteSpace(request.AccessToken) || string.IsNullOrWhiteSpace(request.RefreshToken))
+        if (string.IsNullOrWhiteSpace(request.AccessToken))
         {
-            throw new ArgumentException("Access token e refresh token são obrigatórios.");
+            throw new ArgumentException("Access token é obrigatório.");
         }
 
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
         await graphTokenService.StoreTokensAsync(
             personId,
             request.AccessToken.Trim(),
-            request.RefreshToken.Trim(),
+            request.RefreshToken?.Trim() ?? string.Empty,
             request.ExpiresAt,
             request.Scopes,
             cancellationToken);

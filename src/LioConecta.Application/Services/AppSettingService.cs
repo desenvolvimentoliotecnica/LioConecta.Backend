@@ -33,6 +33,8 @@ public sealed class AppSettingService(
             ["media"] = ("Mídia", "Uploads locais de imagens de comunicados (até migrar para S3/SharePoint)."),
             ["benefits"] = ("Benefícios", "URLs dos portais externos exibidos na página de Benefícios (botão Abrir portal)."),
             ["leave"] = ("Férias e ausências", "URLs dos portais e links externos dos serviços de férias, licenças e afastamentos."),
+            ["facilities"] = ("Facilities", "Cardápio do refeitório — permissões de edição e envio por e-mail."),
+            ["loop"] = ("Loop de Projetos", "Permissões do módulo Loop de Projetos e Pulse Ágil."),
         };
 
     private static readonly HashSet<string> RestartKeys =

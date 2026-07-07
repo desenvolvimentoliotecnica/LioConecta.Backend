@@ -105,7 +105,7 @@ public sealed class CalendarController(ICalendarService calendarService) : Contr
     [HttpGet("menu/{date}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<CafeteriaMenuDto>> GetMenu(
+    public async Task<ActionResult<DailyMenuDto>> GetMenu(
         DateOnly date,
         CancellationToken cancellationToken)
     {

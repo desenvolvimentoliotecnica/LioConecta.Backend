@@ -423,6 +423,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         modelBuilder.Entity<CafeteriaMenu>(entity =>
         {
             entity.HasIndex(m => m.Date).IsUnique();
+            entity.Property(m => m.PayloadJson).HasDefaultValue("{}");
+            entity.Property(m => m.Published).HasDefaultValue(false);
+
+            entity.HasOne(m => m.UpdatedBy)
+                .WithMany()
+                .HasForeignKey(m => m.UpdatedById)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 

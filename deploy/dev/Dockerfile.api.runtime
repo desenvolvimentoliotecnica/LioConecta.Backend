@@ -1,6 +1,8 @@
 ﻿FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl libldap-2.5-0 libsasl2-2 \
+    && rm -rf /var/lib/apt/lists/*
 COPY publish/ .
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080

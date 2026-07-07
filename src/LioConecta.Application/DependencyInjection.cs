@@ -16,6 +16,7 @@ public static class DependencyInjection
         services.AddScoped<IServiceRequestService, ServiceRequestService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IChatService, ChatService>();
+        services.AddScoped<ILoopService, LoopService>();
         services.AddScoped<ICalendarService, CalendarService>();
         services.AddScoped<IAnalyticsService, AnalyticsService>();
         services.AddScoped<IUserPreferenceService, UserPreferenceService>();

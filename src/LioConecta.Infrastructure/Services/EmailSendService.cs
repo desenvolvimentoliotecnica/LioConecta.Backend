@@ -52,6 +52,13 @@ public sealed class EmailSendService(
             senderPersonId,
             cancellationToken);
 
+        if (request.DirectAttachments is { Count: > 0 })
+        {
+            attachments = attachments
+                .Concat(request.DirectAttachments)
+                .ToList();
+        }
+
         var metadata = JsonSerializer.Serialize(new
         {
             source = string.IsNullOrWhiteSpace(request.Source) ? "compose" : request.Source.Trim(),

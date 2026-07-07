@@ -23,7 +23,9 @@ public sealed class UserGraphTokenService(
     public async Task<bool> HasLinkedAccountAsync(Guid personId, CancellationToken cancellationToken = default)
     {
         var token = await tokenRepository.GetByPersonIdAsync(personId, cancellationToken);
-        return token is not null && !string.IsNullOrWhiteSpace(token.EncryptedRefreshToken);
+        return token is not null
+            && (!string.IsNullOrWhiteSpace(token.EncryptedAccessToken)
+                || !string.IsNullOrWhiteSpace(token.EncryptedRefreshToken));
     }
 
     public async Task<bool> HasScopeAsync(Guid personId, string scope, CancellationToken cancellationToken = default)
@@ -93,6 +95,12 @@ public sealed class UserGraphTokenService(
         }
 
         var refreshToken = SecretProtector.Unprotect(token.EncryptedRefreshToken, encryptionKey);
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            throw new InvalidOperationException(
+                "Token Microsoft expirado. Abra /calendario e clique em «Vincular conta» novamente.");
+        }
+
         var refreshed = await RefreshAccessTokenAsync(refreshToken, cancellationToken);
 
         token.EncryptedAccessToken = SecretProtector.Protect(refreshed.AccessToken, encryptionKey);

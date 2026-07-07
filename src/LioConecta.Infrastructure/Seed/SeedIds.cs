@@ -28,4 +28,12 @@ internal static class SeedIds
     public static readonly Guid GroupWellbeingSaude = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeee0a");
     public static readonly Guid GroupPrivacidadeLgpd = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeee0b");
     public static readonly Guid GroupInovacaoAberta = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeee0c");
+
+    public static readonly Guid FacilitiesMenu20260706 = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffff01");
+    public static readonly Guid FacilitiesMenu20260707 = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffff02");
+    public static readonly Guid FacilitiesMenu20260708 = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffff03");
+    public static readonly Guid FacilitiesMenu20260709 = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffff04");
+    public static readonly Guid FacilitiesMenu20260710 = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffff05");
+    public static readonly Guid FacilitiesMenu20260711 = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffff06");
+    public static readonly Guid FacilitiesMenu20260712 = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffff07");
 }

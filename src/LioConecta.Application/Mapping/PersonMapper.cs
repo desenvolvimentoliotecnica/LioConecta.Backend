@@ -423,9 +423,3 @@ public static class GroupMapper
             group.ReviewedAt,
             group.RejectionReason);
 }
-
-public static class CalendarMapper
-{
-    public static CafeteriaMenuDto ToDto(CafeteriaMenu menu)
-        => new(menu.Date, JsonMapper.DeserializeStringList(menu.ItemsJson));
-}

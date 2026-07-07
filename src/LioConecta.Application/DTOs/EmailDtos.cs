@@ -87,7 +87,8 @@ public sealed record SendEmailRequest(
     IReadOnlyList<string>? Cc,
     IReadOnlyList<string>? Bcc,
     IReadOnlyList<Guid>? AttachmentIds,
-    string? Source);
+    string? Source,
+    IReadOnlyList<EmailAttachmentRecord>? DirectAttachments = null);
 
 public sealed record SendEmailResponse(
     Guid MessageId,

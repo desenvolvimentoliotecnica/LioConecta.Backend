@@ -3,9 +3,7 @@ using LioConecta.Application.Common;
 using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Integrations;
 using LioConecta.Application.Interfaces.Integrations.Models;
-using LioConecta.Application.Interfaces.Repositories;
 using LioConecta.Application.Interfaces.Services;
-using LioConecta.Application.Mapping;
 
 namespace LioConecta.Application.Services;
 
@@ -14,7 +12,7 @@ public sealed class CalendarService(
     ICurrentUserService currentUserService,
     IUserGraphTokenService graphTokenService,
     ICalendarGraphAdapter calendarGraphAdapter,
-    ICalendarRepository calendarRepository) : ICalendarService
+    IFacilitiesMenuService facilitiesMenuService) : ICalendarService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -61,9 +59,9 @@ public sealed class CalendarService(
     {
         EnsureCalendarEnabled();
 
-        if (string.IsNullOrWhiteSpace(request.AccessToken) || string.IsNullOrWhiteSpace(request.RefreshToken))
+        if (string.IsNullOrWhiteSpace(request.AccessToken))
         {
-            throw new ArgumentException("Access token e refresh token são obrigatórios.");
+            throw new ArgumentException("Access token é obrigatório.");
         }
 
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
@@ -72,7 +70,7 @@ public sealed class CalendarService(
         await graphTokenService.StoreTokensAsync(
             personId,
             request.AccessToken.Trim(),
-            request.RefreshToken.Trim(),
+            request.RefreshToken?.Trim() ?? string.Empty,
             request.ExpiresAt,
             scopes,
             cancellationToken);
@@ -178,13 +176,10 @@ public sealed class CalendarService(
         await calendarGraphAdapter.DeleteEventAsync(accessToken, eventId, cancellationToken);
     }
 
-    public async Task<CafeteriaMenuDto?> GetCafeteriaMenuAsync(
+    public Task<DailyMenuDto?> GetCafeteriaMenuAsync(
         DateOnly date,
         CancellationToken cancellationToken = default)
-    {
-        var menu = await calendarRepository.GetCafeteriaMenuAsync(date, cancellationToken);
-        return menu is null ? null : CalendarMapper.ToDto(menu);
-    }
+        => facilitiesMenuService.GetPublishedDailyMenuAsync(date, cancellationToken);
 
     private async Task<string> GetUserAccessTokenAsync(CancellationToken cancellationToken)
     {

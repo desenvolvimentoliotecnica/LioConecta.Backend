@@ -31,4 +31,6 @@ public class Payslip : BaseEntity
     public DateTimeOffset? SyncedAtUtc { get; set; }
 
     public string? Source { get; set; }
+
+    public decimal FgtsDepositAmount { get; set; }
 }

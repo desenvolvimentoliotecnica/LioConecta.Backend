@@ -8,6 +8,7 @@ public interface IPayslipRepository
         Guid personId,
         int year,
         int month,
+        string? paymentType = null,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<Payslip>> ListAsync(
@@ -50,5 +51,10 @@ public interface IPayslipRepository
     Task<int> DeleteIncomeStatementsWithoutSourceAsync(
         Guid personId,
         string requiredSource,
+        CancellationToken cancellationToken = default);
+
+    Task<int> DeleteIncomeStatementsBeforeYearAsync(
+        Guid personId,
+        int fromYear,
         CancellationToken cancellationToken = default);
 }

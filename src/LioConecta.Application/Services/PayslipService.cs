@@ -16,7 +16,6 @@ public sealed class PayslipService(
     ICurrentUserService currentUserService,
     IPersonRepository personRepository,
     ITotvsRmEmployeeRepository employeeRepository,
-    ITotvsRmPayslipRepository totvsRmPayslipRepository,
     ITotvsRmConfigurationService totvsRmConfigurationService,
     IPayslipSyncService payslipSyncService,
     IAppSettingsProvider settings,
@@ -33,18 +32,20 @@ public sealed class PayslipService(
         new("comparativo", "Comparativo Salarial", "Compare proventos, descontos e líquido entre dois meses para entender variações na remuneração.", "consulta", "Imediato", true, false, "Consultar", "Compara automaticamente os dois últimos holerites. Útil para identificar diferenças de horas extras ou descontos."),
         new("demonstrativo", "Demonstrativo Detalhado", "Visualize rubricas, bases de cálculo, horas extras, adicionais e descontos linha a linha.", "holerite", "Imediato", true, false, "Visualizar", "Exibe todas as rubricas de proventos e descontos do holerite mais recente, com códigos e valores."),
         new("informe-rendimentos", "Informe de Rendimentos", "Emita o informe anual para declaração de Imposto de Renda com valores pagos e retidos.", "informe", "Imediato", true, false, "Emitir", "Disponível após fechamento anual. Contém totais pagos e impostos retidos mês a mês."),
-        new("comprovante", "Comprovante de Rendimentos", "Documento simplificado para comprovação de renda em processos internos ou externos.", "informe", "Até 1 dia útil", true, false, "Solicitar", "Gera solicitação ao RH para emissão de comprovante simplificado. Prazo de até 1 dia útil."),
-        new("carta-consignacao", "Carta de Consignação", "Consulte margem consignável e emita carta para empréstimos e convênios autorizados.", "documento", "Até 2 dias úteis", true, false, "Emitir", "Calcula margem consignável com base no salário líquido e encaminha solicitação de emissão da carta."),
+        new("comprovante", "Comprovante de Rendimentos", "Documento simplificado para comprovação de renda em processos internos ou externos.", "informe", "Imediato", true, false, "Emitir", "Gera PDF imediato com remuneração da última competência disponível."),
+        new("carta-consignacao", "Carta de Consignação", "Consulte margem consignável e emita carta para empréstimos e convênios autorizados.", "documento", "Imediato", true, false, "Emitir", "Gera PDF com margem consignável estimada (35% do líquido) da última competência."),
         new("fgts", "FGTS e Encargos", "Resumo de depósitos de FGTS, INSS e demais encargos vinculados ao seu contrato.", "consulta", "Imediato", true, false, "Consultar", "Mostra depósitos mensais de FGTS integrados ao TOTVS RM (PFPERFF)."),
         new("descontos", "Descontos em Folha", "Detalhamento de plano de saúde, vale-transporte, empréstimos consignados e outros descontos.", "consulta", "Imediato", true, false, "Consultar", "Consolida descontos recorrentes do holerite mais recente com código e competência."),
-        new("segunda-via", "Solicitar 2ª Via", "Peça reemissão de holerite de competências anteriores quando o documento original não estiver acessível.", "documento", "Até 3 dias úteis", false, false, "Solicitar", "Serviço offline: abre chamado ao RH informando a competência desejada. Prazo de até 3 dias úteis."),
-        new("duvidas-rubricas", "Dúvidas sobre Rubricas", "Orientações sobre códigos, siglas e regras de cálculo aplicadas na sua folha de pagamento.", "consulta", "Até 2 dias úteis", true, false, "Consultar", "Glossário dos códigos de rubricas mais frequentes na sua folha, com descrição e regra de cálculo.")
+        new("duvidas-rubricas", "Dúvidas sobre Rubricas", "Orientações sobre códigos, siglas e regras de cálculo aplicadas na sua folha de pagamento.", "consulta", "Imediato", true, false, "Consultar", "Glossário dos códigos de rubricas mais frequentes na sua folha, com descrição amigável.")
     ];
 
     public async Task<PayslipSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default)
     {
-        var syncContext = await EnsureSyncedAsync(cancellationToken);
+        var syncContext = await TriggerSyncIfStaleAsync(cancellationToken);
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
+        var admissionDate = await ResolveAdmissionDateAsync(personId, cancellationToken);
+        var hiredYear = admissionDate?.Year;
+        var informeYear = ResolveInformeYear(hiredYear);
         var eligible = await ListEligiblePayslipsAsync(personId, null, null, 100, cancellationToken);
         var latest = eligible.FirstOrDefault();
 
@@ -57,7 +58,9 @@ public sealed class PayslipService(
                 syncContext.AvailabilityStatus,
                 syncContext.UserMessage,
                 syncContext.DataSource,
-                syncContext.SyncedAt);
+                syncContext.SyncedAt,
+                hiredYear,
+                informeYear);
         }
 
         return new PayslipSummaryDto(
@@ -67,7 +70,9 @@ public sealed class PayslipService(
             syncContext.AvailabilityStatus,
             syncContext.UserMessage,
             syncContext.DataSource,
-            syncContext.SyncedAt);
+            syncContext.SyncedAt,
+            hiredYear,
+            informeYear);
     }
 
     public IReadOnlyList<PayslipServiceDto> GetServices() => ServiceCatalog;
@@ -78,7 +83,7 @@ public sealed class PayslipService(
         int limit,
         CancellationToken cancellationToken = default)
     {
-        await EnsureSyncedAsync(cancellationToken);
+        await TriggerSyncIfStaleAsync(cancellationToken);
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
         var payslips = await ListEligiblePayslipsAsync(personId, year, month, limit, cancellationToken);
         return payslips.Select(ToListItem).ToList();
@@ -87,29 +92,42 @@ public sealed class PayslipService(
     public async Task<PayslipDetailDto?> GetDetailAsync(
         int year,
         int month,
+        string? paymentType = null,
         CancellationToken cancellationToken = default)
     {
-        await EnsureSyncedAsync(cancellationToken);
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
         if (!await IsEligibleCompetenceAsync(personId, year, month, cancellationToken))
         {
             return null;
         }
 
-        var payslip = await payslipRepository.GetByCompetenceAsync(personId, year, month, cancellationToken);
+        var payslip = await payslipRepository.GetByCompetenceAsync(
+            personId,
+            year,
+            month,
+            paymentType,
+            cancellationToken);
         return payslip is null ? null : ToDetail(payslip);
     }
 
-    public async Task<byte[]> GetPdfAsync(int year, int month, CancellationToken cancellationToken = default)
+    public async Task<byte[]> GetPdfAsync(
+        int year,
+        int month,
+        string? paymentType = null,
+        CancellationToken cancellationToken = default)
     {
-        await EnsureSyncedAsync(cancellationToken);
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
         if (!await IsEligibleCompetenceAsync(personId, year, month, cancellationToken))
         {
             throw new InvalidOperationException("Holerite não encontrado.");
         }
 
-        var payslip = await payslipRepository.GetByCompetenceAsync(personId, year, month, cancellationToken)
+        var payslip = await payslipRepository.GetByCompetenceAsync(
+            personId,
+            year,
+            month,
+            paymentType,
+            cancellationToken)
             ?? throw new InvalidOperationException("Holerite não encontrado.");
 
         var document = await payslipPdfBuilder.BuildAsync(personId, payslip, cancellationToken)
@@ -125,8 +143,8 @@ public sealed class PayslipService(
         int toMonth,
         CancellationToken cancellationToken = default)
     {
-        var from = await GetDetailAsync(fromYear, fromMonth, cancellationToken);
-        var to = await GetDetailAsync(toYear, toMonth, cancellationToken);
+        var from = await GetDetailAsync(fromYear, fromMonth, "FOLHA", cancellationToken);
+        var to = await GetDetailAsync(toYear, toMonth, "FOLHA", cancellationToken);
         if (from is null || to is null)
         {
             return null;
@@ -141,46 +159,61 @@ public sealed class PayslipService(
 
     public async Task<IncomeStatementDto?> GetIncomeStatementAsync(int year, CancellationToken cancellationToken = default)
     {
-        await EnsureSyncedAsync(cancellationToken);
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
+        var admissionDate = await ResolveAdmissionDateAsync(personId, cancellationToken);
+        if (admissionDate is not null && year < admissionDate.Value.Year)
+        {
+            return null;
+        }
+
         var statement = await payslipRepository.GetIncomeStatementAsync(personId, year, cancellationToken);
         if (statement is null)
         {
-            var synced = await payslipSyncService.SyncIncomeStatementAsync(personId, year, cancellationToken);
-            if (!synced)
-            {
-                return null;
-            }
-
-            statement = await payslipRepository.GetIncomeStatementAsync(personId, year, cancellationToken);
-            if (statement is null)
-            {
-                return null;
-            }
+            return null;
         }
 
         var lines = DeserializeLines<IncomeStatementLineDto>(statement.LinesJson);
-        return new IncomeStatementDto(statement.Year, statement.TotalPaid, statement.TotalWithheld, lines);
+        lines = PayslipCompetenceRules
+            .FilterIncomeLinesByAdmission(lines, year, admissionDate, line => line.Month)
+            .Where(line => line.Paid > 0m || line.Withheld > 0m)
+            .ToList();
+
+        var payslips = await ListEligiblePayslipsAsync(personId, year, null, 24, cancellationToken);
+        lines = PayslipIncomeStatementRules
+            .EnrichWithheldFromPayslips(lines, payslips, year)
+            .Where(line => line.Paid > 0m || line.Withheld > 0m)
+            .ToList();
+
+        if (lines.Count == 0)
+        {
+            return null;
+        }
+
+        return new IncomeStatementDto(
+            statement.Year,
+            lines.Sum(line => line.Paid),
+            lines.Sum(line => line.Withheld),
+            lines);
     }
 
     public async Task<FgtsConsultaDto> GetFgtsConsultaAsync(CancellationToken cancellationToken = default)
     {
-        await EnsureSyncedAsync(cancellationToken);
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
-        var chapa = await ResolveChapaAsync(personId, cancellationToken)
-            ?? throw new InvalidOperationException("Matricula nao vinculada ao perfil.");
-
-        var rmDeposits = await totvsRmPayslipRepository.GetFgtsDepositsAsync(chapa, 12, cancellationToken);
-        var deposits = rmDeposits
-            .Select(record =>
+        var eligible = await ListEligiblePayslipsAsync(personId, null, null, 12, cancellationToken);
+        var deposits = eligible
+            .Where(p => string.Equals(p.PaymentType, "FOLHA", StringComparison.OrdinalIgnoreCase))
+            .Select(p =>
             {
-                var fgtsAmount = PayslipRmMapper.ResolveFgtsAmount(record.BaseFgts, record.FgtsAmount);
-                var employerShare = fgtsAmount * 2m;
+                var amount = p.FgtsDepositAmount > 0m
+                    ? p.FgtsDepositAmount
+                    : Math.Round(p.GrossAmount * 0.08m, 2);
+
                 return new FgtsDepositDto(
-                    PayslipRmMapper.BuildPeriodLabel(record.AnoComp, record.MesComp),
-                    fgtsAmount,
-                    Math.Round(employerShare, 2));
+                    FormatCompetence(p.Year, p.Month),
+                    amount,
+                    Math.Round(amount * 2m, 2));
             })
+            .Where(d => d.Amount > 0m)
             .ToList();
 
         return new FgtsConsultaDto(deposits.Sum(d => d.Amount), deposits);
@@ -188,15 +221,23 @@ public sealed class PayslipService(
 
     public async Task<DescontosConsultaDto> GetDescontosConsultaAsync(CancellationToken cancellationToken = default)
     {
-        await EnsureSyncedAsync(cancellationToken);
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
         var eligible = await ListEligiblePayslipsAsync(personId, null, null, 100, cancellationToken);
-        var latest = eligible.FirstOrDefault()
-            ?? throw new InvalidOperationException("Nenhum holerite disponível.");
+        var latest = eligible.FirstOrDefault(p =>
+                         string.Equals(p.PaymentType, "FOLHA", StringComparison.OrdinalIgnoreCase))
+                     ?? eligible.FirstOrDefault()
+                     ?? throw new InvalidOperationException("Nenhum holerite disponível.");
 
-        var deductions = DeserializeLines<PayslipLineDto>(latest.DeductionsJson);
+        var deductions = DeserializeLines<PayslipLineDto>(latest.DeductionsJson)
+            .Where(d => PayslipDeductionRules.IsReportableDeduction(d.Code, d.Label))
+            .ToList();
+
         var items = deductions
-            .Select(d => new DescontoItemDto(d.Code, d.Label, d.Amount, FormatCompetence(latest.Year, latest.Month)))
+            .Select(d => new DescontoItemDto(
+                d.Code,
+                PayslipRubricCatalog.ResolveLabel(d.Code, d.Label),
+                d.Amount,
+                FormatCompetence(latest.Year, latest.Month)))
             .ToList();
 
         return new DescontosConsultaDto(items.Sum(i => i.Amount), items);
@@ -204,14 +245,16 @@ public sealed class PayslipService(
 
     public async Task<RubricasConsultaDto> GetRubricasConsultaAsync(CancellationToken cancellationToken = default)
     {
-        await EnsureSyncedAsync(cancellationToken);
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
         var eligible = await ListEligiblePayslipsAsync(personId, null, null, 12, cancellationToken);
-        var latest = eligible.FirstOrDefault()
-            ?? throw new InvalidOperationException("Nenhum holerite disponível.");
+        var latest = eligible.FirstOrDefault(p =>
+                         string.Equals(p.PaymentType, "FOLHA", StringComparison.OrdinalIgnoreCase))
+                     ?? eligible.FirstOrDefault()
+                     ?? throw new InvalidOperationException("Nenhum holerite disponível.");
 
         var earnings = DeserializeLines<PayslipLineDto>(latest.EarningsJson);
-        var deductions = DeserializeLines<PayslipLineDto>(latest.DeductionsJson);
+        var deductions = DeserializeLines<PayslipLineDto>(latest.DeductionsJson)
+            .Where(d => PayslipDeductionRules.IsReportableDeduction(d.Code, d.Label));
         var items = earnings
             .Concat(deductions)
             .GroupBy(line => line.Code, StringComparer.Ordinal)
@@ -219,11 +262,20 @@ public sealed class PayslipService(
             .OrderBy(line => line.Code, StringComparer.Ordinal)
             .Select(line => new RubricaHelpDto(
                 line.Code,
-                line.Label,
-                $"Rubrica integrada do holerite {FormatCompetence(latest.Year, latest.Month)} (origem TOTVS RM)."))
+                PayslipRubricCatalog.ResolveLabel(line.Code, line.Label),
+                PayslipRubricCatalog.ResolveDescription(line.Code, line.Label)))
             .ToList();
 
         return new RubricasConsultaDto(items);
+    }
+
+    public async Task<byte[]> GetComprovantePdfAsync(CancellationToken cancellationToken = default) =>
+        PayslipRhDocumentPdfGenerator.GenerateComprovante(await BuildRhDocumentAsync(cancellationToken));
+
+    public async Task<byte[]> GetCartaConsignacaoPdfAsync(CancellationToken cancellationToken = default)
+    {
+        var document = await BuildRhDocumentAsync(cancellationToken);
+        return PayslipRhDocumentPdfGenerator.GenerateCartaConsignacao(document);
     }
 
     public async Task<PayslipRequestResultDto> CreateRequestAsync(
@@ -305,7 +357,36 @@ public sealed class PayslipService(
         return profile?.DataAdmissao?.Date;
     }
 
-    private async Task<PayslipSyncContext> EnsureSyncedAsync(CancellationToken cancellationToken)
+    private async Task<PayslipRhDocumentDto> BuildRhDocumentAsync(CancellationToken cancellationToken)
+    {
+        var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
+        var person = await personRepository.GetByIdAsync(personId, cancellationToken)
+            ?? throw new InvalidOperationException("Perfil não encontrado.");
+
+        var latest = await payslipRepository.GetLatestAsync(personId, cancellationToken)
+            ?? throw new InvalidOperationException("Nenhum holerite disponível para emissão.");
+
+        var chapa = await ResolveChapaAsync(personId, cancellationToken) ?? person.EmployeeId ?? "—";
+        var profile = string.IsNullOrWhiteSpace(chapa)
+            ? null
+            : await employeeRepository.GetProfileByChapaAsync(chapa, cancellationToken);
+
+        var net = latest.NetAmount;
+        return new PayslipRhDocumentDto(
+            "LIO Tecnica",
+            profile?.Nome ?? person.Name,
+            chapa,
+            profile?.FuncaoDescricao ?? person.Title ?? "Colaborador",
+            profile?.SecaoDescricao ?? person.Dept ?? "—",
+            FormatCompetence(latest.Year, latest.Month),
+            latest.GrossAmount,
+            latest.DeductionsTotal,
+            net,
+            Math.Round(net * 0.35m, 2),
+            DateTimeOffset.UtcNow.ToString("dd/MM/yyyy HH:mm", PtBr));
+    }
+
+    private async Task<PayslipSyncContext> TriggerSyncIfStaleAsync(CancellationToken cancellationToken)
     {
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
         var person = await personRepository.GetByIdAsync(personId, cancellationToken);
@@ -331,7 +412,7 @@ public sealed class PayslipService(
                 "Consulta de holerite temporariamente indisponivel. Entre em contato com o RH.");
         }
 
-        var ttlMinutes = settings.GetInt(AppSettingKeys.WorkersTotvsPayslipCacheTtlMinutes, 60);
+        var ttlMinutes = settings.GetInt(AppSettingKeys.WorkersTotvsPayslipCacheTtlMinutes, 1440);
         var maxSyncedAt = await payslipRepository.GetMaxSyncedAtUtcAsync(personId, cancellationToken);
         if (maxSyncedAt is not null && !IsStale(maxSyncedAt.Value, ttlMinutes))
         {
@@ -378,6 +459,17 @@ public sealed class PayslipService(
     private static bool IsStale(DateTimeOffset syncedAtUtc, int ttlMinutes) =>
         syncedAtUtc.AddMinutes(ttlMinutes) < DateTimeOffset.UtcNow;
 
+    private static int ResolveInformeYear(int? hiredYear)
+    {
+        var currentYear = DateTime.UtcNow.Year;
+        if (hiredYear is not null && hiredYear.Value >= currentYear)
+        {
+            return currentYear;
+        }
+
+        return currentYear - 1;
+    }
+
     private static PayslipListItemDto ToListItem(Payslip payslip) =>
         new(
             payslip.Year,
@@ -388,17 +480,34 @@ public sealed class PayslipService(
             payslip.PublishedAt,
             payslip.PaymentType);
 
-    private static PayslipDetailDto ToDetail(Payslip payslip) =>
-        new(
+    private static PayslipDetailDto ToDetail(Payslip payslip)
+    {
+        var earnings = DeserializeLines<PayslipLineDto>(payslip.EarningsJson)
+            .Select(line => line with
+            {
+                Label = PayslipRubricCatalog.ResolveLabel(line.Code, line.Label)
+            })
+            .ToList();
+
+        var deductions = DeserializeLines<PayslipLineDto>(payslip.DeductionsJson)
+            .Where(line => PayslipDeductionRules.IsReportableDeduction(line.Code, line.Label))
+            .Select(line => line with
+            {
+                Label = PayslipRubricCatalog.ResolveLabel(line.Code, line.Label)
+            })
+            .ToList();
+
+        return new PayslipDetailDto(
             payslip.Year,
             payslip.Month,
             FormatCompetence(payslip.Year, payslip.Month),
             payslip.GrossAmount,
             payslip.NetAmount,
-            payslip.DeductionsTotal,
-            DeserializeLines<PayslipLineDto>(payslip.EarningsJson),
-            DeserializeLines<PayslipLineDto>(payslip.DeductionsJson),
+            deductions.Sum(line => line.Amount),
+            earnings,
+            deductions,
             payslip.PublishedAt);
+    }
 
     private static IReadOnlyList<T> DeserializeLines<T>(string json) =>
         JsonSerializer.Deserialize<List<T>>(json, JsonOptions) ?? [];

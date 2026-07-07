@@ -7,7 +7,9 @@ public sealed record PayslipSummaryDto(
     string? AvailabilityStatus = null,
     string? UserMessage = null,
     string? DataSource = null,
-    DateTimeOffset? SyncedAt = null);
+    DateTimeOffset? SyncedAt = null,
+    int? HiredYear = null,
+    int? InformeYear = null);
 
 public sealed record PayslipServiceDto(
     string Id,

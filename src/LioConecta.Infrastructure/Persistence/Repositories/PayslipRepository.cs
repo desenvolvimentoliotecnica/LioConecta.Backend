@@ -11,12 +11,19 @@ public sealed class PayslipRepository(AppDbContext db) : IPayslipRepository
         Guid personId,
         int year,
         int month,
+        string? paymentType = null,
         CancellationToken cancellationToken = default)
     {
         var payslips = await db.Payslips
             .AsNoTracking()
             .Where(p => p.PersonId == personId && p.Year == year && p.Month == month)
             .ToListAsync(cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(paymentType))
+        {
+            return payslips.FirstOrDefault(p =>
+                string.Equals(p.PaymentType, paymentType, StringComparison.OrdinalIgnoreCase));
+        }
 
         return payslips
             .OrderBy(p => p.PaymentType == "FOLHA" ? 0 : 1)
@@ -71,6 +78,7 @@ public sealed class PayslipRepository(AppDbContext db) : IPayslipRepository
             personId,
             latestCompetence.Year,
             latestCompetence.Month,
+            null,
             cancellationToken);
     }
 
@@ -109,6 +117,7 @@ public sealed class PayslipRepository(AppDbContext db) : IPayslipRepository
             existing.PublishedAt = payslip.PublishedAt;
             existing.SyncedAtUtc = payslip.SyncedAtUtc;
             existing.Source = payslip.Source;
+            existing.FgtsDepositAmount = payslip.FgtsDepositAmount;
         }
 
         await db.SaveChangesAsync(cancellationToken);
@@ -200,6 +209,30 @@ public sealed class PayslipRepository(AppDbContext db) : IPayslipRepository
 
         var stale = await db.IncomeStatements
             .Where(i => i.PersonId == personId && !payslipYears.Contains(i.Year))
+            .ToListAsync(cancellationToken);
+
+        if (stale.Count == 0)
+        {
+            return 0;
+        }
+
+        db.IncomeStatements.RemoveRange(stale);
+        await db.SaveChangesAsync(cancellationToken);
+        return stale.Count;
+    }
+
+    public async Task<int> DeleteIncomeStatementsBeforeYearAsync(
+        Guid personId,
+        int fromYear,
+        CancellationToken cancellationToken = default)
+    {
+        if (fromYear <= 0)
+        {
+            return 0;
+        }
+
+        var stale = await db.IncomeStatements
+            .Where(i => i.PersonId == personId && i.Year < fromYear)
             .ToListAsync(cancellationToken);
 
         if (stale.Count == 0)

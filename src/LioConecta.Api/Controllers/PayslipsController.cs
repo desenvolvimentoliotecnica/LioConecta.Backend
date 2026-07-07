@@ -85,14 +85,48 @@ public sealed class PayslipsController(IPayslipService payslipService) : Control
         return CreatedAtAction(nameof(CreateRequest), result);
     }
 
-    [HttpGet("{year:int}/{month:int}/pdf")]
+    [HttpGet("comprovante/pdf")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetPdf(int year, int month, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetComprovantePdf(CancellationToken cancellationToken)
     {
         try
         {
-            var bytes = await payslipService.GetPdfAsync(year, month, cancellationToken);
+            var bytes = await payslipService.GetComprovantePdfAsync(cancellationToken);
+            return File(bytes, "application/pdf", "comprovante-rendimentos.pdf");
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
+    }
+
+    [HttpGet("carta-consignacao/pdf")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetCartaConsignacaoPdf(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var bytes = await payslipService.GetCartaConsignacaoPdfAsync(cancellationToken);
+            return File(bytes, "application/pdf", "carta-consignacao.pdf");
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
+    }
+
+    [HttpGet("{year:int}/{month:int}/pdf")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetPdf(
+        int year,
+        int month,
+        [FromQuery] string? paymentType,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var bytes = await payslipService.GetPdfAsync(year, month, paymentType, cancellationToken);
             return File(bytes, "application/pdf", $"contracheque-{year}-{month:D2}.pdf");
         }
         catch (InvalidOperationException)
@@ -107,9 +141,10 @@ public sealed class PayslipsController(IPayslipService payslipService) : Control
     public async Task<ActionResult<PayslipDetailDto>> GetDetail(
         int year,
         int month,
+        [FromQuery] string? paymentType,
         CancellationToken cancellationToken)
     {
-        var detail = await payslipService.GetDetailAsync(year, month, cancellationToken);
+        var detail = await payslipService.GetDetailAsync(year, month, paymentType, cancellationToken);
         return detail is null ? NotFound() : Ok(detail);
     }
 

@@ -42,4 +42,13 @@ public interface IPayslipRepository
         int fromYear,
         int fromMonth,
         CancellationToken cancellationToken = default);
+
+    Task UpsertIncomeStatementAsync(
+        IncomeStatement statement,
+        CancellationToken cancellationToken = default);
+
+    Task<int> DeleteIncomeStatementsWithoutSourceAsync(
+        Guid personId,
+        string requiredSource,
+        CancellationToken cancellationToken = default);
 }

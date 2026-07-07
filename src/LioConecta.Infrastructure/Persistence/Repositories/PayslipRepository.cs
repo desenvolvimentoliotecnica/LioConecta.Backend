@@ -161,4 +161,54 @@ public sealed class PayslipRepository(AppDbContext db) : IPayslipRepository
         await db.SaveChangesAsync(cancellationToken);
         return stale.Count;
     }
+
+    public async Task UpsertIncomeStatementAsync(
+        IncomeStatement statement,
+        CancellationToken cancellationToken = default)
+    {
+        var existing = await db.IncomeStatements.FirstOrDefaultAsync(
+            i => i.PersonId == statement.PersonId && i.Year == statement.Year,
+            cancellationToken);
+
+        if (existing is null)
+        {
+            db.IncomeStatements.Add(statement);
+        }
+        else
+        {
+            existing.TotalPaid = statement.TotalPaid;
+            existing.TotalWithheld = statement.TotalWithheld;
+            existing.LinesJson = statement.LinesJson;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<int> DeleteIncomeStatementsWithoutSourceAsync(
+        Guid personId,
+        string requiredSource,
+        CancellationToken cancellationToken = default)
+    {
+        // IncomeStatement rows are always RM-backed after sync; remove legacy seed rows
+        // identified by empty LinesJson or zero totals with no matching payslip year.
+        var payslipYears = await db.Payslips
+            .AsNoTracking()
+            .Where(p => p.PersonId == personId && p.Source == requiredSource)
+            .Select(p => p.Year)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var stale = await db.IncomeStatements
+            .Where(i => i.PersonId == personId && !payslipYears.Contains(i.Year))
+            .ToListAsync(cancellationToken);
+
+        if (stale.Count == 0)
+        {
+            return 0;
+        }
+
+        db.IncomeStatements.RemoveRange(stale);
+        await db.SaveChangesAsync(cancellationToken);
+        return stale.Count;
+    }
 }

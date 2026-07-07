@@ -16,6 +16,7 @@ public sealed class PayslipService(
     ICurrentUserService currentUserService,
     IPersonRepository personRepository,
     ITotvsRmEmployeeRepository employeeRepository,
+    ITotvsRmPayslipRepository totvsRmPayslipRepository,
     ITotvsRmConfigurationService totvsRmConfigurationService,
     IPayslipSyncService payslipSyncService,
     IAppSettingsProvider settings,
@@ -28,13 +29,13 @@ public sealed class PayslipService(
     [
         new("visualizar", "Visualizar Contracheque", "Acesse o holerite da última competência com proventos, descontos e valor líquido.", "holerite", "Imediato", true, true, "Visualizar", "Abre o holerite mais recente disponível. Os valores ficam confidenciais até você optar por exibi-los na barra de ferramentas."),
         new("download-pdf", "Download em PDF", "Baixe o contracheque do mês selecionado em PDF para arquivamento pessoal ou comprovação.", "holerite", "Imediato", true, false, "Baixar", "Gera um arquivo PDF do holerite da competência mais recente. O download é registrado para auditoria interna."),
-        new("historico", "Histórico de Holerites", "Consulte contracheques dos últimos 24 meses com busca por competência e tipo de pagamento.", "historico", "Imediato", true, false, "Consultar", "Lista todas as competências disponíveis. Selecione uma linha para visualizar o demonstrativo completo."),
+        new("historico", "Histórico de Holerites", "Consulte contracheques dos últimos 12 meses com busca por competência e tipo de pagamento.", "historico", "Imediato", true, false, "Consultar", "Lista as competências disponíveis sincronizadas do TOTVS RM. Selecione uma linha para visualizar o demonstrativo completo."),
         new("comparativo", "Comparativo Salarial", "Compare proventos, descontos e líquido entre dois meses para entender variações na remuneração.", "consulta", "Imediato", true, false, "Consultar", "Compara automaticamente os dois últimos holerites. Útil para identificar diferenças de horas extras ou descontos."),
         new("demonstrativo", "Demonstrativo Detalhado", "Visualize rubricas, bases de cálculo, horas extras, adicionais e descontos linha a linha.", "holerite", "Imediato", true, false, "Visualizar", "Exibe todas as rubricas de proventos e descontos do holerite mais recente, com códigos e valores."),
         new("informe-rendimentos", "Informe de Rendimentos", "Emita o informe anual para declaração de Imposto de Renda com valores pagos e retidos.", "informe", "Imediato", true, false, "Emitir", "Disponível após fechamento anual. Contém totais pagos e impostos retidos mês a mês."),
         new("comprovante", "Comprovante de Rendimentos", "Documento simplificado para comprovação de renda em processos internos ou externos.", "informe", "Até 1 dia útil", true, false, "Solicitar", "Gera solicitação ao RH para emissão de comprovante simplificado. Prazo de até 1 dia útil."),
         new("carta-consignacao", "Carta de Consignação", "Consulte margem consignável e emita carta para empréstimos e convênios autorizados.", "documento", "Até 2 dias úteis", true, false, "Emitir", "Calcula margem consignável com base no salário líquido e encaminha solicitação de emissão da carta."),
-        new("fgts", "FGTS e Encargos", "Resumo de depósitos de FGTS, INSS e demais encargos vinculados ao seu contrato.", "consulta", "Imediato", true, false, "Consultar", "Mostra depósitos mensais de FGTS calculados sobre a remuneração base dos últimos holerites."),
+        new("fgts", "FGTS e Encargos", "Resumo de depósitos de FGTS, INSS e demais encargos vinculados ao seu contrato.", "consulta", "Imediato", true, false, "Consultar", "Mostra depósitos mensais de FGTS integrados ao TOTVS RM (PFPERFF)."),
         new("descontos", "Descontos em Folha", "Detalhamento de plano de saúde, vale-transporte, empréstimos consignados e outros descontos.", "consulta", "Imediato", true, false, "Consultar", "Consolida descontos recorrentes do holerite mais recente com código e competência."),
         new("segunda-via", "Solicitar 2ª Via", "Peça reemissão de holerite de competências anteriores quando o documento original não estiver acessível.", "documento", "Até 3 dias úteis", false, false, "Solicitar", "Serviço offline: abre chamado ao RH informando a competência desejada. Prazo de até 3 dias úteis."),
         new("duvidas-rubricas", "Dúvidas sobre Rubricas", "Orientações sobre códigos, siglas e regras de cálculo aplicadas na sua folha de pagamento.", "consulta", "Até 2 dias úteis", true, false, "Consultar", "Glossário dos códigos de rubricas mais frequentes na sua folha, com descrição e regra de cálculo.")
@@ -140,11 +141,22 @@ public sealed class PayslipService(
 
     public async Task<IncomeStatementDto?> GetIncomeStatementAsync(int year, CancellationToken cancellationToken = default)
     {
+        await EnsureSyncedAsync(cancellationToken);
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
         var statement = await payslipRepository.GetIncomeStatementAsync(personId, year, cancellationToken);
         if (statement is null)
         {
-            return null;
+            var synced = await payslipSyncService.SyncIncomeStatementAsync(personId, year, cancellationToken);
+            if (!synced)
+            {
+                return null;
+            }
+
+            statement = await payslipRepository.GetIncomeStatementAsync(personId, year, cancellationToken);
+            if (statement is null)
+            {
+                return null;
+            }
         }
 
         var lines = DeserializeLines<IncomeStatementLineDto>(statement.LinesJson);
@@ -155,16 +167,19 @@ public sealed class PayslipService(
     {
         await EnsureSyncedAsync(cancellationToken);
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
-        var payslips = await ListEligiblePayslipsAsync(personId, null, null, 6, cancellationToken);
-        var deposits = payslips
-            .Where(p => p.PaymentType == "FOLHA")
-            .Select(p =>
+        var chapa = await ResolveChapaAsync(personId, cancellationToken)
+            ?? throw new InvalidOperationException("Matricula nao vinculada ao perfil.");
+
+        var rmDeposits = await totvsRmPayslipRepository.GetFgtsDepositsAsync(chapa, 12, cancellationToken);
+        var deposits = rmDeposits
+            .Select(record =>
             {
-                var baseAmount = p.GrossAmount * 0.08m;
+                var fgtsAmount = PayslipRmMapper.ResolveFgtsAmount(record.BaseFgts, record.FgtsAmount);
+                var employerShare = fgtsAmount * 2m;
                 return new FgtsDepositDto(
-                    FormatCompetence(p.Year, p.Month),
-                    Math.Round(baseAmount, 2),
-                    Math.Round(baseAmount * 2, 2));
+                    PayslipRmMapper.BuildPeriodLabel(record.AnoComp, record.MesComp),
+                    fgtsAmount,
+                    Math.Round(employerShare, 2));
             })
             .ToList();
 
@@ -187,20 +202,28 @@ public sealed class PayslipService(
         return new DescontosConsultaDto(items.Sum(i => i.Amount), items);
     }
 
-    public Task<RubricasConsultaDto> GetRubricasConsultaAsync(CancellationToken cancellationToken = default)
+    public async Task<RubricasConsultaDto> GetRubricasConsultaAsync(CancellationToken cancellationToken = default)
     {
-        var items = new List<RubricaHelpDto>
-        {
-            new("001", "Salário base", "Remuneração fixa mensal conforme contrato de trabalho."),
-            new("050", "Horas extras 50%", "Adicional de 50% sobre a hora normal. Quantidade informada no demonstrativo."),
-            new("080", "13º salário", "Gratificação natalina paga conforme calendário da folha."),
-            new("201", "INSS", "Contribuição previdenciária descontada conforme tabela vigente."),
-            new("202", "IRRF", "Imposto de renda retido na fonte calculado sobre a base tributável."),
-            new("210", "Plano de saúde", "Coparticipação e mensalidade do plano corporativo."),
-            new("220", "Vale-transporte", "Desconto de até 6% do salário base, conforme legislação.")
-        };
+        await EnsureSyncedAsync(cancellationToken);
+        var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
+        var eligible = await ListEligiblePayslipsAsync(personId, null, null, 12, cancellationToken);
+        var latest = eligible.FirstOrDefault()
+            ?? throw new InvalidOperationException("Nenhum holerite disponível.");
 
-        return Task.FromResult(new RubricasConsultaDto(items));
+        var earnings = DeserializeLines<PayslipLineDto>(latest.EarningsJson);
+        var deductions = DeserializeLines<PayslipLineDto>(latest.DeductionsJson);
+        var items = earnings
+            .Concat(deductions)
+            .GroupBy(line => line.Code, StringComparer.Ordinal)
+            .Select(group => group.First())
+            .OrderBy(line => line.Code, StringComparer.Ordinal)
+            .Select(line => new RubricaHelpDto(
+                line.Code,
+                line.Label,
+                $"Rubrica integrada do holerite {FormatCompetence(latest.Year, latest.Month)} (origem TOTVS RM)."))
+            .ToList();
+
+        return new RubricasConsultaDto(items);
     }
 
     public async Task<PayslipRequestResultDto> CreateRequestAsync(
@@ -247,6 +270,19 @@ public sealed class PayslipService(
         return payslips
             .Where(p => PayslipCompetenceRules.IsEligible(p.Year, p.Month, admissionDate))
             .ToList();
+    }
+
+    private async Task<string?> ResolveChapaAsync(
+        Guid personId,
+        CancellationToken cancellationToken)
+    {
+        var person = await personRepository.GetByIdAsync(personId, cancellationToken);
+        if (person is null || string.IsNullOrWhiteSpace(person.EmployeeId))
+        {
+            return null;
+        }
+
+        return TotvsRmChapaNormalizer.Normalize(person.EmployeeId);
     }
 
     private async Task<DateTime?> ResolveAdmissionDateAsync(

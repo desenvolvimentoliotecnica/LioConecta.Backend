@@ -3,6 +3,7 @@ using LioConecta.Application.Common;
 using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Application.Mapping;
+using LioConecta.Application.Services;
 using LioConecta.Domain.Entities;
 using LioConecta.Domain.Enums;
 using LioConecta.Infrastructure.Persistence;
@@ -1048,5 +1049,5 @@ public sealed class OrgChartGovernanceService(
             : value.Trim();
 
     private static string? ResolvePhotoUrl(Person person)
-        => string.IsNullOrWhiteSpace(person.PhotoUrl) ? null : person.PhotoUrl.Trim();
+        => PersonPhotoResolver.ResolveEffectivePhotoUrl(person);
 }

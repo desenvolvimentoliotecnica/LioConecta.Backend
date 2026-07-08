@@ -56,7 +56,8 @@ try
     builder.Services.AddInfrastructure(settingsProvider);
     builder.Services.AddScoped<INotificationBroadcaster, SignalRNotificationBroadcaster>();
     builder.Services.AddScoped<IChatBroadcaster, SignalRChatBroadcaster>();
-    if (builder.Environment.IsDevelopment())
+    if (builder.Environment.IsDevelopment()
+        && !string.Equals(Environment.GetEnvironmentVariable("LIO_DISABLE_DEV_WORKERS"), "true", StringComparison.OrdinalIgnoreCase))
     {
         builder.Services.AddHostedService<TotvsSyncWorker>();
         builder.Services.AddHostedService<GraphSyncWorker>();

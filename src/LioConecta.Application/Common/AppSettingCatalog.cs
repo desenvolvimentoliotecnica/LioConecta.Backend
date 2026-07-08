@@ -230,6 +230,7 @@ public static class AppSettingCatalog
         ..LeavePortalSettingCatalog.ToAppSettingDefinitions(),
         ..FacilitiesMenuSettingCatalog.ToAppSettingDefinitions(),
         ..LoopSettingCatalog.ToAppSettingDefinitions(),
+        ..CompassSettingCatalog.ToAppSettingDefinitions(),
         ..PortalUiSettingCatalog.ToAppSettingDefinitions(),
     ];
 }

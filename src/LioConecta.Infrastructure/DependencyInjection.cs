@@ -154,6 +154,7 @@ public static class DependencyInjection
         services.AddScoped<IEmailConfigurationService, EmailConfigurationService>();
         services.AddScoped<IOrgChartGovernanceService, OrgChartGovernanceService>();
         services.AddScoped<IFacilitiesMenuService, FacilitiesMenuService>();
+        services.AddScoped<ICompassService, CompassService>();
         services.AddScoped<IEmailQueueService, EmailQueueService>();
         services.AddScoped<IEmailDispatchService, EmailDispatchService>();
         services.AddScoped<IEmailAdminService, EmailAdminService>();

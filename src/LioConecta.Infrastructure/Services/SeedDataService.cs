@@ -22,6 +22,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             await EnsureBenefitsCatalogAsync(cancellationToken);
             await EnsureLeaveCatalogAsync(cancellationToken);
             await EnsureFacilitiesMenuCatalogAsync(cancellationToken);
+            await EnsureCompassCatalogAsync(cancellationToken);
             await EnsurePollSeedAsync(cancellationToken);
             await EnsureEmployeeIdsAsync(cancellationToken);
             await EnsureDevTestUserProfileAsync(cancellationToken);
@@ -472,6 +473,30 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             "Seeded {Count} cafeteria menu day(s) for week starting {WeekStart:yyyy-MM-dd}.",
             added,
             FacilitiesMenuCatalogSeed.WeekStart);
+    }
+
+    private async Task EnsureCompassCatalogAsync(CancellationToken cancellationToken)
+    {
+        var snapshotId = SeedIds.CompassIbpSnapshotJul2026;
+        if (await db.CompassIbpSnapshots.AnyAsync(s => s.Id == snapshotId, cancellationToken))
+        {
+            return;
+        }
+
+        var seedTime = DateTimeOffset.UtcNow;
+        var payload = CompassCatalogSeed.LoadFromJson();
+        var snapshot = CompassCatalogSeed.ToSnapshotEntity(payload.Snapshot, seedTime);
+        db.CompassIbpSnapshots.Add(snapshot);
+
+        const int batchSize = 500;
+        var rows = CompassCatalogSeed.ToRowEntities(snapshotId, payload.Rows, seedTime).ToList();
+        for (var i = 0; i < rows.Count; i += batchSize)
+        {
+            await db.CompassIbpRows.AddRangeAsync(rows.Skip(i).Take(batchSize), cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        logger.LogInformation("Seeded Compass IBP snapshot with {Count} rows.", rows.Count);
     }
 
     private async Task EnsureArchivedAtBackfillAsync(CancellationToken cancellationToken)

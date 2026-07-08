@@ -119,6 +119,10 @@ public static class AppSettingKeys
     public const string LoopAllowedRoles = "loop.allowed_roles";
     public const string LoopAllowedEmails = "loop.allowed_emails";
 
+    public const string CompassEnabled = "compass.enabled";
+    public const string CompassAllowedRoles = "compass.allowed_roles";
+    public const string CompassAllowedEmails = "compass.allowed_emails";
+
     public const string PortalUiMaturityBadgesEnabled = "portal.ui.maturity_badges_enabled";
     public const string PortalUiMaturityRoadmap = "portal.ui.maturity_roadmap";
 }

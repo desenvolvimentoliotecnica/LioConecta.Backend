@@ -59,4 +59,11 @@ public interface IPersonService
     Task<PersonProfileDto> UpdateOwnCareerHistoryAsync(
         IReadOnlyList<PersonCareerHistoryItemDto> careerHistory,
         CancellationToken cancellationToken = default);
+
+    Task<PersonProfileDto> UpdateOwnAvatarAsync(string? photoUrl, CancellationToken cancellationToken = default);
+
+    Task<PersonProfileDto> UpdatePersonAvatarAsync(
+        string personKey,
+        string? photoUrl,
+        CancellationToken cancellationToken = default);
 }

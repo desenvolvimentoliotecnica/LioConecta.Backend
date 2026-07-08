@@ -116,4 +116,33 @@ public sealed class PeopleController(
         var profile = await personService.GetProfileAsync(slug, cancellationToken);
         return profile is null ? NotFound() : Ok(profile);
     }
+
+    [HttpPatch("{personKey}/profile/avatar")]
+    [ProducesResponseType(typeof(PersonProfileDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PersonProfileDto>> UpdateAvatar(
+        string personKey,
+        [FromBody] UpdateProfileAvatarRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var profile = await personService.UpdatePersonAvatarAsync(personKey, request.PhotoUrl, cancellationToken);
+            return Ok(profile);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("não encontrado", StringComparison.OrdinalIgnoreCase))
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

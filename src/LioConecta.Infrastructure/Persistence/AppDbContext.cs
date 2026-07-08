@@ -55,6 +55,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<OrgDepartment> OrgDepartments => Set<OrgDepartment>();
     public DbSet<OrgDepartmentMapping> OrgDepartmentMappings => Set<OrgDepartmentMapping>();
     public DbSet<OrgPosition> OrgPositions => Set<OrgPosition>();
+    public DbSet<CompassIbpSnapshot> CompassIbpSnapshots => Set<CompassIbpSnapshot>();
+    public DbSet<CompassIbpRow> CompassIbpRows => Set<CompassIbpRow>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -85,6 +87,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigurePortalUsers(modelBuilder);
         ConfigureUserTeamsTokens(modelBuilder);
         ConfigureOrgChartGovernance(modelBuilder);
+        ConfigureCompass(modelBuilder);
     }
 
     private static void ApplySnakeCaseTableNames(ModelBuilder modelBuilder)
@@ -827,6 +830,42 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasOne(c => c.Person)
                 .WithMany()
                 .HasForeignKey(c => c.PersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureCompass(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<CompassIbpSnapshot>(entity =>
+        {
+            entity.HasIndex(s => s.IsActive);
+            entity.HasIndex(s => s.ImportedAt);
+            entity.Property(s => s.Label).HasMaxLength(256);
+            entity.Property(s => s.VersionAtual).HasMaxLength(64);
+            entity.Property(s => s.VersionAnterior).HasMaxLength(64);
+            entity.Property(s => s.SourceSystem).HasMaxLength(64);
+        });
+
+        modelBuilder.Entity<CompassIbpRow>(entity =>
+        {
+            entity.HasIndex(r => r.SnapshotId);
+            entity.HasIndex(r => new { r.SnapshotId, r.Diretoria });
+            entity.HasIndex(r => new { r.SnapshotId, r.Unidade });
+            entity.HasIndex(r => new { r.SnapshotId, r.FamiliaComercial });
+            entity.HasIndex(r => new { r.SnapshotId, r.Tipo });
+            entity.Property(r => r.Tipo).HasMaxLength(128);
+            entity.Property(r => r.FamiliaComercial).HasMaxLength(256);
+            entity.Property(r => r.SkuCode).HasMaxLength(64);
+            entity.Property(r => r.SkuDescription).HasMaxLength(512);
+            entity.Property(r => r.ClienteHyperion).HasMaxLength(256);
+            entity.Property(r => r.Cliente).HasMaxLength(256);
+            entity.Property(r => r.Matriz).HasMaxLength(128);
+            entity.Property(r => r.Diretoria).HasMaxLength(128);
+            entity.Property(r => r.Unidade).HasMaxLength(128);
+
+            entity.HasOne(r => r.Snapshot)
+                .WithMany(s => s.Rows)
+                .HasForeignKey(r => r.SnapshotId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

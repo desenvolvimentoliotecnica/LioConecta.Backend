@@ -1,3 +1,4 @@
+using LioConecta.Application.Services;
 using LioConecta.Domain.Entities;
 using LioConecta.Domain.Enums;
 using LioConecta.Infrastructure.Persistence;
@@ -23,6 +24,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             await EnsureLeaveCatalogAsync(cancellationToken);
             await EnsureFacilitiesMenuCatalogAsync(cancellationToken);
             await EnsurePhoneExtensionsCatalogAsync(cancellationToken);
+            await EnsurePortalSystemsCatalogAsync(cancellationToken);
             await EnsureCompassCatalogAsync(cancellationToken);
             await EnsurePollSeedAsync(cancellationToken);
             await EnsureEmployeeIdsAsync(cancellationToken);
@@ -272,6 +274,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
         await EnsureGroupsCatalogAsync(cancellationToken);
         await EnsureFacilitiesMenuCatalogAsync(cancellationToken);
         await EnsurePhoneExtensionsCatalogAsync(cancellationToken);
+        await EnsurePortalSystemsCatalogAsync(cancellationToken);
         logger.LogInformation("Seed completed with {People} people.", people.Length);
     }
 
@@ -491,6 +494,36 @@ private async Task EnsurePhoneExtensionsCatalogAsync(CancellationToken cancellat
         logger.LogInformation("Seeded {Count} phone extension(s) from legacy catalog.", added);
     }
 
+    private async Task EnsurePortalSystemsCatalogAsync(CancellationToken cancellationToken)
+    {
+        var existingKeys = await db.PortalSystems
+            .Where(x => x.SeedKey != null)
+            .Select(x => x.SeedKey!)
+            .ToListAsync(cancellationToken);
+        var existingSet = existingKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var seedTime = DateTimeOffset.UtcNow.AddDays(-1);
+        var added = 0;
+
+        foreach (var row in PortalSystemsCatalogSeed.Rows)
+        {
+            if (existingSet.Contains(row.Key))
+            {
+                continue;
+            }
+
+            db.PortalSystems.Add(PortalSystemsCatalogSeed.ToEntity(row, seedTime));
+            added++;
+        }
+
+        if (added == 0)
+        {
+            return;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Seeded {Count} portal system(s) in catalog.", added);
+    }
+
 
     private async Task EnsureFacilitiesMenuCatalogAsync(CancellationToken cancellationToken)
     {
@@ -693,12 +726,6 @@ private async Task EnsurePhoneExtensionsCatalogAsync(CancellationToken cancellat
             changed = true;
         }
 
-        if (!string.IsNullOrWhiteSpace(devUser.PersonalDataJson))
-        {
-            devUser.PersonalDataJson = null;
-            changed = true;
-        }
-
         if (!string.Equals(devUser.SkillsJson, "[]", StringComparison.Ordinal))
         {
             devUser.SkillsJson = "[]";
@@ -736,10 +763,13 @@ private async Task EnsurePhoneExtensionsCatalogAsync(CancellationToken cancellat
         }
 
         // Keep BirthDate/HireDate from RM sync so birthdays stay visible after bootstrap.
+        // Preserve PhotoUrl (Graph sync) and PersonalDataJson (portal avatar / profile edits).
 
-        if (!string.IsNullOrWhiteSpace(devUser.PhotoUrl))
+        if (string.IsNullOrWhiteSpace(PersonPhotoResolver.ResolveEffectivePhotoUrl(devUser)))
         {
-            devUser.PhotoUrl = null;
+            PersonPhotoResolver.SetPortalAvatarUrl(
+                devUser,
+                $"{PersonPhotoResolver.PortalAvatarBasePath}crab.png");
             changed = true;
         }
 

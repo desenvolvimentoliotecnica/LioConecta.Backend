@@ -126,6 +126,11 @@ public static class AppSettingKeys
     public const string RamaisAllowedRoles = "ramais.allowed_roles";
     public const string RamaisAllowedEmails = "ramais.allowed_emails";
 
+    public const string PortalEnvironment = "portal.environment";
+    public const string SystemsAllowedRoles = "systems.allowed_roles";
+    public const string SystemsAllowedEmails = "systems.allowed_emails";
+    public const string SystemsIconsRootPath = "systems.icons_root_path";
+
     public const string LoopEnabled = "loop.enabled";
     public const string LoopAllowedRoles = "loop.allowed_roles";
     public const string LoopAllowedEmails = "loop.allowed_emails";

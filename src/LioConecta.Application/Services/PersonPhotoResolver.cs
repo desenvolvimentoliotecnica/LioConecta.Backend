@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using System.Text.Json;
 using LioConecta.Domain.Entities;
 
@@ -16,6 +17,21 @@ public static class PersonPhotoResolver
         "octopus", "giraffe", "zebra", "pig", "cow", "sheep", "deer", "raccoon",
     };
 
+    private static readonly Regex LegacyDemoAvatarPattern =
+        new(@"^/avatar-[^/]+\.png$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    public static bool IsLegacyDemoAvatarUrl(string? url)
+    {
+        var normalized = NormalizePath(url);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return false;
+        }
+
+        var path = normalized.Split('?', 2)[0];
+        return LegacyDemoAvatarPattern.IsMatch(path);
+    }
+
     public static string? GetPortalAvatarUrl(Person person)
     {
         var stored = ReadPortalAvatarFromPersonalData(person);
@@ -25,7 +41,7 @@ public static class PersonPhotoResolver
     public static string? GetGraphPhotoUrl(Person person)
     {
         var url = person.PhotoUrl?.Trim();
-        if (string.IsNullOrWhiteSpace(url) || IsPortalAvatarUrl(url))
+        if (string.IsNullOrWhiteSpace(url) || IsPortalAvatarUrl(url) || IsLegacyDemoAvatarUrl(url))
         {
             return null;
         }
@@ -47,8 +63,7 @@ public static class PersonPhotoResolver
             return graph;
         }
 
-        var raw = person.PhotoUrl?.Trim();
-        return string.IsNullOrWhiteSpace(raw) ? null : raw;
+        return null;
     }
 
     public static void SetPortalAvatarUrl(Person person, string photoUrl)

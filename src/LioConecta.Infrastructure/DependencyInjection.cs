@@ -139,8 +139,12 @@ public static class DependencyInjection
 
         services.AddScoped<ITotvsRmTimesheetRepository, TotvsRmTimesheetRepository>();
         services.AddScoped<ITotvsRmPayslipRepository, TotvsRmPayslipRepository>();
+        services.AddScoped<ITotvsRmLeaveRepository, TotvsRmLeaveRepository>();
         services.AddScoped<ITotvsRmEmployeeRepository, TotvsRmEmployeeRepository>();
         services.AddScoped<TotvsRmConnectionTester>();
+        services.AddScoped<QueuedLeaveRmWriteBack>();
+        services.AddScoped<TotvsRmApiLeaveWriteBack>();
+        services.AddScoped<ILeaveRmWriteBack, ChainedLeaveRmWriteBack>();
     }
 
     private static void RegisterServices(IServiceCollection services, IAppSettingsProvider settings)
@@ -185,6 +189,7 @@ public static class DependencyInjection
         services.AddScoped<GlpiConnectionTester>();
         services.AddScoped<IWorkerRunRecorder, WorkerRunRecorder>();
         services.AddScoped<IWorkerTriggerService, WorkerTriggerService>();
+        services.AddScoped<LeaveWriteBackService>();
 
         var redisConnection = settings.GetRedisConnection();
         if (!string.IsNullOrWhiteSpace(redisConnection))

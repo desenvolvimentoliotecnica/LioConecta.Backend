@@ -23,4 +23,8 @@ public class EmployeeLeaveBalance : BaseEntity
     public DateOnly? NextScheduledEnd { get; set; }
 
     public string BreakdownJson { get; set; } = "{}";
+
+    public string? DataSource { get; set; }
+
+    public DateTimeOffset? SyncedAt { get; set; }
 }

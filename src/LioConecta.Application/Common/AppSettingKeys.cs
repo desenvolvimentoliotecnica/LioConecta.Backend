@@ -78,6 +78,9 @@ public static class AppSettingKeys
     public const string WorkersTotvsTimesheetCacheTtlMinutes = "workers.totvs_timesheet_cache_ttl_minutes";
     public const string WorkersTotvsPayslipSyncIntervalMinutes = "workers.totvs_payslip_sync_interval_minutes";
     public const string WorkersTotvsPayslipCacheTtlMinutes = "workers.totvs_payslip_cache_ttl_minutes";
+    public const string WorkersTotvsLeaveSyncIntervalMinutes = "workers.totvs_leave_sync_interval_minutes";
+    public const string WorkersTotvsLeaveCacheTtlMinutes = "workers.totvs_leave_cache_ttl_minutes";
+    public const string LeaveRmWriteBackEnabled = "leave.rm.writeback.enabled";
     public const string WorkersPollClosureIntervalMinutes = "workers.poll_closure_interval_minutes";
 
     public const string SerilogDefaultLevel = "serilog.default_level";

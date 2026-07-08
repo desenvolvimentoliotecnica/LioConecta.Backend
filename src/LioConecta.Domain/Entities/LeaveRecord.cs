@@ -23,4 +23,14 @@ public class LeaveRecord : BaseEntity
     public int? Days { get; set; }
 
     public string DetailsJson { get; set; } = "{}";
+
+    public Guid? ServiceRequestId { get; set; }
+
+    public string? RmExternalId { get; set; }
+
+    public string? RmSyncStatus { get; set; }
+
+    public string? DataSource { get; set; }
+
+    public DateTimeOffset? SyncedAt { get; set; }
 }

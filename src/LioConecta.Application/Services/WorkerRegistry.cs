@@ -44,6 +44,18 @@ public static class WorkerRegistry
             AppSettingKeys.WorkersTotvsPayslipSyncIntervalMinutes,
             30),
         new(
+            WorkerKeys.TotvsLeaveSync,
+            "Sync férias TOTVS RM",
+            "Atualiza saldo e solicitações de férias consultando PFUFERIAS/PFUFERIASPER no SQL Server TOTVS RM.",
+            AppSettingKeys.WorkersTotvsLeaveSyncIntervalMinutes,
+            60),
+        new(
+            WorkerKeys.LeaveWriteBack,
+            "Write-back férias RM",
+            "Envia solicitações pendentes do portal para API/middleware TOTVS RM quando habilitado.",
+            null,
+            15),
+        new(
             WorkerKeys.EmailDispatch,
             "Envio de e-mails",
             "Processa a fila de e-mails pendentes via SMTP configurado em banco.",

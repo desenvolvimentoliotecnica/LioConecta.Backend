@@ -73,6 +73,7 @@ public static class DependencyInjection
         services.AddScoped<IPayslipRepository, PayslipRepository>();
         services.AddScoped<IBenefitRepository, BenefitRepository>();
         services.AddScoped<ILeaveRepository, LeaveRepository>();
+        services.AddScoped<ILeaveNotifyDirectory, LeaveNotifyDirectory>();
         services.AddScoped<IAuditRepository, AuditRepository>();
         services.AddScoped<IObservabilityRepository, ObservabilityRepository>();
         services.AddScoped<ITimesheetPeriodCacheRepository, TimesheetPeriodCacheRepository>();

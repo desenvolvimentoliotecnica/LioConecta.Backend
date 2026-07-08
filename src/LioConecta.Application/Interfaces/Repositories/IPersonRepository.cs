@@ -34,4 +34,14 @@ public interface IPersonRepository
     Task<IReadOnlyList<Person>> GetByAzureObjectIdsAsync(
         IEnumerable<Guid> objectIds,
         CancellationToken cancellationToken = default);
+
+    Task<Person?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Person>> GetByEmailsAsync(
+        IEnumerable<string> emails,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Person>> GetByIdsAsync(
+        IEnumerable<Guid> ids,
+        CancellationToken cancellationToken = default);
 }

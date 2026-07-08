@@ -21,4 +21,10 @@ public interface INotificationService
     Task NotifyPollCreatedAsync(FeedPost post, Poll poll, CancellationToken cancellationToken = default);
 
     Task NotifyPollClosedAsync(FeedPost post, Poll poll, CancellationToken cancellationToken = default);
+
+    Task NotifyLeaveRequestCreatedAsync(
+        IReadOnlyList<Guid> recipientPersonIds,
+        Guid leaveRecordId,
+        string summary,
+        CancellationToken cancellationToken = default);
 }

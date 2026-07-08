@@ -10,6 +10,7 @@ namespace LioConecta.Application.Services;
 
 public sealed class NotificationService(
     INotificationRepository notificationRepository,
+    IPersonRepository personRepository,
     INotificationBroadcaster notificationBroadcaster,
     ICurrentUserService currentUserService) : INotificationService
 {
@@ -88,6 +89,28 @@ public sealed class NotificationService(
             NotificationType.Feed,
             title,
             body,
+            href,
+            cancellationToken);
+    }
+
+    public async Task NotifyLeaveRequestCreatedAsync(
+        IReadOnlyList<Guid> recipientPersonIds,
+        Guid leaveRecordId,
+        string summary,
+        CancellationToken cancellationToken = default)
+    {
+        var recipients = await personRepository.GetByIdsAsync(recipientPersonIds, cancellationToken);
+        if (recipients.Count == 0)
+        {
+            return;
+        }
+
+        var href = $"/servicos/ferias-ausencias/gestao?requestId={leaveRecordId}";
+        await BroadcastAsync(
+            () => Task.FromResult(recipients),
+            NotificationType.ServiceRequest,
+            "Nova solicitação de férias",
+            summary.Trim(),
             href,
             cancellationToken);
     }

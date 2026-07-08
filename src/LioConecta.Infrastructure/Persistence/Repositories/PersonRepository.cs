@@ -142,4 +142,49 @@ public sealed class PersonRepository(AppDbContext db) : IPersonRepository
             .Where(p => p.AzureAdObjectId != null && ids.Contains(p.AzureAdObjectId.Value))
             .ToListAsync(cancellationToken);
     }
+
+    public Task<Person?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        var normalized = email.Trim().ToLowerInvariant();
+        return db.People
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.IsActive && p.Email.ToLower() == normalized, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Person>> GetByEmailsAsync(
+        IEnumerable<string> emails,
+        CancellationToken cancellationToken = default)
+    {
+        var normalized = emails
+            .Where(e => !string.IsNullOrWhiteSpace(e))
+            .Select(e => e.Trim().ToLowerInvariant())
+            .Distinct()
+            .ToList();
+
+        if (normalized.Count == 0)
+        {
+            return [];
+        }
+
+        return await db.People
+            .AsNoTracking()
+            .Where(p => p.IsActive && normalized.Contains(p.Email.ToLower()))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Person>> GetByIdsAsync(
+        IEnumerable<Guid> ids,
+        CancellationToken cancellationToken = default)
+    {
+        var idList = ids.Distinct().ToList();
+        if (idList.Count == 0)
+        {
+            return [];
+        }
+
+        return await db.People
+            .AsNoTracking()
+            .Where(p => p.IsActive && idList.Contains(p.Id))
+            .ToListAsync(cancellationToken);
+    }
 }

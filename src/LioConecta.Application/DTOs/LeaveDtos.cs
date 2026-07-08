@@ -106,3 +106,37 @@ public sealed record LeaveRequestDetailDto(
     string? DataSource,
     DateTimeOffset CreatedAt,
     IReadOnlyList<LeaveTimelineEventDto> Timeline);
+
+public sealed record LeaveManagementItemDto(
+    Guid Id,
+    Guid? ServiceRequestId,
+    string EmployeeName,
+    string? EmployeeId,
+    string Email,
+    string Title,
+    string Status,
+    string? RmSyncStatus,
+    DateOnly? StartDate,
+    DateOnly? EndDate,
+    int? Days,
+    string? DataSource,
+    DateTimeOffset CreatedAt);
+
+public sealed record LeaveManagementDetailDto(
+    Guid Id,
+    Guid? ServiceRequestId,
+    string EmployeeName,
+    string? EmployeeId,
+    string Email,
+    string Title,
+    string Status,
+    string? RmSyncStatus,
+    string? RmExternalId,
+    DateOnly? StartDate,
+    DateOnly? EndDate,
+    int? Days,
+    string? Notes,
+    string? DataSource,
+    DateTimeOffset CreatedAt,
+    IReadOnlyList<LeaveTimelineEventDto> Timeline,
+    string ApprovalNote);

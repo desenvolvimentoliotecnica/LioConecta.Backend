@@ -15,9 +15,15 @@ public sealed class LeaveService(
     IServiceRequestService serviceRequestService,
     ICurrentUserService currentUserService,
     IAppSettingsProvider settingsProvider,
-    ITotvsRmConfigurationService totvsRmConfigurationService) : ILeaveService
+    ITotvsRmConfigurationService totvsRmConfigurationService,
+    IPersonRepository personRepository,
+    LeaveNotifyRecipientResolver leaveNotifyRecipientResolver,
+    INotificationService notificationService,
+    ILeaveEmailNotifier leaveEmailNotifier) : ILeaveService
 {
     private const string VacationServiceKey = "solicitar-ferias";
+    private const string ApprovalNote =
+        "A aprovação formal da solicitação é feita no RM Labore. O portal apenas registra, notifica e espelha o status.";
     private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
@@ -246,11 +252,242 @@ public sealed class LeaveService(
         payload["recordId"] = record.Id;
         await leaveRepository.AddRecordAsync(record, cancellationToken);
 
+        if (string.Equals(service.Id, VacationServiceKey, StringComparison.OrdinalIgnoreCase))
+        {
+            await NotifyVacationRequestCreatedAsync(record, personId, cancellationToken);
+        }
+
         return new LeaveRequestResultDto(
             created.Id,
             record.Id,
             created.Status.ToString(),
             "Solicitação registrada com sucesso. Acompanhe o andamento na página de Férias e ausências.");
+    }
+
+    public async Task<IReadOnlyList<LeaveManagementItemDto>> GetManagementListAsync(
+        string? status,
+        string? query,
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        var (canAccess, isRhScope, personId) = await EnsureCanManageAsync(cancellationToken);
+        if (!canAccess)
+        {
+            throw new UnauthorizedAccessException("Acesso à gestão de férias negado.");
+        }
+
+        IReadOnlyList<Guid>? personIds = null;
+        if (!isRhScope)
+        {
+            var reports = await personRepository.GetDirectReportsAsync(personId, cancellationToken);
+            personIds = reports.Select(r => r.Id).ToList();
+            if (personIds.Count == 0)
+            {
+                return [];
+            }
+        }
+
+        var records = await leaveRepository.ListManagementAsync(
+            personIds,
+            status,
+            query,
+            limit,
+            cancellationToken);
+
+        return records.Select(ToManagementItem).ToList();
+    }
+
+    public async Task<LeaveManagementDetailDto?> GetManagementDetailAsync(
+        Guid recordId,
+        CancellationToken cancellationToken = default)
+    {
+        var (canAccess, isRhScope, personId) = await EnsureCanManageAsync(cancellationToken);
+        if (!canAccess)
+        {
+            throw new UnauthorizedAccessException("Acesso à gestão de férias negado.");
+        }
+
+        var record = await leaveRepository.GetRecordWithPersonAsync(recordId, cancellationToken);
+        if (record is null || record.ServiceKey != VacationServiceKey)
+        {
+            return null;
+        }
+
+        if (!isRhScope)
+        {
+            var reports = await personRepository.GetDirectReportsAsync(personId, cancellationToken);
+            if (reports.All(r => r.Id != record.PersonId))
+            {
+                throw new UnauthorizedAccessException("Acesso à solicitação de férias negado.");
+            }
+        }
+
+        return await ToManagementDetailAsync(record, cancellationToken);
+    }
+
+    public async Task<byte[]?> GetRequestPdfAsync(Guid recordId, CancellationToken cancellationToken = default)
+    {
+        var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
+        var record = await leaveRepository.GetRecordWithPersonAsync(recordId, cancellationToken);
+        if (record is null || record.PersonId != personId || record.ServiceKey != VacationServiceKey)
+        {
+            return null;
+        }
+
+        return BuildPdf(record);
+    }
+
+    public async Task<byte[]?> GetManagementPdfAsync(Guid recordId, CancellationToken cancellationToken = default)
+    {
+        var detail = await GetManagementDetailAsync(recordId, cancellationToken);
+        if (detail is null)
+        {
+            return null;
+        }
+
+        var record = await leaveRepository.GetRecordWithPersonAsync(recordId, cancellationToken);
+        return record is null ? null : BuildPdf(record);
+    }
+
+    private async Task NotifyVacationRequestCreatedAsync(
+        LeaveRecord record,
+        Guid requesterPersonId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var recipients = await leaveNotifyRecipientResolver.ResolveAsync(requesterPersonId, cancellationToken);
+            if (recipients.Count == 0)
+            {
+                return;
+            }
+
+            var requester = await personRepository.GetByIdAsync(requesterPersonId, cancellationToken);
+            var period = FormatPeriodLabel(record.StartDate, record.EndDate);
+            var summary = requester is null
+                ? $"Nova solicitação de férias ({period})."
+                : $"{requester.Name} solicitou férias ({period}).";
+
+            await notificationService.NotifyLeaveRequestCreatedAsync(
+                recipients.Select(r => r.Id).ToList(),
+                record.Id,
+                summary,
+                cancellationToken);
+
+            if (requester is not null)
+            {
+                await leaveEmailNotifier.NotifyRequestCreatedAsync(
+                    record,
+                    requester,
+                    recipients,
+                    cancellationToken);
+            }
+        }
+        catch
+        {
+            // Notifications are best-effort; request creation must not fail.
+        }
+    }
+
+    private async Task<(bool CanAccess, bool IsRhScope, Guid PersonId)> EnsureCanManageAsync(
+        CancellationToken cancellationToken)
+    {
+        var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
+        var roles = await currentUserService.GetRolesAsync(cancellationToken);
+        var (canAccess, isRhScope) = await leaveNotifyRecipientResolver.CanManageAsync(
+            personId,
+            roles,
+            cancellationToken);
+        return (canAccess, isRhScope, personId);
+    }
+
+    private async Task<LeaveManagementDetailDto> ToManagementDetailAsync(
+        LeaveRecord record,
+        CancellationToken cancellationToken)
+    {
+        var notes = ExtractNotes(record.DetailsJson);
+        var timeline = BuildTimeline(record);
+
+        if (record.ServiceRequestId is Guid serviceRequestId)
+        {
+            var serviceRequest = await serviceRequestService.GetByIdAsync(serviceRequestId, cancellationToken);
+            if (serviceRequest is not null)
+            {
+                timeline = MergeServiceRequestTimeline(timeline, serviceRequest);
+            }
+        }
+
+        var person = record.Person;
+        return new LeaveManagementDetailDto(
+            record.Id,
+            record.ServiceRequestId,
+            person?.Name ?? "Colaborador",
+            person?.EmployeeId,
+            person?.Email ?? string.Empty,
+            record.Title,
+            record.Status,
+            record.RmSyncStatus,
+            record.RmExternalId,
+            record.StartDate,
+            record.EndDate,
+            record.Days,
+            notes,
+            record.DataSource,
+            record.CreatedAt,
+            timeline,
+            ApprovalNote);
+    }
+
+    private static LeaveManagementItemDto ToManagementItem(LeaveRecord record) =>
+        new(
+            record.Id,
+            record.ServiceRequestId,
+            record.Person?.Name ?? "Colaborador",
+            record.Person?.EmployeeId,
+            record.Person?.Email ?? string.Empty,
+            record.Title,
+            record.Status,
+            record.RmSyncStatus,
+            record.StartDate,
+            record.EndDate,
+            record.Days,
+            record.DataSource,
+            record.CreatedAt);
+
+    private static byte[] BuildPdf(LeaveRecord record)
+    {
+        var person = record.Person;
+        var period = FormatPeriodLabel(record.StartDate, record.EndDate);
+        var model = new LeaveRequestPdfModel(
+            person?.Name ?? "Colaborador",
+            person?.EmployeeId ?? "—",
+            person?.Email ?? "—",
+            period,
+            record.Days?.ToString(PtBr) ?? "—",
+            record.Status,
+            record.RmSyncStatus ?? "—",
+            record.Id.ToString(),
+            record.RmExternalId ?? "—",
+            LeaveRequestPdfGenerator.FormatDateTime(record.CreatedAt),
+            ExtractNotes(record.DetailsJson));
+
+        return LeaveRequestPdfGenerator.Generate(model);
+    }
+
+    private static string FormatPeriodLabel(DateOnly? start, DateOnly? end)
+    {
+        if (start is null)
+        {
+            return "sem período";
+        }
+
+        var startLabel = start.Value.ToString("dd/MM/yyyy", PtBr);
+        if (end is null)
+        {
+            return startLabel;
+        }
+
+        return $"{startLabel} – {end.Value.ToString("dd/MM/yyyy", PtBr)}";
     }
 
     private async Task EnsureSyncedIfStaleAsync(Guid personId, CancellationToken cancellationToken)

@@ -22,6 +22,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             await EnsureBenefitsCatalogAsync(cancellationToken);
             await EnsureLeaveCatalogAsync(cancellationToken);
             await EnsureFacilitiesMenuCatalogAsync(cancellationToken);
+            await EnsurePhoneExtensionsCatalogAsync(cancellationToken);
             await EnsureCompassCatalogAsync(cancellationToken);
             await EnsurePollSeedAsync(cancellationToken);
             await EnsureEmployeeIdsAsync(cancellationToken);
@@ -270,6 +271,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
         await EnsureSuperAdminPortalUserAsync(cancellationToken);
         await EnsureGroupsCatalogAsync(cancellationToken);
         await EnsureFacilitiesMenuCatalogAsync(cancellationToken);
+        await EnsurePhoneExtensionsCatalogAsync(cancellationToken);
         logger.LogInformation("Seed completed with {People} people.", people.Length);
     }
 
@@ -439,6 +441,56 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
         await db.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Seeded leave catalog for Maria Silva.");
     }
+
+private async Task EnsurePhoneExtensionsCatalogAsync(CancellationToken cancellationToken)
+    {
+        var rows = PhoneExtensionsCatalogSeed.LoadRows();
+        if (rows.Count == 0)
+        {
+            logger.LogDebug("Phone extensions seed JSON not found or empty; skipping.");
+            return;
+        }
+
+        var existingLegacyIds = await db.PhoneExtensions
+            .Where(x => x.LegacySourceId != null)
+            .Select(x => x.LegacySourceId!.Value)
+            .ToListAsync(cancellationToken);
+        var existingSet = existingLegacyIds.ToHashSet();
+
+        var emailToPersonId = await db.People
+            .AsNoTracking()
+            .Where(p => p.Email != null && p.Email != "")
+            .Select(p => new { p.Id, Email = p.Email.ToLower() })
+            .ToListAsync(cancellationToken);
+
+        var personByEmail = emailToPersonId
+            .GroupBy(x => x.Email)
+            .ToDictionary(g => g.Key, g => g.First().Id, StringComparer.OrdinalIgnoreCase);
+
+        var seedTime = DateTimeOffset.UtcNow.AddDays(-1);
+        var added = 0;
+
+        foreach (var row in rows)
+        {
+            if (existingSet.Contains(row.Id)) continue;
+
+            Guid? personId = null;
+            if (!string.IsNullOrWhiteSpace(row.Email))
+            {
+                var email = row.Email.Trim().ToLowerInvariant();
+                if (personByEmail.TryGetValue(email, out var matchedId)) personId = matchedId;
+            }
+
+            db.PhoneExtensions.Add(PhoneExtensionsCatalogSeed.ToEntity(row, personId, seedTime));
+            added++;
+        }
+
+        if (added == 0) return;
+
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Seeded {Count} phone extension(s) from legacy catalog.", added);
+    }
+
 
     private async Task EnsureFacilitiesMenuCatalogAsync(CancellationToken cancellationToken)
     {

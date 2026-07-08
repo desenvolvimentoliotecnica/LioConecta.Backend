@@ -57,6 +57,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<OrgPosition> OrgPositions => Set<OrgPosition>();
     public DbSet<CompassIbpSnapshot> CompassIbpSnapshots => Set<CompassIbpSnapshot>();
     public DbSet<CompassIbpRow> CompassIbpRows => Set<CompassIbpRow>();
+    public DbSet<PhoneExtension> PhoneExtensions => Set<PhoneExtension>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -88,6 +89,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureUserTeamsTokens(modelBuilder);
         ConfigureOrgChartGovernance(modelBuilder);
         ConfigureCompass(modelBuilder);
+        ConfigurePhoneExtensions(modelBuilder);
     }
 
     private static void ApplySnakeCaseTableNames(ModelBuilder modelBuilder)
@@ -868,6 +870,27 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany(s => s.Rows)
                 .HasForeignKey(r => r.SnapshotId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigurePhoneExtensions(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PhoneExtension>(entity =>
+        {
+            entity.Property(e => e.Name).HasMaxLength(256);
+            entity.Property(e => e.Extension).HasMaxLength(32);
+            entity.Property(e => e.Mobile).HasMaxLength(64);
+            entity.Property(e => e.Department).HasMaxLength(256);
+            entity.Property(e => e.Title).HasMaxLength(256);
+            entity.Property(e => e.Email).HasMaxLength(256);
+            entity.Property(e => e.ManagerName).HasMaxLength(256);
+            entity.HasIndex(e => e.Extension);
+            entity.HasIndex(e => e.Department);
+            entity.HasIndex(e => e.Email);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.LegacySourceId);
+            entity.HasIndex(e => e.PersonId);
+            entity.HasOne(e => e.Person).WithMany().HasForeignKey(e => e.PersonId).OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

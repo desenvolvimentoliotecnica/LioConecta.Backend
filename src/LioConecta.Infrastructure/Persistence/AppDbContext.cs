@@ -58,6 +58,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<CompassIbpSnapshot> CompassIbpSnapshots => Set<CompassIbpSnapshot>();
     public DbSet<CompassIbpRow> CompassIbpRows => Set<CompassIbpRow>();
     public DbSet<PhoneExtension> PhoneExtensions => Set<PhoneExtension>();
+    public DbSet<PortalSystem> PortalSystems => Set<PortalSystem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -90,6 +91,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureOrgChartGovernance(modelBuilder);
         ConfigureCompass(modelBuilder);
         ConfigurePhoneExtensions(modelBuilder);
+        ConfigurePortalSystems(modelBuilder);
     }
 
     private static void ApplySnakeCaseTableNames(ModelBuilder modelBuilder)
@@ -891,6 +893,29 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasIndex(e => e.LegacySourceId);
             entity.HasIndex(e => e.PersonId);
             entity.HasOne(e => e.Person).WithMany().HasForeignKey(e => e.PersonId).OnDelete(DeleteBehavior.SetNull);
+        });
+    }
+
+    private static void ConfigurePortalSystems(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PortalSystem>(entity =>
+        {
+            entity.Property(e => e.Name).HasMaxLength(256);
+            entity.Property(e => e.Slug).HasMaxLength(128);
+            entity.Property(e => e.Description).HasMaxLength(1024);
+            entity.Property(e => e.Category).HasMaxLength(128);
+            entity.Property(e => e.UrlDev).HasMaxLength(2048);
+            entity.Property(e => e.UrlHml).HasMaxLength(2048);
+            entity.Property(e => e.UrlPrd).HasMaxLength(2048);
+            entity.Property(e => e.IconFaClass).HasMaxLength(128);
+            entity.Property(e => e.IconAssetUrl).HasMaxLength(512);
+            entity.Property(e => e.AccessNotes).HasMaxLength(1024);
+            entity.Property(e => e.SeedKey).HasMaxLength(64);
+            entity.HasIndex(e => e.Slug).IsUnique();
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.SortOrder);
+            entity.HasIndex(e => e.SeedKey);
         });
     }
 }

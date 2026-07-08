@@ -46,6 +46,17 @@ public class PersonPhotoResolverTests
     }
 
     [Fact]
+    public void ResolveEffectivePhotoUrl_IgnoresLegacyDemoAvatarPaths()
+    {
+        var person = new Person
+        {
+            PhotoUrl = "/avatar-maria-silva.png",
+        };
+
+        Assert.Null(PersonPhotoResolver.ResolveEffectivePhotoUrl(person));
+    }
+
+    [Fact]
     public void NormalizeAndValidatePortalAvatar_RejectsInvalidPath()
     {
         Assert.Throws<InvalidOperationException>(() =>

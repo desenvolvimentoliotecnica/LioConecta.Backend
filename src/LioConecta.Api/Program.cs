@@ -312,6 +312,13 @@ try
         RequestPath = "/media/people",
     });
 
+    var systemsIconsRoot = ResolveSystemsIconsRoot(settingsProvider, app.Environment);
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(systemsIconsRoot),
+        RequestPath = "/systems/icons",
+    });
+
     app.UseAuthentication();
     app.UseAuthorization();
 
@@ -441,6 +448,17 @@ static string ResolvePostsMediaRoot(IAppSettingsProvider settings, IWebHostEnvir
 static string ResolvePeopleMediaRoot(IAppSettingsProvider settings, IWebHostEnvironment environment)
 {
     var configured = settings.GetString(AppSettingKeys.MediaPeopleRootPath, "App_Data/media/people");
+    var absolute = Path.IsPathRooted(configured)
+        ? configured
+        : Path.Combine(environment.ContentRootPath, configured);
+
+    Directory.CreateDirectory(absolute);
+    return absolute;
+}
+
+static string ResolveSystemsIconsRoot(IAppSettingsProvider settings, IWebHostEnvironment environment)
+{
+    var configured = settings.GetString(AppSettingKeys.SystemsIconsRootPath, "App_Data/systems/icons");
     var absolute = Path.IsPathRooted(configured)
         ? configured
         : Path.Combine(environment.ContentRootPath, configured);

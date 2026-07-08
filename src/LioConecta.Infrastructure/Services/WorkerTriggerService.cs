@@ -17,6 +17,8 @@ public sealed class WorkerTriggerService(
     IPollClosureService pollClosureService,
     ITimesheetSyncService timesheetSyncService,
     IPayslipSyncService payslipSyncService,
+    ILeaveSyncService leaveSyncService,
+    LeaveWriteBackService leaveWriteBackService,
     IEmailDispatchService emailDispatchService) : IWorkerTriggerService
 {
     public Task<IReadOnlyList<WorkerDefinitionDto>> ListWorkersAsync(CancellationToken cancellationToken)
@@ -137,6 +139,20 @@ public sealed class WorkerTriggerService(
                 workerKey,
                 "manual",
                 async (context, ct) => _ = await payslipSyncService.SyncAllActivePeopleAsync(context, ct),
+                cancellationToken),
+            WorkerKeys.TotvsLeaveSync => workerRunRecorder.ExecuteAsync(
+                workerKey,
+                "manual",
+                async (context, ct) => _ = await leaveSyncService.SyncAllActivePeopleAsync(context, ct),
+                cancellationToken),
+            WorkerKeys.LeaveWriteBack => workerRunRecorder.ExecuteAsync(
+                workerKey,
+                "manual",
+                async (context, ct) =>
+                {
+                    var processed = await leaveWriteBackService.ProcessPendingAsync(ct);
+                    await context.LogInfoAsync($"Processados {processed} write-back(s) de férias.", ct);
+                },
                 cancellationToken),
             WorkerKeys.EmailDispatch => workerRunRecorder.ExecuteAsync(
                 workerKey,

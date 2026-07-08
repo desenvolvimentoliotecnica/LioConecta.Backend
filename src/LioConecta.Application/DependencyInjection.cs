@@ -27,6 +27,8 @@ public static class DependencyInjection
         services.AddScoped<IPayslipService, PayslipService>();
         services.AddScoped<IBenefitService, BenefitService>();
         services.AddScoped<ILeaveService, LeaveService>();
+        services.AddScoped<LeaveNotifyRecipientResolver>();
+        services.AddScoped<ILeaveEmailNotifier, LeaveEmailNotifier>();
         services.AddScoped<IHelpDeskService, HelpDeskService>();
         services.AddScoped<IPlannerService, PlannerService>();
         services.AddScoped<IPollClosureService, PollClosureService>();
@@ -40,6 +42,7 @@ public static class DependencyInjection
         services.AddScoped<IPontoService, PontoService>();
         services.AddScoped<ITimesheetSyncService, TimesheetSyncService>();
         services.AddScoped<IPayslipSyncService, PayslipSyncService>();
+        services.AddScoped<ILeaveSyncService, LeaveSyncService>();
         services.AddScoped<PayslipPdfBuilder>();
 
         return services;

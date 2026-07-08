@@ -8,5 +8,7 @@ public static class WorkerKeys
     public const string PollClosure = "poll-closure";
     public const string TotvsTimesheetSync = "totvs-timesheet-sync";
     public const string TotvsPayslipSync = "totvs-payslip-sync";
+    public const string TotvsLeaveSync = "totvs-leave-sync";
+    public const string LeaveWriteBack = "leave-writeback";
     public const string EmailDispatch = "email-dispatch";
 }

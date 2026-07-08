@@ -27,4 +27,10 @@ public interface INotificationService
         Guid leaveRecordId,
         string summary,
         CancellationToken cancellationToken = default);
+
+    Task NotifyBirthdayCongratsAsync(
+        FeedPost post,
+        Person celebrated,
+        Person author,
+        CancellationToken cancellationToken = default);
 }

@@ -75,23 +75,28 @@ public sealed class PeopleController(
             .Where(p => p.IsActive && p.BirthDate != null)
             .ToListAsync(cancellationToken);
 
+        // Inclui: próximos `days` dias OU aniversários já ocorridos no mês corrente
+        // (ex.: dia 06/07 ainda aparece em "Este mês" quando hoje é 08/07).
         var upcoming = people
             .Where(p =>
             {
                 var birthDate = p.BirthDate!.Value;
-                var nextBirthday = new DateOnly(today.Year, birthDate.Month, birthDate.Day);
-                if (nextBirthday < today)
-                {
-                    nextBirthday = nextBirthday.AddYears(1);
-                }
+                var birthdayThisYear = new DateOnly(today.Year, birthDate.Month, birthDate.Day);
+                var alreadyCelebratedThisMonth =
+                    birthdayThisYear.Month == today.Month && birthdayThisYear <= today;
 
-                return nextBirthday.DayNumber - today.DayNumber <= days;
+                var nextBirthday = birthdayThisYear < today
+                    ? birthdayThisYear.AddYears(1)
+                    : birthdayThisYear;
+                var withinUpcomingWindow = nextBirthday.DayNumber - today.DayNumber <= days;
+
+                return alreadyCelebratedThisMonth || withinUpcomingWindow;
             })
             .OrderBy(p =>
             {
                 var birthDate = p.BirthDate!.Value;
-                var nextBirthday = new DateOnly(today.Year, birthDate.Month, birthDate.Day);
-                return nextBirthday < today ? nextBirthday.AddYears(1) : nextBirthday;
+                // Ordena pelo aniversário deste ano (passados do mês primeiro, depois futuros).
+                return new DateOnly(today.Year, birthDate.Month, birthDate.Day);
             })
             .Select(p => PersonMapper.ToSummary(p))
             .ToList();

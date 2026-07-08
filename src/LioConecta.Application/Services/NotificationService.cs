@@ -115,6 +115,46 @@ public sealed class NotificationService(
             cancellationToken);
     }
 
+    public async Task NotifyBirthdayCongratsAsync(
+        FeedPost post,
+        Person celebrated,
+        Person author,
+        CancellationToken cancellationToken = default)
+    {
+        // Sempre notifica o parabenizado — inclusive se autor == celebrado (auto-parabéns).
+        var now = DateTimeOffset.UtcNow;
+        var title = celebrated.Id == author.Id
+            ? "Você publicou parabéns no feed"
+            : $"{author.Name} te parabenizou";
+        var notification = new Notification
+        {
+            Id = Guid.NewGuid(),
+            PersonId = celebrated.Id,
+            Type = NotificationType.Birthday,
+            Title = title,
+            Body = post.Content.Trim(),
+            Href = $"/?post={post.Id}",
+            IsRead = false,
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+
+        await notificationRepository.AddRangeAsync([notification], cancellationToken);
+
+        var dto = NotificationMapper.ToDto(notification);
+        try
+        {
+            await notificationBroadcaster.SendToPersonAsync(
+                PersonGroupKey.Resolve(celebrated),
+                dto,
+                cancellationToken);
+        }
+        catch
+        {
+            // Real-time delivery is best-effort; notifications are persisted regardless.
+        }
+    }
+
     private Task BroadcastToAllActivePersonsAsync(
         NotificationType type,
         string title,

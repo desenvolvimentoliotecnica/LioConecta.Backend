@@ -39,12 +39,25 @@ public sealed class FeedController(
 
     [HttpPost("posts")]
     [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CreatePost(
         [FromBody] CreatePostRequest request,
         CancellationToken cancellationToken)
     {
-        var post = await feedService.CreatePostAsync(request, cancellationToken);
-        return CreatedAtAction(nameof(GetPost), new { id = post.Id }, post);
+        try
+        {
+            var post = await feedService.CreatePostAsync(request, cancellationToken);
+            return CreatedAtAction(nameof(GetPost), new { id = post.Id }, post);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
     }
 
     [HttpDelete("posts/{id:guid}")]

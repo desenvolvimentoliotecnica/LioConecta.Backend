@@ -123,6 +123,9 @@ public static class AppSettingKeys
     public const string FacilitiesMenuAllowedEmails = "facilities.menu.allowed_emails";
     public const string FacilitiesMenuEmailRecipients = "facilities.menu.email_recipients";
 
+    public const string RamaisAllowedRoles = "ramais.allowed_roles";
+    public const string RamaisAllowedEmails = "ramais.allowed_emails";
+
     public const string LoopEnabled = "loop.enabled";
     public const string LoopAllowedRoles = "loop.allowed_roles";
     public const string LoopAllowedEmails = "loop.allowed_emails";

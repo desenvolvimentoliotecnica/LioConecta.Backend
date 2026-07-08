@@ -128,6 +128,8 @@ public sealed record PersonCareerHistoryItemDto(
 public sealed record UpdateProfileCareerHistoryRequest(
     IReadOnlyList<PersonCareerHistoryItemDto> CareerHistory);
 
+public sealed record UpdateProfileAvatarRequest(string? PhotoUrl);
+
 public sealed record PersonProfileDto(
     Guid Id,
     string Slug,
@@ -150,7 +152,9 @@ public sealed record PersonProfileDto(
     IReadOnlyList<string> Tags,
     IReadOnlyList<PersonSkillDto> Skills,
     IReadOnlyDictionary<string, object?>? PersonalData,
-    ViewerContext ViewerContext);
+    ViewerContext ViewerContext,
+    string? GraphPhotoUrl = null,
+    string? PortalPhotoUrl = null);
 
 public sealed record PersonHierarchyMemberDto(
     string Slug,

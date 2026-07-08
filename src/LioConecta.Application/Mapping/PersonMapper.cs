@@ -1,6 +1,7 @@
 using System.Text.Json;
 using LioConecta.Application.Common;
 using LioConecta.Application.DTOs;
+using LioConecta.Application.Services;
 using LioConecta.Domain.Entities;
 using LioConecta.Domain.Enums;
 
@@ -139,7 +140,7 @@ public static class PersonMapper
             person.Slug,
             person.Name,
             person.Title,
-            person.PhotoUrl,
+            PersonPhotoResolver.ResolveEffectivePhotoUrl(person),
             PersonDepartmentHelper.GetName(person),
             person.Location,
             person.Manager?.Slug,
@@ -153,7 +154,7 @@ public static class PersonMapper
             person.Slug,
             person.Name,
             person.Title,
-            person.PhotoUrl,
+            PersonPhotoResolver.ResolveEffectivePhotoUrl(person),
             person.Email,
             person.TeamsUpn,
             PersonDepartmentHelper.GetName(person),
@@ -170,7 +171,7 @@ public static class PersonMapper
             person.Name,
             person.Email,
             person.Title,
-            person.PhotoUrl,
+            PersonPhotoResolver.ResolveEffectivePhotoUrl(person),
             PersonDepartmentHelper.GetName(person),
             roles);
 
@@ -205,7 +206,7 @@ public static class PersonMapper
             showSensitive ? person.Email : MaskEmail(person.Email),
             showSensitive ? person.Phone : null,
             person.Location,
-            person.PhotoUrl,
+            PersonPhotoResolver.ResolveEffectivePhotoUrl(person),
             PersonDepartmentHelper.GetName(person),
             person.Manager?.Name,
             person.Manager?.Slug,
@@ -218,7 +219,9 @@ public static class PersonMapper
             JsonMapper.DeserializeStringList(person.TagsJson),
             JsonMapper.DeserializeSkills(person.SkillsJson),
             personalData,
-            viewerContext);
+            viewerContext,
+            PersonPhotoResolver.GetGraphPhotoUrl(person),
+            PersonPhotoResolver.GetPortalAvatarUrl(person));
     }
 
     public static OrgChartNodeDto ToOrgChartNode(Person person, bool isOrphan = false)
@@ -248,7 +251,7 @@ public static class PersonMapper
             PersonDepartmentHelper.GetName(person));
 
     private static string? ResolvePhotoUrl(Person person) =>
-        string.IsNullOrWhiteSpace(person.PhotoUrl) ? null : person.PhotoUrl.Trim();
+        PersonPhotoResolver.ResolveEffectivePhotoUrl(person);
 
     private static string MaskEmail(string email)
     {

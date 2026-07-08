@@ -13,7 +13,8 @@ public sealed class PersonService(
     IPersonRepository personRepository,
     ICurrentUserService currentUserService,
     ITotvsRmEmployeeRepository employeeRepository,
-    IAppSettingsProvider settingsProvider) : IPersonService
+    IAppSettingsProvider settingsProvider,
+    IOrgChartGovernanceService orgChartGovernanceService) : IPersonService
 {
     public async Task<MeDto> GetMeAsync(CancellationToken cancellationToken = default)
     {
@@ -242,6 +243,28 @@ public sealed class PersonService(
         return await ReloadProfileAsync(person, cancellationToken);
     }
 
+    public async Task<PersonProfileDto> UpdateOwnAvatarAsync(
+        string? photoUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var person = await GetEditablePersonAsync(cancellationToken);
+        ApplyAvatarUpdate(person, photoUrl);
+        return await ReloadProfileAsync(person, cancellationToken);
+    }
+
+    public async Task<PersonProfileDto> UpdatePersonAvatarAsync(
+        string personKey,
+        string? photoUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var person = await ResolvePersonByKeyAsync(personKey, cancellationToken)
+            ?? throw new InvalidOperationException("Colaborador não encontrado.");
+
+        await EnsureCanEditPersonAvatarAsync(person, cancellationToken);
+        ApplyAvatarUpdate(person, photoUrl);
+        return await ReloadProfileAsync(person, cancellationToken);
+    }
+
     private async Task<PersonProfileDto> ReloadProfileAsync(
         Domain.Entities.Person person,
         CancellationToken cancellationToken)
@@ -256,6 +279,46 @@ public sealed class PersonService(
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
         return await personRepository.GetByIdAsync(personId, cancellationToken)
             ?? throw new InvalidOperationException("Current user profile was not found.");
+    }
+
+    private async Task<Domain.Entities.Person?> ResolvePersonByKeyAsync(
+        string personKey,
+        CancellationToken cancellationToken)
+    {
+        if (Guid.TryParse(personKey, out var personId))
+        {
+            return await personRepository.GetByIdAsync(personId, cancellationToken);
+        }
+
+        return await personRepository.GetBySlugAsync(personKey, cancellationToken);
+    }
+
+    private async Task EnsureCanEditPersonAvatarAsync(
+        Domain.Entities.Person person,
+        CancellationToken cancellationToken)
+    {
+        var currentPersonId = await currentUserService.GetPersonIdAsync(cancellationToken);
+        if (person.Id == currentPersonId)
+        {
+            return;
+        }
+
+        var policy = await orgChartGovernanceService.GetPolicyAsync(cancellationToken);
+        if (!policy.CanEdit)
+        {
+            throw new UnauthorizedAccessException("Sem permissão para editar o avatar desta pessoa.");
+        }
+    }
+
+    private static void ApplyAvatarUpdate(Domain.Entities.Person person, string? photoUrl)
+    {
+        if (string.IsNullOrWhiteSpace(photoUrl))
+        {
+            PersonPhotoResolver.ClearPortalAvatar(person);
+            return;
+        }
+
+        PersonPhotoResolver.SetPortalAvatarUrl(person, photoUrl);
     }
 
     public async Task<IReadOnlyList<PersonSummaryDto>> SearchAsync(

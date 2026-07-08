@@ -138,4 +138,22 @@ public sealed class MeController(IPersonService personService) : ControllerBase
         var profile = await personService.UpdateOwnCareerHistoryAsync(request.CareerHistory, cancellationToken);
         return Ok(profile);
     }
+
+    [HttpPatch("profile/avatar")]
+    [ProducesResponseType(typeof(PersonProfileDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PersonProfileDto>> UpdateAvatar(
+        [FromBody] UpdateProfileAvatarRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var profile = await personService.UpdateOwnAvatarAsync(request.PhotoUrl, cancellationToken);
+            return Ok(profile);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

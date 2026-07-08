@@ -66,7 +66,7 @@ ssh @sshArgs $sshTarget "mkdir -p $remoteDir/current"
 scp @sshArgs -r "$staging/*" "${sshTarget}:$remoteDir/current/"
 scp @sshArgs (Join-Path $staging ".env") "${sshTarget}:$remoteDir/current/.env"
 Write-Host "Starting containers..."
-$remoteCmd = "cd $remoteDir/current; chmod +x seed-dev-settings.sh apply-db-fixes.sh scripts/apply-db-fixes.sh; export POSTGRES_PASSWORD='$pgPass'; export LIOSNECTA_HTTP_PORT='$httpPort'; docker compose -f docker-compose.dev.yml --env-file .env up -d --build --remove-orphans"
+$remoteCmd = "cd $remoteDir/current; chmod +x seed-dev-settings.sh scripts/apply-db-fixes.sh scripts/*.sh; export POSTGRES_PASSWORD='$pgPass'; export LIOSNECTA_HTTP_PORT='$httpPort'; docker compose -f docker-compose.dev.yml --env-file .env up -d --build --remove-orphans; docker compose -f docker-compose.dev.yml restart nginx"
 ssh @sshArgs $sshTarget $remoteCmd
 ssh @sshArgs $sshTarget "chmod -R a+rX $remoteDir/current/frontend-dist"
 Write-Host "Waiting for health..."

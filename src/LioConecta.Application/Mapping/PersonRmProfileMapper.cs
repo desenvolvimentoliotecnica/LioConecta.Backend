@@ -45,7 +45,7 @@ public static class PersonRmProfileMapper
             showSensitive ? person.Email : MaskEmail(person.Email),
             showSensitive ? FirstNonEmpty(rm.Telefone, person.Phone) : null,
             location,
-            person.PhotoUrl,
+            PersonPhotoResolver.ResolveEffectivePhotoUrl(person),
             string.IsNullOrWhiteSpace(rm.SecaoDescricao)
                 ? PersonDepartmentHelper.GetName(person)
                 : rm.SecaoDescricao.Trim(),
@@ -60,7 +60,9 @@ public static class PersonRmProfileMapper
             JsonMapper.DeserializeStringList(person.TagsJson),
             skills,
             personalData,
-            viewerContext);
+            viewerContext,
+            PersonPhotoResolver.GetGraphPhotoUrl(person),
+            PersonPhotoResolver.GetPortalAvatarUrl(person));
     }
 
     private static string? ReadPersonalString(IReadOnlyDictionary<string, object?> personalData, string key)

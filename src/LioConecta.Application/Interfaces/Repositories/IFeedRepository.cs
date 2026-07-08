@@ -13,6 +13,8 @@ public interface IFeedRepository
 
     Task AddPostAsync(FeedPost post, CancellationToken cancellationToken = default);
 
+    Task AddPostWithCelebrationAsync(FeedPost post, Celebration celebration, CancellationToken cancellationToken = default);
+
     Task AddPostWithPollAsync(FeedPost post, Poll poll, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<Poll>> GetPollsByPostIdsAsync(

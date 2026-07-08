@@ -10,6 +10,7 @@ namespace LioConecta.Application.Services;
 
 public sealed class FeedService(
     IFeedRepository feedRepository,
+    IPersonRepository personRepository,
     IAnalyticsRepository analyticsRepository,
     ICurrentUserService currentUserService,
     INotificationService notificationService) : IFeedService
@@ -77,6 +78,11 @@ public sealed class FeedService(
             return await CreatePollPostAsync(request, authorId, now, cancellationToken);
         }
 
+        if (request.Type == PostType.Celebration)
+        {
+            return await CreateCelebrationPostAsync(request, authorId, now, cancellationToken);
+        }
+
         var post = new FeedPost
         {
             Id = Guid.NewGuid(),
@@ -91,6 +97,69 @@ public sealed class FeedService(
         await feedRepository.AddPostAsync(post, cancellationToken);
         var saved = await feedRepository.GetByIdAsync(post.Id, cancellationToken)
             ?? throw new InvalidOperationException($"Post {post.Id} was not found after save.");
+        return FeedMapper.ToDto(saved, authorId);
+    }
+
+    private async Task<FeedPostDto> CreateCelebrationPostAsync(
+        CreatePostRequest request,
+        Guid authorId,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var celebratedPersonId = CelebrationCreateParser.ParseCelebratedPersonId(request.Metadata);
+        var celebrated = await personRepository.GetByIdAsync(celebratedPersonId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Person {celebratedPersonId} was not found.");
+
+        if (!celebrated.IsActive)
+        {
+            throw new ArgumentException("Cannot congratulate an inactive person.", nameof(request));
+        }
+
+        var author = await personRepository.GetByIdAsync(authorId, cancellationToken)
+            ?? throw new UnauthorizedAccessException("Authenticated person was not found.");
+
+        var message = CelebrationCreateParser.NormalizeMessage(request.Content);
+        var content = string.IsNullOrWhiteSpace(message)
+            ? $"Parabéns, {celebrated.Name}! 🎂"
+            : $"Parabéns, {celebrated.Name}! {message}";
+
+        var metadata = new Dictionary<string, object?>
+        {
+            ["kind"] = "birthday",
+            ["celebratedPersonId"] = celebrated.Id.ToString(),
+            ["celebratedPersonName"] = celebrated.Name,
+            ["celebratedPersonSlug"] = celebrated.Slug,
+        };
+
+        var postId = Guid.NewGuid();
+        var post = new FeedPost
+        {
+            Id = postId,
+            AuthorId = authorId,
+            Type = PostType.Celebration,
+            Content = content,
+            MetadataJson = JsonMapper.SerializeObjectDictionary(metadata),
+            CreatedAt = now,
+            UpdatedAt = now
+        };
+
+        var celebration = new Celebration
+        {
+            Id = Guid.NewGuid(),
+            PostId = postId,
+            CelebratedPersonId = celebrated.Id,
+            Message = message,
+            CreatedAt = now,
+            UpdatedAt = now
+        };
+
+        await feedRepository.AddPostWithCelebrationAsync(post, celebration, cancellationToken);
+
+        var saved = await feedRepository.GetByIdAsync(postId, cancellationToken)
+            ?? throw new InvalidOperationException($"Post {postId} was not found after save.");
+
+        await notificationService.NotifyBirthdayCongratsAsync(saved, celebrated, author, cancellationToken);
+
         return FeedMapper.ToDto(saved, authorId);
     }
 

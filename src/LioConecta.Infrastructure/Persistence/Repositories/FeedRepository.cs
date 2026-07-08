@@ -79,6 +79,16 @@ public sealed class FeedRepository(AppDbContext db) : IFeedRepository
         await db.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task AddPostWithCelebrationAsync(
+        FeedPost post,
+        Celebration celebration,
+        CancellationToken cancellationToken = default)
+    {
+        db.FeedPosts.Add(post);
+        db.Celebrations.Add(celebration);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task AddPostWithPollAsync(FeedPost post, Poll poll, CancellationToken cancellationToken = default)
     {
         db.FeedPosts.Add(post);

@@ -735,17 +735,7 @@ private async Task EnsurePhoneExtensionsCatalogAsync(CancellationToken cancellat
             changed = true;
         }
 
-        if (devUser.BirthDate is not null)
-        {
-            devUser.BirthDate = null;
-            changed = true;
-        }
-
-        if (devUser.HireDate is not null)
-        {
-            devUser.HireDate = null;
-            changed = true;
-        }
+        // Keep BirthDate/HireDate from RM sync so birthdays stay visible after bootstrap.
 
         if (!string.IsNullOrWhiteSpace(devUser.PhotoUrl))
         {

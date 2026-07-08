@@ -1150,6 +1150,12 @@ namespace LioConecta.Infrastructure.Migrations
                     b.Property<int>("ScheduledDays")
                         .HasColumnType("integer");
 
+                    b.Property<string>("DataSource")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("SyncedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1380,6 +1386,9 @@ namespace LioConecta.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("DataSource")
+                        .HasColumnType("text");
+
                     b.Property<DateOnly?>("EndDate")
                         .HasColumnType("date");
 
@@ -1390,9 +1399,18 @@ namespace LioConecta.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("RmExternalId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RmSyncStatus")
+                        .HasColumnType("text");
+
                     b.Property<string>("ServiceKey")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<Guid?>("ServiceRequestId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateOnly?>("StartDate")
                         .HasColumnType("date");
@@ -1400,6 +1418,9 @@ namespace LioConecta.Infrastructure.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("SyncedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -1413,6 +1434,8 @@ namespace LioConecta.Infrastructure.Migrations
                     b.HasIndex("Status");
 
                     b.HasIndex("PersonId", "StartDate");
+
+                    b.HasIndex("PersonId", "RmExternalId");
 
                     b.ToTable("leave_records");
                 });

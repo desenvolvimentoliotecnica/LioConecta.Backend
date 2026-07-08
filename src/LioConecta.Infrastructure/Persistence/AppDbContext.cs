@@ -626,6 +626,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         {
             entity.HasIndex(r => new { r.PersonId, r.StartDate });
             entity.HasIndex(r => r.Status);
+            entity.HasIndex(r => new { r.PersonId, r.RmExternalId });
 
             entity.HasOne(r => r.Person)
                 .WithMany()

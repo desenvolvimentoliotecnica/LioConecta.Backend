@@ -40,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<IPontoService, PontoService>();
         services.AddScoped<ITimesheetSyncService, TimesheetSyncService>();
         services.AddScoped<IPayslipSyncService, PayslipSyncService>();
+        services.AddScoped<ILeaveSyncService, LeaveSyncService>();
         services.AddScoped<PayslipPdfBuilder>();
 
         return services;

@@ -44,4 +44,26 @@ public interface IUniLioAuthoringService
         CancellationToken cancellationToken = default);
 
     Task DeleteModuleAsync(Guid courseId, Guid moduleId, CancellationToken cancellationToken = default);
+
+    Task<UniLioModuleAttachmentDto> UploadModuleAttachmentAsync(
+        Guid courseId,
+        Guid moduleId,
+        Stream content,
+        string fileName,
+        string? contentType,
+        long sizeBytes,
+        CancellationToken cancellationToken = default);
+
+    Task DeleteModuleAttachmentAsync(
+        Guid courseId,
+        Guid moduleId,
+        Guid attachmentId,
+        CancellationToken cancellationToken = default);
+
+    Task<UniLioAuthoringAssessmentDto> UpsertCourseAssessmentAsync(
+        Guid courseId,
+        UniLioUpsertAssessmentRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task DeleteCourseAssessmentAsync(Guid courseId, CancellationToken cancellationToken = default);
 }

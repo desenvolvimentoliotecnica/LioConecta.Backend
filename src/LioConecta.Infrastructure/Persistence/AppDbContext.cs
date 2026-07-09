@@ -76,6 +76,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<UniLioIntegrationLink> UniLioIntegrationLinks => Set<UniLioIntegrationLink>();
     public DbSet<UniLioModuleQuestion> UniLioModuleQuestions => Set<UniLioModuleQuestion>();
     public DbSet<UniLioModuleQuestionReply> UniLioModuleQuestionReplies => Set<UniLioModuleQuestionReply>();
+    public DbSet<UniLioModuleAttachment> UniLioModuleAttachments => Set<UniLioModuleAttachment>();
     public DbSet<PhoneExtension> PhoneExtensions => Set<PhoneExtension>();
     public DbSet<PortalSystem> PortalSystems => Set<PortalSystem>();
 
@@ -940,6 +941,20 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasOne(m => m.Course)
                 .WithMany(c => c.Modules)
                 .HasForeignKey(m => m.CourseId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UniLioModuleAttachment>(entity =>
+        {
+            entity.ToTable("uni_lio_module_attachments");
+            entity.HasIndex(a => a.ModuleId);
+            entity.HasIndex(a => new { a.ModuleId, a.SortOrder });
+            entity.Property(a => a.FileName).HasMaxLength(512);
+            entity.Property(a => a.StorageFileName).HasMaxLength(128);
+            entity.Property(a => a.ContentType).HasMaxLength(128);
+            entity.HasOne(a => a.Module)
+                .WithMany(m => m.Attachments)
+                .HasForeignKey(a => a.ModuleId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

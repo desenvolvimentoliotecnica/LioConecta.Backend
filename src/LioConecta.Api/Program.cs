@@ -319,6 +319,14 @@ try
         RequestPath = "/systems/icons",
     });
 
+    var uniLioModuleAttachmentsRoot = Path.Combine(app.Environment.ContentRootPath, "App_Data", "unilio", "module-attachments");
+    Directory.CreateDirectory(uniLioModuleAttachmentsRoot);
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(uniLioModuleAttachmentsRoot),
+        RequestPath = "/unilio/modules/attachments",
+    });
+
     app.UseAuthentication();
     app.UseAuthorization();
 

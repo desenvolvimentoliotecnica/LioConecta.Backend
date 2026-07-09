@@ -9,7 +9,9 @@ using LioConecta.Application.Services;
 using LioConecta.Domain.Entities;
 using LioConecta.Domain.Enums;
 using LioConecta.Infrastructure.Persistence;
+using LioConecta.Infrastructure.Services.UniLio;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 
 namespace LioConecta.Infrastructure.Services;
 
@@ -18,7 +20,8 @@ public sealed class UniLioAuthoringService(
     ICurrentUserService currentUserService,
     INotificationService notificationService,
     UniLioApprovalRecipientResolver approvalRecipientResolver,
-    IUniLioEmailNotifier uniLioEmailNotifier) : IUniLioAuthoringService
+    IUniLioEmailNotifier uniLioEmailNotifier,
+    IHostEnvironment hostEnvironment) : IUniLioAuthoringService
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
@@ -427,7 +430,139 @@ public sealed class UniLioAuthoringService(
         var module = course.Modules.FirstOrDefault(m => m.Id == moduleId)
             ?? throw new KeyNotFoundException($"Módulo {moduleId} não encontrado.");
 
+        foreach (var attachment in module.Attachments.ToList())
+        {
+            UniLioModuleAttachmentStorage.DeleteIfExists(attachment.StorageFileName, hostEnvironment);
+        }
+
         db.UniLioCourseModules.Remove(module);
+        course.UpdatedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<UniLioModuleAttachmentDto> UploadModuleAttachmentAsync(
+        Guid courseId,
+        Guid moduleId,
+        Stream content,
+        string fileName,
+        string? contentType,
+        long sizeBytes,
+        CancellationToken cancellationToken = default)
+    {
+        var course = await LoadCourseAsync(courseId, cancellationToken);
+        var viewer = await GetViewerAsync(cancellationToken);
+        EnsureCanEdit(course, viewer);
+
+        var module = course.Modules.FirstOrDefault(m => m.Id == moduleId)
+            ?? throw new KeyNotFoundException($"Módulo {moduleId} não encontrado.");
+
+        UniLioModuleAttachmentStorage.Validate(fileName, sizeBytes);
+        var extension = Path.GetExtension(fileName);
+        var storageFileName = await UniLioModuleAttachmentStorage.SaveAsync(
+            content,
+            extension,
+            hostEnvironment,
+            cancellationToken);
+
+        var sortOrder = module.Attachments.Count == 0
+            ? 1
+            : module.Attachments.Max(a => a.SortOrder) + 1;
+        var now = DateTimeOffset.UtcNow;
+        var attachment = new UniLioModuleAttachment
+        {
+            ModuleId = moduleId,
+            FileName = fileName.Trim(),
+            StorageFileName = storageFileName,
+            ContentType = UniLioModuleAttachmentStorage.ResolveContentType(fileName, contentType),
+            SizeBytes = sizeBytes,
+            SortOrder = sortOrder,
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+
+        db.UniLioModuleAttachments.Add(attachment);
+        module.UpdatedAt = now;
+        course.UpdatedAt = now;
+        await db.SaveChangesAsync(cancellationToken);
+
+        return UniLioModuleAttachmentMapper.Map(attachment);
+    }
+
+    public async Task DeleteModuleAttachmentAsync(
+        Guid courseId,
+        Guid moduleId,
+        Guid attachmentId,
+        CancellationToken cancellationToken = default)
+    {
+        var course = await LoadCourseAsync(courseId, cancellationToken);
+        var viewer = await GetViewerAsync(cancellationToken);
+        EnsureCanEdit(course, viewer);
+
+        var module = course.Modules.FirstOrDefault(m => m.Id == moduleId)
+            ?? throw new KeyNotFoundException($"Módulo {moduleId} não encontrado.");
+
+        var attachment = module.Attachments.FirstOrDefault(a => a.Id == attachmentId)
+            ?? throw new KeyNotFoundException($"Anexo {attachmentId} não encontrado.");
+
+        UniLioModuleAttachmentStorage.DeleteIfExists(attachment.StorageFileName, hostEnvironment);
+        db.UniLioModuleAttachments.Remove(attachment);
+        module.UpdatedAt = DateTimeOffset.UtcNow;
+        course.UpdatedAt = module.UpdatedAt;
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<UniLioAuthoringAssessmentDto> UpsertCourseAssessmentAsync(
+        Guid courseId,
+        UniLioUpsertAssessmentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var course = await LoadCourseAsync(courseId, cancellationToken);
+        var viewer = await GetViewerAsync(cancellationToken);
+        EnsureCanEdit(course, viewer);
+
+        var assessment = course.Assessments.FirstOrDefault();
+        var now = DateTimeOffset.UtcNow;
+        if (assessment is null)
+        {
+            assessment = new UniLioAssessment
+            {
+                CourseId = courseId,
+                Title = request.Title.Trim(),
+                PassingScore = request.PassingScore,
+                QuestionsJson = request.QuestionsJson,
+                CreatedAt = now,
+                UpdatedAt = now,
+            };
+            db.UniLioAssessments.Add(assessment);
+        }
+        else
+        {
+            assessment.Title = request.Title.Trim();
+            assessment.PassingScore = request.PassingScore;
+            assessment.QuestionsJson = request.QuestionsJson;
+            assessment.UpdatedAt = now;
+        }
+
+        course.UpdatedAt = now;
+        await db.SaveChangesAsync(cancellationToken);
+
+        return new UniLioAuthoringAssessmentDto(
+            assessment.Id,
+            assessment.Title,
+            assessment.PassingScore,
+            assessment.QuestionsJson);
+    }
+
+    public async Task DeleteCourseAssessmentAsync(Guid courseId, CancellationToken cancellationToken = default)
+    {
+        var course = await LoadCourseAsync(courseId, cancellationToken);
+        var viewer = await GetViewerAsync(cancellationToken);
+        EnsureCanEdit(course, viewer);
+
+        var assessment = course.Assessments.FirstOrDefault()
+            ?? throw new KeyNotFoundException("Avaliação final não configurada para este curso.");
+
+        db.UniLioAssessments.Remove(assessment);
         course.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
     }
@@ -435,7 +570,8 @@ public sealed class UniLioAuthoringService(
     private async Task<UniLioCourse> LoadCourseAsync(Guid id, CancellationToken cancellationToken)
     {
         return await db.UniLioCourses
-            .Include(c => c.Modules)
+            .Include(c => c.Modules).ThenInclude(m => m.Attachments)
+            .Include(c => c.Assessments)
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken)
             ?? throw new KeyNotFoundException($"Curso {id} não encontrado.");
     }
@@ -580,8 +716,18 @@ public sealed class UniLioAuthoringService(
             course.SubmittedAt,
             course.PublishedAt);
 
-    private static UniLioAuthoringCourseDto MapAuthoringCourse(UniLioCourse course) =>
-        new(
+    private static UniLioAuthoringCourseDto MapAuthoringCourse(UniLioCourse course)
+    {
+        var assessment = course.Assessments.FirstOrDefault();
+        UniLioAuthoringAssessmentDto? assessmentDto = assessment is null
+            ? null
+            : new UniLioAuthoringAssessmentDto(
+                assessment.Id,
+                assessment.Title,
+                assessment.PassingScore,
+                assessment.QuestionsJson);
+
+        return new UniLioAuthoringCourseDto(
             course.Id,
             course.SeedKey,
             course.Title,
@@ -605,7 +751,9 @@ public sealed class UniLioAuthoringService(
             course.Modules
                 .OrderBy(m => m.SortOrder)
                 .Select(m => MapModule(m, false))
-                .ToList());
+                .ToList(),
+            assessmentDto);
+    }
 
     private static UniLioModuleDto MapModule(UniLioCourseModule module, bool isCompleted) =>
         new(
@@ -618,7 +766,8 @@ public sealed class UniLioAuthoringService(
             module.ArticleHtml,
             module.QuizJson,
             ParseQuizPassingScore(module.QuizJson),
-            isCompleted);
+            isCompleted,
+            UniLioModuleAttachmentMapper.Map(module.Attachments));
 
     private static int? ParseQuizPassingScore(string? quizJson)
     {

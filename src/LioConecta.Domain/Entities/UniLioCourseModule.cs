@@ -23,4 +23,6 @@ public class UniLioCourseModule : BaseEntity
     public UniLioCourse Course { get; set; } = null!;
 
     public ICollection<UniLioModuleProgress> ModuleProgress { get; set; } = [];
+
+    public ICollection<UniLioModuleAttachment> Attachments { get; set; } = [];
 }

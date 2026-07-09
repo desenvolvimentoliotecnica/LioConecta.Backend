@@ -212,6 +212,13 @@ internal static class UniLioCatalogSeed
         ["enrollment-maria-appcc"] = Guid.Parse("99999999-9999-9999-9999-999999990003"),
         ["enrollment-ricardo-nr35"] = Guid.Parse("99999999-9999-9999-9999-999999990004"),
         ["enrollment-julia-powerbi"] = Guid.Parse("99999999-9999-9999-9999-999999990005"),
+        ["enrollment-julio-codigo"] = Guid.Parse("99999999-9999-9999-9999-999999990006"),
+        ["enrollment-carlos-lgpd"] = Guid.Parse("99999999-9999-9999-9999-999999990007"),
+        ["enrollment-maria-seginfo"] = Guid.Parse("99999999-9999-9999-9999-999999990008"),
+        ["enrollment-ricardo-lean"] = Guid.Parse("99999999-9999-9999-9999-999999990009"),
+        ["enrollment-julia-onboarding"] = Guid.Parse("99999999-9999-9999-9999-999999990010"),
+        ["enrollment-carlos-onboarding"] = Guid.Parse("99999999-9999-9999-9999-999999990011"),
+        ["enrollment-maria-lean"] = Guid.Parse("99999999-9999-9999-9999-999999990012"),
     };
 
     private static readonly IReadOnlyDictionary<string, Guid> PersonSkillIds = new Dictionary<string, Guid>(StringComparer.Ordinal)
@@ -805,7 +812,7 @@ internal static class UniLioCatalogSeed
 
         return new UniLioCertificate
         {
-            Id = Guid.Parse($"55555555-5555-5555-5555-{ResolveEnrollmentNumericSuffix(seed.SeedKey):x12}"),
+            Id = ResolveEnrollmentId(seed.SeedKey),
             PersonId = ResolvePersonId(seed.PersonSeedKey),
             CourseId = ResolveCourseId(seed.CourseSeedKey),
             CertificateCode = seed.CertificateCode,

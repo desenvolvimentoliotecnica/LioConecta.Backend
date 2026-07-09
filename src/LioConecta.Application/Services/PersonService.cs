@@ -12,6 +12,7 @@ namespace LioConecta.Application.Services;
 public sealed class PersonService(
     IPersonRepository personRepository,
     ICurrentUserService currentUserService,
+    IPermissionService permissionService,
     ITotvsRmEmployeeRepository employeeRepository,
     IAppSettingsProvider settingsProvider,
     IOrgChartGovernanceService orgChartGovernanceService) : IPersonService
@@ -23,7 +24,14 @@ public sealed class PersonService(
             ?? throw new InvalidOperationException("Current user profile was not found.");
 
         var roles = await currentUserService.GetRolesAsync(cancellationToken);
-        return PersonMapper.ToMe(person, roles);
+        var permissions = await permissionService.GetEffectivePermissionsAsync(cancellationToken);
+        var context = await permissionService.GetAuthContextAsync(cancellationToken);
+        return PersonMapper.ToMe(
+            person,
+            roles,
+            permissions,
+            context?.SubjectType.ToString().ToLowerInvariant(),
+            context?.IsTestUser ?? false);
     }
 
     public async Task<PersonProfileDto?> GetProfileAsync(string slug, CancellationToken cancellationToken = default)

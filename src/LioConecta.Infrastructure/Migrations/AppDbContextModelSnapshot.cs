@@ -2001,6 +2001,64 @@ namespace LioConecta.Infrastructure.Migrations
                     b.ToTable("payslips");
                 });
 
+            modelBuilder.Entity("LioConecta.Domain.Entities.Permission", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("AllowedDataScopesJson")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<int>("BusinessArea")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<bool>("IsSystem")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("MenuPath")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("Module")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Resource")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Key");
+
+                    b.HasIndex("BusinessArea");
+
+                    b.HasIndex("Module");
+
+                    b.ToTable("permissions");
+                });
+
             modelBuilder.Entity("LioConecta.Domain.Entities.Person", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2383,6 +2441,11 @@ namespace LioConecta.Infrastructure.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)");
 
+                    b.Property<string>("SecurityStamp")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2426,6 +2489,76 @@ namespace LioConecta.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("reactions");
+                });
+
+            modelBuilder.Entity("LioConecta.Domain.Entities.Role", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("BusinessArea")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsKeyUserTemplate")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsSystem")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("IsSystem");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("roles");
+                });
+
+            modelBuilder.Entity("LioConecta.Domain.Entities.RolePermission", b =>
+                {
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PermissionKey")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<int>("DataScope")
+                        .HasColumnType("integer");
+
+                    b.HasKey("RoleId", "PermissionKey");
+
+                    b.HasIndex("PermissionKey");
+
+                    b.ToTable("role_permissions");
                 });
 
             modelBuilder.Entity("LioConecta.Domain.Entities.ServiceRequest", b =>
@@ -2510,6 +2643,105 @@ namespace LioConecta.Infrastructure.Migrations
                     b.HasIndex("ServiceRequestId");
 
                     b.ToTable("service_request_events");
+                });
+
+            modelBuilder.Entity("LioConecta.Domain.Entities.SubjectRoleAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("AssignedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("AssignedByPersonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("SubjectType")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("SubjectType", "SubjectId");
+
+                    b.HasIndex("SubjectType", "SubjectId", "RoleId")
+                        .IsUnique();
+
+                    b.ToTable("subject_role_assignments");
+                });
+
+            modelBuilder.Entity("LioConecta.Domain.Entities.TestUser", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("BusinessArea")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<Guid?>("OptionalPersonId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("SecurityStamp")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("OptionalPersonId");
+
+                    b.ToTable("test_users");
                 });
 
             modelBuilder.Entity("LioConecta.Domain.Entities.TimesheetPeriodCache", b =>
@@ -3193,7 +3425,7 @@ namespace LioConecta.Infrastructure.Migrations
 
                     b.HasIndex("ModuleId", "SortOrder");
 
-                    b.ToTable("uni_lio_module_attachments");
+                    b.ToTable("uni_lio_module_attachments", (string)null);
                 });
 
             modelBuilder.Entity("LioConecta.Domain.Entities.UniLioModuleProgress", b =>
@@ -4099,6 +4331,25 @@ namespace LioConecta.Infrastructure.Migrations
                     b.Navigation("Post");
                 });
 
+            modelBuilder.Entity("LioConecta.Domain.Entities.RolePermission", b =>
+                {
+                    b.HasOne("LioConecta.Domain.Entities.Permission", "Permission")
+                        .WithMany("RolePermissions")
+                        .HasForeignKey("PermissionKey")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LioConecta.Domain.Entities.Role", "Role")
+                        .WithMany("RolePermissions")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Permission");
+
+                    b.Navigation("Role");
+                });
+
             modelBuilder.Entity("LioConecta.Domain.Entities.ServiceRequest", b =>
                 {
                     b.HasOne("LioConecta.Domain.Entities.Person", "Requester")
@@ -4126,6 +4377,27 @@ namespace LioConecta.Infrastructure.Migrations
                     b.Navigation("Actor");
 
                     b.Navigation("ServiceRequest");
+                });
+
+            modelBuilder.Entity("LioConecta.Domain.Entities.SubjectRoleAssignment", b =>
+                {
+                    b.HasOne("LioConecta.Domain.Entities.Role", "Role")
+                        .WithMany("SubjectAssignments")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("LioConecta.Domain.Entities.TestUser", b =>
+                {
+                    b.HasOne("LioConecta.Domain.Entities.Person", "OptionalPerson")
+                        .WithMany()
+                        .HasForeignKey("OptionalPersonId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("OptionalPerson");
                 });
 
             modelBuilder.Entity("LioConecta.Domain.Entities.TimesheetPeriodCache", b =>
@@ -4497,6 +4769,11 @@ namespace LioConecta.Infrastructure.Migrations
                     b.Navigation("DirectReports");
                 });
 
+            modelBuilder.Entity("LioConecta.Domain.Entities.Permission", b =>
+                {
+                    b.Navigation("RolePermissions");
+                });
+
             modelBuilder.Entity("LioConecta.Domain.Entities.Person", b =>
                 {
                     b.Navigation("DirectReports");
@@ -4510,6 +4787,13 @@ namespace LioConecta.Infrastructure.Migrations
             modelBuilder.Entity("LioConecta.Domain.Entities.PollOption", b =>
                 {
                     b.Navigation("Votes");
+                });
+
+            modelBuilder.Entity("LioConecta.Domain.Entities.Role", b =>
+                {
+                    b.Navigation("RolePermissions");
+
+                    b.Navigation("SubjectAssignments");
                 });
 
             modelBuilder.Entity("LioConecta.Domain.Entities.ServiceRequest", b =>

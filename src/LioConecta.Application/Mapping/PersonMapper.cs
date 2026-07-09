@@ -164,7 +164,12 @@ public static class PersonMapper
             person.HireDate,
             person.Phone);
 
-    public static MeDto ToMe(Person person, IReadOnlyList<UserRole> roles)
+    public static MeDto ToMe(
+        Person person,
+        IReadOnlyList<UserRole> roles,
+        IReadOnlyList<EffectivePermissionDto>? permissions = null,
+        string? subjectType = null,
+        bool isTestUser = false)
         => new(
             person.Id,
             person.Slug,
@@ -173,7 +178,10 @@ public static class PersonMapper
             person.Title,
             PersonPhotoResolver.ResolveEffectivePhotoUrl(person),
             PersonDepartmentHelper.GetName(person),
-            roles);
+            roles,
+            permissions ?? [],
+            subjectType,
+            isTestUser);
 
     public static PersonProfileDto ToProfile(Person person, ViewerContext viewerContext)
     {

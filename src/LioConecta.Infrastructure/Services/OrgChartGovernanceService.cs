@@ -13,7 +13,7 @@ namespace LioConecta.Infrastructure.Services;
 
 public sealed class OrgChartGovernanceService(
     AppDbContext db,
-    ICurrentUserService currentUserService,
+    IPermissionService permissionService,
     IAppSettingsProvider settingsProvider) : IOrgChartGovernanceService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -53,25 +53,18 @@ public sealed class OrgChartGovernanceService(
     public async Task<OrgChartPolicyDto> GetPolicyAsync(CancellationToken cancellationToken)
     {
         var settings = await EnsureSettingsAsync(cancellationToken);
-        var roles = await currentUserService.GetRolesAsync(cancellationToken);
-        var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
-        var person = await db.People.AsNoTracking().FirstOrDefaultAsync(p => p.Id == personId, cancellationToken);
-        var email = person?.Email?.Trim().ToLowerInvariant();
 
-        var editRoles = DeserializeRoles(settings.EditAllowedRolesJson);
-        var viewFullRoles = DeserializeRoles(settings.ViewFullAllowedRolesJson);
-        var editEmails = DeserializeEmails(settings.EditAllowedEmailsJson);
+        var canEdit = settings.GovernanceEnabled
+            && await permissionService.HasPermissionAsync("org_chart.edit", DataScope.Global, cancellationToken);
 
-        var canEdit = settings.GovernanceEnabled &&
-            (roles.Any(r => editRoles.Contains(r)) ||
-             (email is not null && editEmails.Contains(email)));
+        var canViewFull = canEdit
+            || await permissionService.HasPermissionAsync("org_chart.view_full", DataScope.Global, cancellationToken);
 
-        var canViewFull = canEdit ||
-            roles.Any(r => viewFullRoles.Contains(r));
+        var canGovern = await permissionService.HasPermissionAsync("org_chart.govern", DataScope.Global, cancellationToken);
 
-        var canImport = settings.GovernanceEnabled &&
-            settings.AllowReimport &&
-            (canEdit || roles.Contains(UserRole.Admin));
+        var canImport = settings.GovernanceEnabled
+            && settings.AllowReimport
+            && (canEdit || canGovern);
 
         var allowedFields = BuildAllowedFields(settings);
 

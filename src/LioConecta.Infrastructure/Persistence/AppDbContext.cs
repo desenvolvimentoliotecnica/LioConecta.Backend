@@ -79,6 +79,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<UniLioModuleAttachment> UniLioModuleAttachments => Set<UniLioModuleAttachment>();
     public DbSet<PhoneExtension> PhoneExtensions => Set<PhoneExtension>();
     public DbSet<PortalSystem> PortalSystems => Set<PortalSystem>();
+    public DbSet<Permission> Permissions => Set<Permission>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+    public DbSet<SubjectRoleAssignment> SubjectRoleAssignments => Set<SubjectRoleAssignment>();
+    public DbSet<TestUser> TestUsers => Set<TestUser>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -114,6 +119,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureUniLio(modelBuilder);
         ConfigurePhoneExtensions(modelBuilder);
         ConfigurePortalSystems(modelBuilder);
+        ConfigureRbac(modelBuilder);
     }
 
     private static void ApplySnakeCaseTableNames(ModelBuilder modelBuilder)
@@ -764,6 +770,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(u => u.Email).HasMaxLength(256);
             entity.Property(u => u.PasswordHash).HasMaxLength(512);
             entity.Property(u => u.RolesJson).HasMaxLength(512);
+            entity.Property(u => u.SecurityStamp).HasMaxLength(64);
 
             entity.HasIndex(u => u.Email).IsUnique();
 
@@ -1206,6 +1213,74 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasIndex(e => e.IsActive);
             entity.HasIndex(e => e.SortOrder);
             entity.HasIndex(e => e.SeedKey);
+        });
+    }
+
+    private static void ConfigureRbac(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Permission>(entity =>
+        {
+            entity.HasKey(p => p.Key);
+            entity.Property(p => p.Key).HasMaxLength(128);
+            entity.Property(p => p.Module).HasMaxLength(64);
+            entity.Property(p => p.Resource).HasMaxLength(64);
+            entity.Property(p => p.Action).HasMaxLength(64);
+            entity.Property(p => p.Label).HasMaxLength(256);
+            entity.Property(p => p.Description).HasMaxLength(1024);
+            entity.Property(p => p.AllowedDataScopesJson).HasMaxLength(256);
+            entity.Property(p => p.MenuPath).HasMaxLength(256);
+            entity.HasIndex(p => p.Module);
+            entity.HasIndex(p => p.BusinessArea);
+        });
+
+        modelBuilder.Entity<Role>(entity =>
+        {
+            entity.Property(r => r.Name).HasMaxLength(128);
+            entity.Property(r => r.Slug).HasMaxLength(128);
+            entity.Property(r => r.Description).HasMaxLength(1024);
+            entity.HasIndex(r => r.Slug).IsUnique();
+            entity.HasIndex(r => r.IsSystem);
+            entity.HasIndex(r => r.IsActive);
+        });
+
+        modelBuilder.Entity<RolePermission>(entity =>
+        {
+            entity.HasKey(rp => new { rp.RoleId, rp.PermissionKey });
+            entity.Property(rp => rp.PermissionKey).HasMaxLength(128);
+            entity.HasOne(rp => rp.Role)
+                .WithMany(r => r.RolePermissions)
+                .HasForeignKey(rp => rp.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(rp => rp.Permission)
+                .WithMany(p => p.RolePermissions)
+                .HasForeignKey(rp => rp.PermissionKey)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SubjectRoleAssignment>(entity =>
+        {
+            entity.HasIndex(a => new { a.SubjectType, a.SubjectId });
+            entity.HasIndex(a => a.RoleId);
+            entity.HasIndex(a => new { a.SubjectType, a.SubjectId, a.RoleId }).IsUnique();
+            entity.HasOne(a => a.Role)
+                .WithMany(r => r.SubjectAssignments)
+                .HasForeignKey(a => a.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<TestUser>(entity =>
+        {
+            entity.Property(t => t.Email).HasMaxLength(256);
+            entity.Property(t => t.PasswordHash).HasMaxLength(512);
+            entity.Property(t => t.DisplayName).HasMaxLength(256);
+            entity.Property(t => t.Notes).HasMaxLength(2048);
+            entity.Property(t => t.SecurityStamp).HasMaxLength(64);
+            entity.HasIndex(t => t.Email).IsUnique();
+            entity.HasIndex(t => t.IsActive);
+            entity.HasOne(t => t.OptionalPerson)
+                .WithMany()
+                .HasForeignKey(t => t.OptionalPersonId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

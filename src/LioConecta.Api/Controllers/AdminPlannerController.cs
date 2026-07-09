@@ -8,7 +8,8 @@ namespace LioConecta.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/admin/planner")]
-[Authorize(Policy = AuthPolicies.RequireAdmin)]
+[Authorize]
+[RequirePermission("admin.integrations.test")]
 public sealed class AdminPlannerController(IPlannerConfigurationService plannerConfigurationService) : ControllerBase
 {
     [HttpPost("test")]

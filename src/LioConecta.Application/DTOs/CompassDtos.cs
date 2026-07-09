@@ -2,6 +2,7 @@ namespace LioConecta.Application.DTOs;
 
 public sealed record CompassBootstrapDto(
     bool Enabled,
+    bool CanAccess,
     IReadOnlyList<string> AllowedRoles,
     IReadOnlyList<string> AllowedEmails);
 

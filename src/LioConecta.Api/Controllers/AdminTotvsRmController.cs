@@ -8,7 +8,8 @@ namespace LioConecta.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/admin/totvs-rm")]
-[Authorize(Policy = AuthPolicies.RequireAdmin)]
+[Authorize]
+[RequirePermission("admin.totvs.manage")]
 public sealed class AdminTotvsRmController(ITotvsRmConfigurationService totvsRmConfigurationService) : ControllerBase
 {
     [HttpGet]

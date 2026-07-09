@@ -8,7 +8,8 @@ namespace LioConecta.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/admin/workers")]
-[Authorize(Policy = AuthPolicies.RequireAdmin)]
+[Authorize]
+[RequirePermission("admin.workers.manage")]
 public sealed class AdminWorkersController(IWorkerTriggerService workerTriggerService) : ControllerBase
 {
     [HttpGet]

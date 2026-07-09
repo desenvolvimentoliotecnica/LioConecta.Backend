@@ -3,18 +3,15 @@ using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Repositories;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Domain.Entities;
-using LioConecta.Infrastructure.Persistence;
 
 namespace LioConecta.Infrastructure.Services;
 
 public sealed class BenefitCatalogService(
-    AppDbContext db,
     IBenefitCatalogRepository catalogRepository,
-    ICurrentUserService currentUserService,
-    IAppSettingsProvider settingsProvider) : IBenefitCatalogService
+    IPermissionService permissionService) : IBenefitCatalogService
 {
     public async Task<BenefitManagePolicyDto> GetManagePolicyAsync(CancellationToken cancellationToken = default) =>
-        new(await BenefitManageAuthorization.CanManageAsync(db, currentUserService, settingsProvider, cancellationToken));
+        new(await BenefitManageAuthorization.CanManageAsync(permissionService, cancellationToken));
 
     public async Task<IReadOnlyList<BenefitCatalogItemDto>> ListAsync(
         string? q,
@@ -36,7 +33,7 @@ public sealed class BenefitCatalogService(
         UpsertBenefitCatalogRequest request,
         CancellationToken cancellationToken = default)
     {
-        await BenefitManageAuthorization.EnsureCanManageAsync(db, currentUserService, settingsProvider, cancellationToken);
+        await BenefitManageAuthorization.EnsureCanManageAsync(permissionService, cancellationToken);
         ValidateCatalogRequest(request);
 
         var entityId = Guid.NewGuid();
@@ -59,7 +56,7 @@ public sealed class BenefitCatalogService(
         UpsertBenefitCatalogRequest request,
         CancellationToken cancellationToken = default)
     {
-        await BenefitManageAuthorization.EnsureCanManageAsync(db, currentUserService, settingsProvider, cancellationToken);
+        await BenefitManageAuthorization.EnsureCanManageAsync(permissionService, cancellationToken);
         ValidateCatalogRequest(request);
 
         var entity = await catalogRepository.GetByIdAsync(id, cancellationToken)
@@ -73,7 +70,7 @@ public sealed class BenefitCatalogService(
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        await BenefitManageAuthorization.EnsureCanManageAsync(db, currentUserService, settingsProvider, cancellationToken);
+        await BenefitManageAuthorization.EnsureCanManageAsync(permissionService, cancellationToken);
         var entity = await catalogRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new KeyNotFoundException($"Item de catálogo {id} não encontrado.");
 

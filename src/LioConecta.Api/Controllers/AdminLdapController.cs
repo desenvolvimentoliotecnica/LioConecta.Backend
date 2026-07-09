@@ -8,7 +8,8 @@ namespace LioConecta.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/admin/ldap")]
-[Authorize(Policy = AuthPolicies.RequireAdmin)]
+[Authorize]
+[RequirePermission("admin.ldap.test")]
 public sealed class AdminLdapController(ILdapConfigurationService ldapConfigurationService) : ControllerBase
 {
     [HttpPost("test")]

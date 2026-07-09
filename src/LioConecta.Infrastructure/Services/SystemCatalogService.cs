@@ -12,7 +12,7 @@ namespace LioConecta.Infrastructure.Services;
 
 public sealed class SystemCatalogService(
     AppDbContext db,
-    ICurrentUserService currentUserService,
+    IPermissionService permissionService,
     IAppSettingsProvider settingsProvider,
     IHostEnvironment hostEnvironment) : ISystemCatalogService
 {
@@ -228,47 +228,12 @@ public sealed class SystemCatalogService(
         return new UploadSystemIconResponseDto(publicUrl, normalizedContentType, sizeBytes, Path.GetFileName(fileName));
     }
 
-    private async Task<bool> CanManageAsync(CancellationToken cancellationToken)
-    {
-        var roles = await currentUserService.GetRolesAsync(cancellationToken);
-        if (roles.Contains(UserRole.Admin))
-        {
-            return true;
-        }
-
-        var allowedRoles = DeserializeRoles(settingsProvider.GetString(AppSettingKeys.SystemsAllowedRoles));
-        if (roles.Any(role => allowedRoles.Contains(role)))
-        {
-            return true;
-        }
-
-        var allowedEmails = settingsProvider
-            .GetStringArray(AppSettingKeys.SystemsAllowedEmails)
-            .Select(email => email.Trim().ToLowerInvariant())
-            .Where(email => email.Length > 0)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        if (allowedEmails.Count == 0)
-        {
-            return false;
-        }
-
-        var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
-        var email = await db.People
-            .AsNoTracking()
-            .Where(person => person.Id == personId)
-            .Select(person => person.Email)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        return email is not null && allowedEmails.Contains(email.Trim().ToLowerInvariant());
-    }
+    private Task<bool> CanManageAsync(CancellationToken cancellationToken) =>
+        permissionService.HasPermissionAsync("systems.manage", DataScope.Global, cancellationToken);
 
     private async Task EnsureCanManageAsync(CancellationToken cancellationToken)
     {
-        if (!await CanManageAsync(cancellationToken))
-        {
-            throw new UnauthorizedAccessException("Sem permissao para gerir o catalogo de sistemas.");
-        }
+        await permissionService.EnsurePermissionAsync("systems.manage", DataScope.Global, cancellationToken);
     }
 
     private async Task EnsureSlugAvailableAsync(string slug, Guid? currentId, CancellationToken cancellationToken)
@@ -423,33 +388,6 @@ public sealed class SystemCatalogService(
 
         var trimmed = value.Trim();
         return trimmed.StartsWith("fa-", StringComparison.Ordinal) ? trimmed : $"fa-{trimmed}";
-    }
-
-    private static IReadOnlyList<UserRole> DeserializeRoles(string raw)
-    {
-        if (string.IsNullOrWhiteSpace(raw))
-        {
-            return [UserRole.TI];
-        }
-
-        try
-        {
-            var values = JsonSerializer.Deserialize<string[]>(raw, JsonOptions) ?? [];
-            var roles = new List<UserRole>();
-            foreach (var value in values)
-            {
-                if (Enum.TryParse<UserRole>(value, true, out var role))
-                {
-                    roles.Add(role);
-                }
-            }
-
-            return roles.Count > 0 ? roles : [UserRole.TI];
-        }
-        catch (JsonException)
-        {
-            return [UserRole.TI];
-        }
     }
 
     private static string ExtensionForContentType(string contentType) => contentType switch

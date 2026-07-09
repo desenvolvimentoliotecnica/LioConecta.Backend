@@ -1,7 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using LioConecta.Application.Common;
+using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Domain.Entities;
 using LioConecta.Domain.Enums;
@@ -13,8 +15,19 @@ public sealed class PortalJwtService(IAppSettingsProvider settingsProvider) : IP
 {
     private const string Issuer = "LioConecta";
     private const string Audience = "LioConecta.Portal";
+    private const int MaxPermissionClaimLength = 3500;
 
     public (string Token, int ExpiresInSeconds) CreateToken(Person person, IReadOnlyList<UserRole> roles)
+        => CreateToken(person, roles, RbacSubjectType.Person, person.Id, person.Id.ToString("N"), false, []);
+
+    public (string Token, int ExpiresInSeconds) CreateToken(
+        Person person,
+        IReadOnlyList<UserRole> roles,
+        RbacSubjectType subjectType,
+        Guid subjectId,
+        string securityStamp,
+        bool isTestUser,
+        IReadOnlyList<EffectivePermissionDto> permissions)
     {
         var signingKey = settingsProvider.GetString(AppSettingKeys.AuthJwtSigningKey);
         if (string.IsNullOrWhiteSpace(signingKey))
@@ -31,11 +44,21 @@ public sealed class PortalJwtService(IAppSettingsProvider settingsProvider) : IP
             new("person_slug", person.Slug),
             new(ClaimTypes.Email, person.Email),
             new(ClaimTypes.Name, person.Name),
+            new("sub_type", MapSubjectTypeClaim(subjectType, isTestUser)),
+            new("sub_id", subjectId.ToString()),
+            new("sst", securityStamp),
+            new("is_test_user", isTestUser ? "true" : "false"),
         };
 
         foreach (var role in roles.Distinct())
         {
             claims.Add(new Claim(ClaimTypes.Role, role.ToString()));
+        }
+
+        var permJson = BuildPermissionsClaim(permissions);
+        if (!string.IsNullOrWhiteSpace(permJson))
+        {
+            claims.Add(new Claim("perm", permJson));
         }
 
         var credentials = new SigningCredentials(
@@ -67,6 +90,36 @@ public sealed class PortalJwtService(IAppSettingsProvider settingsProvider) : IP
             NameClaimType = ClaimTypes.Name,
             RoleClaimType = ClaimTypes.Role,
         };
+
+    private static string MapSubjectTypeClaim(RbacSubjectType subjectType, bool isTestUser)
+    {
+        if (isTestUser || subjectType == RbacSubjectType.TestUser)
+        {
+            return "test";
+        }
+
+        return subjectType switch
+        {
+            RbacSubjectType.PortalUser => "portal",
+            RbacSubjectType.Person => "ldap",
+            _ => subjectType.ToString().ToLowerInvariant(),
+        };
+    }
+
+    private static string? BuildPermissionsClaim(IReadOnlyList<EffectivePermissionDto> permissions)
+    {
+        if (permissions.Count == 0)
+        {
+            return null;
+        }
+
+        var compact = permissions
+            .Select(p => new { k = p.Key, s = p.Scope.ToString() })
+            .ToList();
+
+        var json = JsonSerializer.Serialize(compact);
+        return json.Length <= MaxPermissionClaimLength ? json : null;
+    }
 
     private static int ParseInt(string? raw, int fallback) =>
         int.TryParse(raw, out var parsed) && parsed > 0 ? parsed : fallback;

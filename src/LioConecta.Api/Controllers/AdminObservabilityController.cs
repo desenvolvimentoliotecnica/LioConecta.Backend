@@ -9,7 +9,8 @@ namespace LioConecta.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/admin/observability")]
-[Authorize(Policy = AuthPolicies.RequireAdmin)]
+[Authorize]
+[RequirePermission("analytics.view")]
 [AccessAudited(Resource = "ObservabilityHub")]
 public sealed class AdminObservabilityController(IObservabilityQueryService queryService) : ControllerBase
 {

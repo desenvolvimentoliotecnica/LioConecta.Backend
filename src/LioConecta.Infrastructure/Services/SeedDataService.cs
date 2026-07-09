@@ -9,7 +9,10 @@ using Microsoft.Extensions.Logging;
 
 namespace LioConecta.Infrastructure.Services;
 
-public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> logger)
+public sealed class SeedDataService(
+    AppDbContext db,
+    RbacMigrationSeeder rbacMigrationSeeder,
+    ILogger<SeedDataService> logger)
 {
     public async Task EnsureSeededAsync(CancellationToken cancellationToken = default)
     {
@@ -31,6 +34,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             await EnsureEmployeeIdsAsync(cancellationToken);
             await EnsureDevTestUserProfileAsync(cancellationToken);
             await EnsureSuperAdminPortalUserAsync(cancellationToken);
+            await EnsureRbacAsync(cancellationToken);
             await EnsureGraphDirectoryDepartmentLinksAsync(cancellationToken);
             await EnsureTotvsRmConfigurationAsync(cancellationToken);
             await EnsureEmailConfigurationDevDefaultsAsync(cancellationToken);
@@ -272,6 +276,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
 
         await db.SaveChangesAsync(cancellationToken);
         await EnsureSuperAdminPortalUserAsync(cancellationToken);
+        await EnsureRbacAsync(cancellationToken);
         await EnsureGroupsCatalogAsync(cancellationToken);
         await EnsureFacilitiesMenuCatalogAsync(cancellationToken);
         await EnsurePhoneExtensionsCatalogAsync(cancellationToken);
@@ -1041,6 +1046,11 @@ private async Task EnsurePhoneExtensionsCatalogAsync(CancellationToken cancellat
 
         await db.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Seeded super-admin portal user for {Email}.", superAdminEmail);
+    }
+
+    private async Task EnsureRbacAsync(CancellationToken cancellationToken)
+    {
+        await rbacMigrationSeeder.MigrateAsync(cancellationToken);
     }
 
     private async Task EnsureGraphDirectoryDepartmentLinksAsync(CancellationToken cancellationToken)

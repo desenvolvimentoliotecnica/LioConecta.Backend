@@ -58,6 +58,14 @@ public sealed record UniLioIntegrationLinkDto(
     string SourceKey,
     string Label);
 
+public sealed record UniLioModuleAttachmentDto(
+    Guid Id,
+    string FileName,
+    string Url,
+    string ContentType,
+    long SizeBytes,
+    int SortOrder);
+
 public sealed record UniLioModuleDto(
     Guid Id,
     int SortOrder,
@@ -68,7 +76,8 @@ public sealed record UniLioModuleDto(
     string? ArticleHtml,
     string? QuizJson,
     int? QuizPassingScore,
-    bool IsCompleted);
+    bool IsCompleted,
+    IReadOnlyList<UniLioModuleAttachmentDto> Attachments);
 
 public sealed record UniLioCourseDetailDto(
     Guid Id,
@@ -349,7 +358,19 @@ public sealed record UniLioAuthoringCourseDto(
     DateTimeOffset? PublishedAt,
     DateTimeOffset? SubmittedAt,
     string? RejectionReason,
-    IReadOnlyList<UniLioModuleDto> Modules);
+    IReadOnlyList<UniLioModuleDto> Modules,
+    UniLioAuthoringAssessmentDto? Assessment);
+
+public sealed record UniLioAuthoringAssessmentDto(
+    Guid Id,
+    string Title,
+    int PassingScore,
+    string QuestionsJson);
+
+public sealed record UniLioUpsertAssessmentRequest(
+    string Title,
+    int PassingScore,
+    string QuestionsJson);
 
 public sealed record UniLioAuthoringCourseListDto(
     IReadOnlyList<UniLioAuthoringCourseSummaryDto> Items);

@@ -7,6 +7,7 @@ using LioConecta.Application.Interfaces.Services;
 using LioConecta.Domain.Entities;
 using LioConecta.Domain.Enums;
 using LioConecta.Infrastructure.Persistence;
+using LioConecta.Infrastructure.Services.UniLio;
 using Microsoft.EntityFrameworkCore;
 
 namespace LioConecta.Infrastructure.Services;
@@ -184,7 +185,7 @@ public sealed partial class UniLioService(
 
         var visibleIds = await GetVisibleCourseIdsAsync(viewer, cancellationToken);
         var course = await GetCoursesQuery(visibleIds)
-            .Include(c => c.Modules)
+            .Include(c => c.Modules).ThenInclude(m => m.Attachments)
             .Include(c => c.CourseSkills).ThenInclude(cs => cs.Skill)
             .Include(c => c.IntegrationLinks)
             .FirstOrDefaultAsync(c => c.Id == courseId, cancellationToken)
@@ -210,7 +211,8 @@ public sealed partial class UniLioService(
                 m.ArticleHtml,
                 m.QuizJson,
                 ParseQuizPassingScore(m.QuizJson),
-                completedModuleIds.Contains(m.Id)))
+                completedModuleIds.Contains(m.Id),
+                UniLioModuleAttachmentMapper.Map(m.Attachments)))
             .ToList();
 
         var progressPct = enrollment?.ProgressPct ?? 0;

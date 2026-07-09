@@ -98,4 +98,60 @@ public sealed class UniLioAuthoringController(IUniLioAuthoringService authoringS
         await authoringService.DeleteModuleAsync(courseId, moduleId, cancellationToken);
         return NoContent();
     }
+
+    [HttpPost("courses/{courseId:guid}/modules/{moduleId:guid}/attachments")]
+    [RequestSizeLimit(26_214_400)]
+    [ProducesResponseType(typeof(UniLioModuleAttachmentDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UniLioModuleAttachmentDto>> UploadModuleAttachment(
+        Guid courseId,
+        Guid moduleId,
+        IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        if (file is null || file.Length == 0)
+        {
+            return BadRequest(new { message = "Arquivo obrigatório." });
+        }
+
+        await using var stream = file.OpenReadStream();
+        var result = await authoringService.UploadModuleAttachmentAsync(
+            courseId,
+            moduleId,
+            stream,
+            file.FileName,
+            file.ContentType,
+            file.Length,
+            cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpDelete("courses/{courseId:guid}/modules/{moduleId:guid}/attachments/{attachmentId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> DeleteModuleAttachment(
+        Guid courseId,
+        Guid moduleId,
+        Guid attachmentId,
+        CancellationToken cancellationToken)
+    {
+        await authoringService.DeleteModuleAttachmentAsync(courseId, moduleId, attachmentId, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPut("courses/{courseId:guid}/assessment")]
+    [ProducesResponseType(typeof(UniLioAuthoringAssessmentDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UniLioAuthoringAssessmentDto>> UpsertCourseAssessment(
+        Guid courseId,
+        [FromBody] UniLioUpsertAssessmentRequest request,
+        CancellationToken cancellationToken)
+        => Ok(await authoringService.UpsertCourseAssessmentAsync(courseId, request, cancellationToken));
+
+    [HttpDelete("courses/{courseId:guid}/assessment")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> DeleteCourseAssessment(
+        Guid courseId,
+        CancellationToken cancellationToken)
+    {
+        await authoringService.DeleteCourseAssessmentAsync(courseId, cancellationToken);
+        return NoContent();
+    }
 }

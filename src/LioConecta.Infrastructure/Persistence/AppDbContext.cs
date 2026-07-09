@@ -58,6 +58,22 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<OrgPosition> OrgPositions => Set<OrgPosition>();
     public DbSet<CompassIbpSnapshot> CompassIbpSnapshots => Set<CompassIbpSnapshot>();
     public DbSet<CompassIbpRow> CompassIbpRows => Set<CompassIbpRow>();
+    public DbSet<UniLioCourse> UniLioCourses => Set<UniLioCourse>();
+    public DbSet<UniLioCourseModule> UniLioCourseModules => Set<UniLioCourseModule>();
+    public DbSet<UniLioLearningPath> UniLioLearningPaths => Set<UniLioLearningPath>();
+    public DbSet<UniLioPathCourse> UniLioPathCourses => Set<UniLioPathCourse>();
+    public DbSet<UniLioSkill> UniLioSkills => Set<UniLioSkill>();
+    public DbSet<UniLioCourseSkill> UniLioCourseSkills => Set<UniLioCourseSkill>();
+    public DbSet<UniLioEnrollment> UniLioEnrollments => Set<UniLioEnrollment>();
+    public DbSet<UniLioModuleProgress> UniLioModuleProgress => Set<UniLioModuleProgress>();
+    public DbSet<UniLioAssessment> UniLioAssessments => Set<UniLioAssessment>();
+    public DbSet<UniLioAssessmentAttempt> UniLioAssessmentAttempts => Set<UniLioAssessmentAttempt>();
+    public DbSet<UniLioCertificate> UniLioCertificates => Set<UniLioCertificate>();
+    public DbSet<UniLioEvent> UniLioEvents => Set<UniLioEvent>();
+    public DbSet<UniLioEventRegistration> UniLioEventRegistrations => Set<UniLioEventRegistration>();
+    public DbSet<UniLioCommunityPost> UniLioCommunityPosts => Set<UniLioCommunityPost>();
+    public DbSet<UniLioPersonSkill> UniLioPersonSkills => Set<UniLioPersonSkill>();
+    public DbSet<UniLioIntegrationLink> UniLioIntegrationLinks => Set<UniLioIntegrationLink>();
     public DbSet<PhoneExtension> PhoneExtensions => Set<PhoneExtension>();
     public DbSet<PortalSystem> PortalSystems => Set<PortalSystem>();
 
@@ -92,6 +108,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureUserTeamsTokens(modelBuilder);
         ConfigureOrgChartGovernance(modelBuilder);
         ConfigureCompass(modelBuilder);
+        ConfigureUniLio(modelBuilder);
         ConfigurePhoneExtensions(modelBuilder);
         ConfigurePortalSystems(modelBuilder);
     }
@@ -884,6 +901,207 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasOne(r => r.Snapshot)
                 .WithMany(s => s.Rows)
                 .HasForeignKey(r => r.SnapshotId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureUniLio(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<UniLioCourse>(entity =>
+        {
+            entity.HasIndex(c => c.SeedKey).IsUnique();
+            entity.HasIndex(c => c.Area);
+            entity.HasIndex(c => c.Department);
+            entity.HasIndex(c => c.ContentType);
+            entity.HasIndex(c => c.IsMandatory);
+            entity.Property(c => c.SeedKey).HasMaxLength(128);
+            entity.Property(c => c.Title).HasMaxLength(512);
+            entity.Property(c => c.ContentType).HasMaxLength(32);
+            entity.Property(c => c.Area).HasMaxLength(128);
+            entity.Property(c => c.Department).HasMaxLength(128);
+            entity.Property(c => c.InstructorName).HasMaxLength(256);
+            entity.Property(c => c.Status).HasMaxLength(32);
+            entity.Property(c => c.Provider).HasMaxLength(256);
+        });
+
+        modelBuilder.Entity<UniLioCourseModule>(entity =>
+        {
+            entity.HasIndex(m => m.CourseId);
+            entity.HasIndex(m => new { m.CourseId, m.SortOrder });
+            entity.Property(m => m.Title).HasMaxLength(512);
+            entity.Property(m => m.ContentType).HasMaxLength(32);
+            entity.HasOne(m => m.Course)
+                .WithMany(c => c.Modules)
+                .HasForeignKey(m => m.CourseId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UniLioLearningPath>(entity =>
+        {
+            entity.HasIndex(p => p.SeedKey).IsUnique();
+            entity.Property(p => p.SeedKey).HasMaxLength(128);
+            entity.Property(p => p.Title).HasMaxLength(512);
+        });
+
+        modelBuilder.Entity<UniLioPathCourse>(entity =>
+        {
+            entity.HasIndex(pc => pc.PathId);
+            entity.HasIndex(pc => new { pc.PathId, pc.CourseId }).IsUnique();
+            entity.HasOne(pc => pc.Path)
+                .WithMany(p => p.PathCourses)
+                .HasForeignKey(pc => pc.PathId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(pc => pc.Course)
+                .WithMany()
+                .HasForeignKey(pc => pc.CourseId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UniLioSkill>(entity =>
+        {
+            entity.HasIndex(s => s.SeedKey).IsUnique();
+            entity.Property(s => s.SeedKey).HasMaxLength(128);
+            entity.Property(s => s.Name).HasMaxLength(256);
+            entity.Property(s => s.Category).HasMaxLength(128);
+        });
+
+        modelBuilder.Entity<UniLioCourseSkill>(entity =>
+        {
+            entity.HasIndex(cs => new { cs.CourseId, cs.SkillId }).IsUnique();
+            entity.HasOne(cs => cs.Course)
+                .WithMany(c => c.CourseSkills)
+                .HasForeignKey(cs => cs.CourseId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(cs => cs.Skill)
+                .WithMany(s => s.CourseSkills)
+                .HasForeignKey(cs => cs.SkillId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UniLioEnrollment>(entity =>
+        {
+            entity.HasIndex(e => new { e.PersonId, e.CourseId }).IsUnique();
+            entity.HasIndex(e => e.Status);
+            entity.Property(e => e.Status).HasMaxLength(32);
+            entity.HasOne(e => e.Person)
+                .WithMany()
+                .HasForeignKey(e => e.PersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Course)
+                .WithMany(c => c.Enrollments)
+                .HasForeignKey(e => e.CourseId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UniLioModuleProgress>(entity =>
+        {
+            entity.HasIndex(mp => new { mp.EnrollmentId, mp.ModuleId }).IsUnique();
+            entity.HasOne(mp => mp.Enrollment)
+                .WithMany(e => e.ModuleProgress)
+                .HasForeignKey(mp => mp.EnrollmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(mp => mp.Module)
+                .WithMany(m => m.ModuleProgress)
+                .HasForeignKey(mp => mp.ModuleId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UniLioAssessment>(entity =>
+        {
+            entity.HasIndex(a => a.CourseId);
+            entity.Property(a => a.Title).HasMaxLength(512);
+            entity.HasOne(a => a.Course)
+                .WithMany(c => c.Assessments)
+                .HasForeignKey(a => a.CourseId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UniLioAssessmentAttempt>(entity =>
+        {
+            entity.HasIndex(a => new { a.PersonId, a.AssessmentId });
+            entity.HasOne(a => a.Person)
+                .WithMany()
+                .HasForeignKey(a => a.PersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(a => a.Assessment)
+                .WithMany(a => a.Attempts)
+                .HasForeignKey(a => a.AssessmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UniLioCertificate>(entity =>
+        {
+            entity.HasIndex(c => c.CertificateCode).IsUnique();
+            entity.HasIndex(c => new { c.PersonId, c.CourseId });
+            entity.Property(c => c.CertificateCode).HasMaxLength(64);
+            entity.HasOne(c => c.Person)
+                .WithMany()
+                .HasForeignKey(c => c.PersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(c => c.Course)
+                .WithMany()
+                .HasForeignKey(c => c.CourseId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UniLioEvent>(entity =>
+        {
+            entity.HasIndex(e => e.StartsAt);
+            entity.Property(e => e.Title).HasMaxLength(512);
+            entity.Property(e => e.EventType).HasMaxLength(64);
+            entity.HasOne(e => e.Instructor)
+                .WithMany()
+                .HasForeignKey(e => e.InstructorPersonId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<UniLioEventRegistration>(entity =>
+        {
+            entity.HasIndex(r => new { r.EventId, r.PersonId }).IsUnique();
+            entity.HasOne(r => r.Event)
+                .WithMany(e => e.Registrations)
+                .HasForeignKey(r => r.EventId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(r => r.Person)
+                .WithMany()
+                .HasForeignKey(r => r.PersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UniLioCommunityPost>(entity =>
+        {
+            entity.HasIndex(p => p.AuthorPersonId);
+            entity.HasOne(p => p.Author)
+                .WithMany()
+                .HasForeignKey(p => p.AuthorPersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(p => p.Course)
+                .WithMany()
+                .HasForeignKey(p => p.CourseId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<UniLioPersonSkill>(entity =>
+        {
+            entity.HasIndex(ps => new { ps.PersonId, ps.SkillId }).IsUnique();
+            entity.HasOne(ps => ps.Person)
+                .WithMany()
+                .HasForeignKey(ps => ps.PersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(ps => ps.Skill)
+                .WithMany(s => s.PersonSkills)
+                .HasForeignKey(ps => ps.SkillId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UniLioIntegrationLink>(entity =>
+        {
+            entity.HasIndex(l => new { l.SourceType, l.SourceKey, l.CourseId });
+            entity.Property(l => l.SourceType).HasMaxLength(64);
+            entity.Property(l => l.SourceKey).HasMaxLength(128);
+            entity.HasOne(l => l.Course)
+                .WithMany(c => c.IntegrationLinks)
+                .HasForeignKey(l => l.CourseId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

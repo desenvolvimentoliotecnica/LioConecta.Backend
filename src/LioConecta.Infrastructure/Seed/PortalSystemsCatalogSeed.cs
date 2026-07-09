@@ -51,6 +51,8 @@ internal static class PortalSystemsCatalogSeed
             "/compass", "/compass", "/compass", "fa-compass", 100),
         new("pulse", "Pulse", "pulse", "Interno", "Internal", "Gestao agil Pulse no LioConecta.",
             "/pulse", "/pulse", "/pulse", "fa-heart-pulse", 110),
+        new("unilio", "UniLio", "unilio", "Interno", "Internal", "Universidade corporativa LMS/LXP no LioConecta.",
+            "/unilio", "/unilio", "/unilio", "fa-graduation-cap", 120),
     ];
 
     public static PortalSystem ToEntity(PortalSystemSeedRow row, DateTimeOffset seedTime) => new()

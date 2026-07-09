@@ -1,0 +1,1087 @@
+{
+  "courses": [
+    {
+      "seedKey": "ext-liofilizacao-ufv",
+      "title": "Desidratação dos Alimentos: Bandeja, Atomização e Liofilização",
+      "description": "Aula acadêmica da UFV sobre processos de desidratação, atomização e liofilização aplicados à indústria de alimentos.",
+      "contentType": "external",
+      "durationMinutes": 45,
+      "isMandatory": false,
+      "area": "Tecnologia de Alimentos",
+      "department": "Produção",
+      "rating": 4.8,
+      "instructorName": "TAL — UFV",
+      "externalUrl": "https://www.youtube.com/watch?v=Fg7ufqJTaqQ",
+      "provider": "TAL — Tecnologia de Alimentos UFV",
+      "status": "published",
+      "skillSeedKeys": ["liofilizacao", "qualidade-alimentar"],
+      "tags": ["liofilização", "secagem", "desidratação", "indústria alimentícia"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Desidratação e Liofilização",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=Fg7ufqJTaqQ",
+          "durationMinutes": 45
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-eng-alimentos-podcast",
+      "title": "Engenharia de Alimentos — O que é e atuação na indústria",
+      "description": "Podcast acadêmico sobre o papel do engenheiro de alimentos na cadeia produtiva industrial.",
+      "contentType": "external",
+      "durationMinutes": 38,
+      "isMandatory": false,
+      "area": "Tecnologia de Alimentos",
+      "department": "Produção",
+      "rating": 4.5,
+      "instructorName": "Podcast Acadêmico",
+      "externalUrl": "https://www.youtube.com/watch?v=bvFDOVaj_Z4",
+      "provider": "YouTube",
+      "status": "published",
+      "skillSeedKeys": ["qualidade-alimentar"],
+      "tags": ["engenharia de alimentos", "onboarding", "indústria"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Engenharia de Alimentos na Indústria",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=bvFDOVaj_Z4",
+          "durationMinutes": 38
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-custo-nao-qualidade",
+      "title": "O Custo da Não Qualidade na Indústria de Alimentos",
+      "description": "Discussão sobre impacto financeiro de falhas de qualidade, rastreabilidade e boas práticas em laticínios e alimentos.",
+      "contentType": "external",
+      "durationMinutes": 52,
+      "isMandatory": false,
+      "area": "Qualidade",
+      "department": "Qualidade",
+      "rating": 4.6,
+      "instructorName": "Podcast Qualidade",
+      "externalUrl": "https://www.youtube.com/watch?v=eafwD2I8iSo",
+      "provider": "YouTube",
+      "status": "published",
+      "skillSeedKeys": ["qualidade-alimentar"],
+      "tags": ["qualidade", "custo", "rastreabilidade"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Custo da Não Qualidade",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=eafwD2I8iSo",
+          "durationMinutes": 52
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-stp-alimenticia",
+      "title": "Sistema Toyota de Produção na Indústria Alimentícia",
+      "description": "Aplicação dos princípios Lean e STP em linhas de produção de alimentos.",
+      "contentType": "external",
+      "durationMinutes": 41,
+      "isMandatory": false,
+      "area": "Operações",
+      "department": "Produção",
+      "rating": 4.4,
+      "instructorName": "Aula Acadêmica",
+      "externalUrl": "https://www.youtube.com/watch?v=KyN3l_fVb5Q",
+      "provider": "YouTube",
+      "status": "published",
+      "skillSeedKeys": ["lean-manufacturing"],
+      "tags": ["lean", "STP", "produção"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "STP na Indústria Alimentícia",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=KyN3l_fVb5Q",
+          "durationMinutes": 41
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-appcc-crq",
+      "title": "Introdução ao Sistema APPCC (HACCP)",
+      "description": "Introdução oficial ao Análise de Perigos e Pontos Críticos de Controle pelo CRQ-SP.",
+      "contentType": "external",
+      "durationMinutes": 35,
+      "isMandatory": false,
+      "area": "Qualidade",
+      "department": "Qualidade",
+      "rating": 4.9,
+      "instructorName": "CRQ-SP",
+      "externalUrl": "https://www.youtube.com/watch?v=MZMv4BSNRp8",
+      "provider": "CRQ-SP",
+      "status": "published",
+      "skillSeedKeys": ["qualidade-alimentar"],
+      "tags": ["APPCC", "HACCP", "segurança alimentar"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Introdução APPCC",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=MZMv4BSNRp8",
+          "durationMinutes": 35
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-fssc-22000",
+      "title": "FSSC 22000: O que é e para quem serve",
+      "description": "Visão geral da certificação FSSC 22000 para sistemas de gestão de segurança de alimentos.",
+      "contentType": "external",
+      "durationMinutes": 28,
+      "isMandatory": false,
+      "area": "Qualidade",
+      "department": "Qualidade",
+      "rating": 4.7,
+      "instructorName": "QMS Brasil",
+      "externalUrl": "https://www.youtube.com/watch?v=SesQp3j4G7A",
+      "provider": "QMS Brasil",
+      "status": "published",
+      "skillSeedKeys": ["qualidade-alimentar"],
+      "tags": ["FSSC", "certificação", "segurança alimentar"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "FSSC 22000",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=SesQp3j4G7A",
+          "durationMinutes": 28
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-lean-manufacturing",
+      "title": "Qualidade e Produtividade com Lean Manufacturing",
+      "description": "Fundamentos de Lean Manufacturing para melhoria contínua em ambientes industriais.",
+      "contentType": "external",
+      "durationMinutes": 47,
+      "isMandatory": false,
+      "area": "Operações",
+      "department": "Produção",
+      "rating": 4.6,
+      "instructorName": "Edson Gestão Lean",
+      "externalUrl": "https://www.youtube.com/watch?v=KLirS_S6wYI",
+      "provider": "YouTube",
+      "status": "published",
+      "skillSeedKeys": ["lean-manufacturing"],
+      "tags": ["lean", "produtividade", "qualidade"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Lean Manufacturing",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=KLirS_S6wYI",
+          "durationMinutes": 47
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-lean-six-sigma",
+      "title": "Lean e Six Sigma: Duas origens, um objetivo",
+      "description": "Comparativo entre metodologias Lean e Six Sigma e sua aplicação integrada.",
+      "contentType": "external",
+      "durationMinutes": 33,
+      "isMandatory": false,
+      "area": "Operações",
+      "department": "Qualidade",
+      "rating": 4.5,
+      "instructorName": "Cronos Quality",
+      "externalUrl": "https://www.youtube.com/watch?v=vrpyezyOHDE",
+      "provider": "YouTube",
+      "status": "published",
+      "skillSeedKeys": ["lean-manufacturing"],
+      "tags": ["six sigma", "lean", "melhoria contínua"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Lean e Six Sigma",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=vrpyezyOHDE",
+          "durationMinutes": 33
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-instrumentacao",
+      "title": "Instrumentação Industrial e Controle de Processo",
+      "description": "Conceitos de instrumentação, sensores e controle de processos em plantas industriais.",
+      "contentType": "external",
+      "durationMinutes": 55,
+      "isMandatory": false,
+      "area": "Engenharia",
+      "department": "Produção",
+      "rating": 4.4,
+      "instructorName": "Aula Técnica",
+      "externalUrl": "https://www.youtube.com/watch?v=J2QaNIZaMIA",
+      "provider": "YouTube",
+      "status": "published",
+      "skillSeedKeys": ["liofilizacao"],
+      "tags": ["instrumentação", "controle", "processos"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Instrumentação Industrial",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=J2QaNIZaMIA",
+          "durationMinutes": 55
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-tpm-manutencao",
+      "title": "Webinário TPM — Manutenção Produtiva Total",
+      "description": "Webinário sobre pilares da TPM e manutenção produtiva total em indústrias.",
+      "contentType": "external",
+      "durationMinutes": 60,
+      "isMandatory": false,
+      "area": "Manutenção",
+      "department": "Manutenção",
+      "rating": 4.5,
+      "instructorName": "Haroldo Ribeiro",
+      "externalUrl": "https://www.youtube.com/watch?v=AdmTPlMBlnA",
+      "provider": "YouTube",
+      "status": "published",
+      "skillSeedKeys": ["lean-manufacturing"],
+      "tags": ["TPM", "manutenção", "confiabilidade"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "TPM — Manutenção Produtiva Total",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=AdmTPlMBlnA",
+          "durationMinutes": 60
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-nr35-altura",
+      "title": "NR-35 Trabalho em Altura — Treinamento Completo",
+      "description": "Treinamento completo sobre normas e práticas de segurança para trabalho em altura (NR-35). Obrigatório para colaboradores expostos.",
+      "contentType": "external",
+      "durationMinutes": 90,
+      "isMandatory": true,
+      "area": "Compliance",
+      "department": "Segurança do Trabalho",
+      "rating": 4.7,
+      "instructorName": "Canal SST",
+      "externalUrl": "https://www.youtube.com/watch?v=JE0pdE7iUNo",
+      "provider": "YouTube",
+      "status": "published",
+      "skillSeedKeys": ["seguranca-trabalho"],
+      "tags": ["NR-35", "SST", "compliance", "obrigatório"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "NR-35 Trabalho em Altura",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=JE0pdE7iUNo",
+          "durationMinutes": 90
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-gestao-pessoas-rh",
+      "title": "Gestão de Pessoas: Papel do RH ou do Líder?",
+      "description": "Discussão sobre fronteiras e complementaridade entre RH e liderança na gestão de pessoas.",
+      "contentType": "external",
+      "durationMinutes": 42,
+      "isMandatory": false,
+      "area": "Gestão",
+      "department": "RH",
+      "rating": 4.5,
+      "instructorName": "Mestre do ERP",
+      "externalUrl": "https://www.youtube.com/watch?v=jiUotcPVPdc",
+      "provider": "YouTube",
+      "status": "published",
+      "skillSeedKeys": ["lideranca"],
+      "tags": ["RH", "gestão de pessoas", "liderança"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Gestão de Pessoas",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=jiUotcPVPdc",
+          "durationMinutes": 42
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-lideranca-negociar",
+      "title": "Liderar é Negociar — Desafios dos Novos Gestores",
+      "description": "Podcast sobre negociação, influência e desafios de liderança para novos gestores.",
+      "contentType": "external",
+      "durationMinutes": 36,
+      "isMandatory": false,
+      "area": "Gestão",
+      "department": "RH",
+      "rating": 4.6,
+      "instructorName": "3 Tons de RH",
+      "externalUrl": "https://www.youtube.com/watch?v=Vu0gYy4TOmE",
+      "provider": "YouTube",
+      "status": "published",
+      "skillSeedKeys": ["lideranca"],
+      "tags": ["liderança", "negociação", "gestão"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Liderar é Negociar",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=Vu0gYy4TOmE",
+          "durationMinutes": 36
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-power-bi-iniciantes",
+      "title": "O que é Power BI? Guia para Iniciantes",
+      "description": "Introdução ao Power BI: conceitos, interface e primeiros passos para análise de dados.",
+      "contentType": "external",
+      "durationMinutes": 25,
+      "isMandatory": false,
+      "area": "Dados",
+      "department": "TI",
+      "rating": 4.8,
+      "instructorName": "Xperiun",
+      "externalUrl": "https://www.youtube.com/watch?v=IJc4nb3jnr8",
+      "provider": "YouTube",
+      "status": "published",
+      "skillSeedKeys": ["power-bi"],
+      "tags": ["power bi", "BI", "dados"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Power BI para Iniciantes",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=IJc4nb3jnr8",
+          "durationMinutes": 25
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-power-bi-curso",
+      "title": "Curso Básico Power BI — Aula 1",
+      "description": "Primeira aula de curso básico de Power BI com construção de dashboard inicial.",
+      "contentType": "external",
+      "durationMinutes": 48,
+      "isMandatory": false,
+      "area": "Dados",
+      "department": "TI",
+      "rating": 4.7,
+      "instructorName": "Hashtag Treinamentos",
+      "externalUrl": "https://www.youtube.com/watch?v=37oxzq2pSbI",
+      "provider": "YouTube",
+      "status": "published",
+      "skillSeedKeys": ["power-bi"],
+      "tags": ["power bi", "dashboard", "análise"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Curso Básico Power BI — Aula 1",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=37oxzq2pSbI",
+          "durationMinutes": 48
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-excel-tabela-dinamica",
+      "title": "Tabela Dinâmica do Zero para Iniciantes",
+      "description": "Tutorial prático de tabelas dinâmicas no Excel para análise rápida de dados.",
+      "contentType": "external",
+      "durationMinutes": 32,
+      "isMandatory": false,
+      "area": "Produtividade",
+      "department": "Administrativo",
+      "rating": 4.6,
+      "instructorName": "Curso de Excel Online",
+      "externalUrl": "https://www.youtube.com/watch?v=x9xttoO0r0M",
+      "provider": "YouTube",
+      "status": "published",
+      "skillSeedKeys": ["excel"],
+      "tags": ["excel", "tabela dinâmica", "produtividade"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Tabela Dinâmica do Zero",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=x9xttoO0r0M",
+          "durationMinutes": 32
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-excel-entrevista",
+      "title": "Teste de Excel para Entrevista de Emprego",
+      "description": "Exercícios práticos de Excel frequentemente cobrados em processos seletivos.",
+      "contentType": "external",
+      "durationMinutes": 29,
+      "isMandatory": false,
+      "area": "Produtividade",
+      "department": "Administrativo",
+      "rating": 4.4,
+      "instructorName": "Karen Abecia",
+      "externalUrl": "https://www.youtube.com/watch?v=FEaXIzWsXIQ",
+      "provider": "YouTube",
+      "status": "published",
+      "skillSeedKeys": ["excel"],
+      "tags": ["excel", "carreira", "entrevista"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Teste de Excel para Entrevista",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=FEaXIzWsXIQ",
+          "durationMinutes": 29
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-lgpd-basico",
+      "title": "LGPD: Entendimentos Básicos e Cuidados Necessários",
+      "description": "Fundamentos da Lei Geral de Proteção de Dados para colaboradores. Treinamento obrigatório de compliance.",
+      "contentType": "external",
+      "durationMinutes": 40,
+      "isMandatory": true,
+      "area": "Compliance",
+      "department": "Jurídico",
+      "rating": 4.8,
+      "instructorName": "Canal RH/Compliance",
+      "externalUrl": "https://www.youtube.com/watch?v=1cpffJ0rfyI",
+      "provider": "YouTube",
+      "status": "published",
+      "skillSeedKeys": ["lgpd"],
+      "tags": ["LGPD", "privacidade", "compliance", "obrigatório"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "LGPD — Entendimentos Básicos",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=1cpffJ0rfyI",
+          "durationMinutes": 40
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-lgpd-pme",
+      "title": "LGPD e Impactos para Pequenas e Médias Empresas",
+      "description": "Impactos práticos da LGPD em PMEs e medidas de adequação recomendadas.",
+      "contentType": "external",
+      "durationMinutes": 34,
+      "isMandatory": false,
+      "area": "Compliance",
+      "department": "Jurídico",
+      "rating": 4.5,
+      "instructorName": "Canal Jurídico",
+      "externalUrl": "https://www.youtube.com/watch?v=8q-TmQx_ihE",
+      "provider": "YouTube",
+      "status": "published",
+      "skillSeedKeys": ["lgpd"],
+      "tags": ["LGPD", "PME", "adequação"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "LGPD para PMEs",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=8q-TmQx_ihE",
+          "durationMinutes": 34
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-nr35-resumo",
+      "title": "NR-35 Trabalho em Altura — Curso Rápido",
+      "description": "Resumo objetivo dos requisitos da NR-35 para reciclagem e consulta rápida.",
+      "contentType": "external",
+      "durationMinutes": 20,
+      "isMandatory": false,
+      "area": "Compliance",
+      "department": "Segurança do Trabalho",
+      "rating": 4.3,
+      "instructorName": "Kultivi",
+      "externalUrl": "https://www.youtube.com/watch?v=jPQy_-fD1Do",
+      "provider": "YouTube",
+      "status": "published",
+      "skillSeedKeys": ["seguranca-trabalho"],
+      "tags": ["NR-35", "SST", "resumo"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "NR-35 — Curso Rápido",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=jPQy_-fD1Do",
+          "durationMinutes": 20
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-bpf-usp",
+      "title": "BPF na Indústria de Alimentos",
+      "description": "Aula acadêmica USP sobre Boas Práticas de Fabricação na indústria de alimentos.",
+      "contentType": "external",
+      "durationMinutes": 50,
+      "isMandatory": false,
+      "area": "Qualidade",
+      "department": "Qualidade",
+      "rating": 4.8,
+      "instructorName": "e-Aulas USP",
+      "externalUrl": "https://eaulas.usp.br/portal/video.action?idItem=10195",
+      "provider": "e-Aulas USP",
+      "status": "published",
+      "skillSeedKeys": ["qualidade-alimentar"],
+      "tags": ["BPF", "USP", "segurança alimentar"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "BPF na Indústria de Alimentos",
+          "contentType": "external",
+          "contentUrl": "https://eaulas.usp.br/portal/video.action?idItem=10195",
+          "durationMinutes": 50
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-appcc-usp",
+      "title": "Análise de Perigos e PCC (APPCC) — USP",
+      "description": "Aula acadêmica USP de 67 minutos sobre APPCC e pontos críticos de controle.",
+      "contentType": "external",
+      "durationMinutes": 67,
+      "isMandatory": false,
+      "area": "Qualidade",
+      "department": "Qualidade",
+      "rating": 4.9,
+      "instructorName": "e-Aulas USP",
+      "externalUrl": "https://eaulas.usp.br/portal/video.action/video?idItem=9775",
+      "provider": "e-Aulas USP",
+      "status": "published",
+      "skillSeedKeys": ["qualidade-alimentar"],
+      "tags": ["APPCC", "USP", "PCC"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "APPCC — USP",
+          "contentType": "external",
+          "contentUrl": "https://eaulas.usp.br/portal/video.action/video?idItem=9775",
+          "durationMinutes": 67
+        }
+      ]
+    },
+    {
+      "seedKey": "codigo-conduta",
+      "title": "Código de Conduta LioTécnica",
+      "description": "Política interna de ética, integridade e conduta esperada de todos os colaboradores. Leitura obrigatória com avaliação final.",
+      "contentType": "pdf",
+      "durationMinutes": 30,
+      "isMandatory": true,
+      "area": "Compliance",
+      "department": "Jurídico",
+      "rating": 4.9,
+      "instructorName": "RH LioTécnica",
+      "provider": "LioTécnica",
+      "status": "published",
+      "skillSeedKeys": ["lgpd"],
+      "tags": ["ética", "compliance", "obrigatório"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Leitura do Código de Conduta",
+          "contentType": "pdf",
+          "contentUrl": "/documents/politicas-internas/codigo-conduta.pdf",
+          "durationMinutes": 20
+        },
+        {
+          "sortOrder": 2,
+          "title": "Avaliação — Código de Conduta",
+          "contentType": "quiz",
+          "durationMinutes": 10
+        }
+      ]
+    },
+    {
+      "seedKey": "seguranca-informacao",
+      "title": "Segurança da Informação para Colaboradores",
+      "description": "Boas práticas de segurança digital, phishing, senhas e proteção de dados corporativos. Treinamento obrigatório.",
+      "contentType": "video",
+      "durationMinutes": 35,
+      "isMandatory": true,
+      "area": "Compliance",
+      "department": "TI",
+      "rating": 4.7,
+      "instructorName": "TI LioTécnica",
+      "provider": "LioTécnica",
+      "status": "published",
+      "skillSeedKeys": ["lgpd"],
+      "tags": ["segurança", "phishing", "compliance", "obrigatório"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Fundamentos de Segurança da Informação",
+          "contentType": "video",
+          "contentUrl": "/videos/seguranca-informacao-intro.mp4",
+          "durationMinutes": 25
+        },
+        {
+          "sortOrder": 2,
+          "title": "Phishing e Engenharia Social",
+          "contentType": "video",
+          "contentUrl": "/videos/seguranca-informacao-phishing.mp4",
+          "durationMinutes": 10
+        }
+      ]
+    },
+    {
+      "seedKey": "feedback-efetivo",
+      "title": "Feedback Efetivo na Prática",
+      "description": "Técnicas de feedback construtivo para líderes e colaboradores em rotinas de gestão de desempenho.",
+      "contentType": "video",
+      "durationMinutes": 28,
+      "isMandatory": false,
+      "area": "Gestão",
+      "department": "RH",
+      "rating": 4.6,
+      "instructorName": "RH LioTécnica",
+      "provider": "LioTécnica",
+      "status": "published",
+      "skillSeedKeys": ["lideranca"],
+      "tags": ["feedback", "liderança", "desempenho"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Como Dar Feedback Efetivo",
+          "contentType": "video",
+          "contentUrl": "/videos/feedback-efetivo.mp4",
+          "durationMinutes": 28
+        }
+      ]
+    },
+    {
+      "seedKey": "onboarding-liotecnica",
+      "title": "Onboarding LioTécnica — Boas-vindas",
+      "description": "Vídeo institucional de boas-vindas com visão da empresa, valores e primeiros passos no portal.",
+      "contentType": "video",
+      "durationMinutes": 22,
+      "isMandatory": false,
+      "area": "Institucional",
+      "department": "RH",
+      "rating": 4.8,
+      "instructorName": "RH LioTécnica",
+      "provider": "LioTécnica",
+      "status": "published",
+      "tags": ["onboarding", "institucional", "cultura"],
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Boas-vindas à LioTécnica",
+          "contentType": "video",
+          "contentUrl": "/videos/lioconecta-intro.mp4",
+          "durationMinutes": 22
+        }
+      ]
+    }
+  ],
+  "paths": [
+    {
+      "seedKey": "path-onboarding-liotecnica",
+      "title": "Onboarding LioTécnica",
+      "description": "Primeiros passos na empresa: cultura, compliance básico e visão da indústria alimentícia.",
+      "courseSeedKeys": [
+        "onboarding-liotecnica",
+        "ext-eng-alimentos-podcast",
+        "ext-lgpd-basico",
+        "codigo-conduta"
+      ]
+    },
+    {
+      "seedKey": "path-processos-liofilizacao",
+      "title": "Processos e Liofilização",
+      "description": "Trilha técnica sobre liofilização, instrumentação e excelência operacional em planta.",
+      "courseSeedKeys": [
+        "ext-liofilizacao-ufv",
+        "ext-stp-alimenticia",
+        "ext-instrumentacao",
+        "ext-lean-manufacturing"
+      ]
+    },
+    {
+      "seedKey": "path-seguranca-alimentar",
+      "title": "Segurança Alimentar",
+      "description": "APPCC, BPF, FSSC e gestão da qualidade na cadeia alimentícia.",
+      "courseSeedKeys": [
+        "ext-appcc-crq",
+        "ext-fssc-22000",
+        "ext-bpf-usp",
+        "ext-custo-nao-qualidade",
+        "ext-appcc-usp"
+      ]
+    },
+    {
+      "seedKey": "path-excelencia-operacional",
+      "title": "Excelência Operacional",
+      "description": "Lean, Six Sigma, TPM e STP aplicados à produção industrial.",
+      "courseSeedKeys": [
+        "ext-lean-manufacturing",
+        "ext-lean-six-sigma",
+        "ext-tpm-manutencao",
+        "ext-stp-alimenticia"
+      ]
+    },
+    {
+      "seedKey": "path-lideranca-essentials",
+      "title": "Liderança Essentials",
+      "description": "Competências essenciais para líderes: gestão de pessoas, negociação e feedback.",
+      "courseSeedKeys": [
+        "ext-gestao-pessoas-rh",
+        "ext-lideranca-negociar",
+        "feedback-efetivo"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "seedKey": "liofilizacao",
+      "name": "Liofilização",
+      "category": "Técnica",
+      "description": "Processos de secagem por liofilização e controle de parâmetros críticos."
+    },
+    {
+      "seedKey": "qualidade-alimentar",
+      "name": "Qualidade Alimentar",
+      "category": "Qualidade",
+      "description": "BPF, APPCC, FSSC e gestão de qualidade na indústria de alimentos."
+    },
+    {
+      "seedKey": "lean-manufacturing",
+      "name": "Lean Manufacturing",
+      "category": "Operações",
+      "description": "Princípios Lean, eliminação de desperdícios e melhoria contínua."
+    },
+    {
+      "seedKey": "lideranca",
+      "name": "Liderança",
+      "category": "Gestão",
+      "description": "Gestão de pessoas, feedback, negociação e desenvolvimento de equipes."
+    },
+    {
+      "seedKey": "power-bi",
+      "name": "Power BI",
+      "category": "Dados",
+      "description": "Modelagem, visualização e publicação de dashboards em Power BI."
+    },
+    {
+      "seedKey": "excel",
+      "name": "Excel Avançado",
+      "category": "Produtividade",
+      "description": "Tabelas dinâmicas, fórmulas e análise de dados no Excel."
+    },
+    {
+      "seedKey": "lgpd",
+      "name": "LGPD e Privacidade",
+      "category": "Compliance",
+      "description": "Proteção de dados pessoais e conformidade com a LGPD."
+    },
+    {
+      "seedKey": "seguranca-trabalho",
+      "name": "Segurança do Trabalho",
+      "category": "Compliance",
+      "description": "Normas regulamentadoras, NR-35 e práticas de SST."
+    }
+  ],
+  "assessments": [
+    {
+      "courseSeedKey": "codigo-conduta",
+      "title": "Avaliação — Código de Conduta",
+      "passingScore": 70,
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Qual é o principal objetivo do Código de Conduta da LioTécnica?",
+          "options": [
+            "Definir metas de produção",
+            "Orientar comportamentos éticos e integridade",
+            "Estabelecer política salarial",
+            "Regular férias e benefícios"
+          ],
+          "correctAnswer": "Orientar comportamentos éticos e integridade"
+        },
+        {
+          "id": "q2",
+          "text": "Em caso de conflito de interesses, o colaborador deve:",
+          "options": [
+            "Ignorar se não houver prejuízo financeiro",
+            "Comunicar imediatamente ao gestor ou canal de ética",
+            "Resolver apenas com colegas da equipe",
+            "Aguardar a auditoria anual"
+          ],
+          "correctAnswer": "Comunicar imediatamente ao gestor ou canal de ética"
+        },
+        {
+          "id": "q3",
+          "text": "Presentes ou brindes de fornecedores acima do limite da política devem ser:",
+          "options": [
+            "Aceitos e divididos com a equipe",
+            "Recusados ou declarados conforme a política",
+            "Guardados para eventos internos",
+            "Vendidos para custear confraternizações"
+          ],
+          "correctAnswer": "Recusados ou declarados conforme a política"
+        }
+      ]
+    },
+    {
+      "courseSeedKey": "ext-appcc-crq",
+      "title": "Avaliação — APPCC (HACCP)",
+      "passingScore": 70,
+      "questions": [
+        {
+          "id": "q1",
+          "text": "O que significa APPCC?",
+          "options": [
+            "Análise de Perigos e Pontos Críticos de Controle",
+            "Avaliação de Processos e Procedimentos de Calibração",
+            "Auditoria de Produtos e Padrões de Certificação",
+            "Análise de Performance e Produtividade de Colaboradores"
+          ],
+          "correctAnswer": "Análise de Perigos e Pontos Críticos de Controle"
+        },
+        {
+          "id": "q2",
+          "text": "Um Perigo Biológico em alimentos inclui:",
+          "options": [
+            "Pedaços de metal na linha",
+            "Bactérias, vírus e parasitas",
+            "Rótulo ilegível",
+            "Temperatura ambiente confortável"
+          ],
+          "correctAnswer": "Bactérias, vírus e parasitas"
+        },
+        {
+          "id": "q3",
+          "text": "Um PCC (Ponto Crítico de Controle) é definido como etapa em que:",
+          "options": [
+            "O produto é embalado",
+            "O controle é aplicado para prevenir, eliminar ou reduzir perigo a nível aceitável",
+            "A equipe faz pausa para almoço",
+            "O estoque é contado mensalmente"
+          ],
+          "correctAnswer": "O controle é aplicado para prevenir, eliminar ou reduzir perigo a nível aceitável"
+        },
+        {
+          "id": "q4",
+          "text": "Limites críticos em um PCC devem ser:",
+          "options": [
+            "Subjetivos e flexíveis",
+            "Mensuráveis e monitorados",
+            "Definidos apenas anualmente",
+            "Opcionais em produções pequenas"
+          ],
+          "correctAnswer": "Mensuráveis e monitorados"
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "seedKey": "event-webinar-appcc-pratica",
+      "title": "Webinar APPCC na Prática — Casos LioTécnica",
+      "eventType": "webinar",
+      "startsAt": "2026-07-15T14:00:00-03:00",
+      "endsAt": "2026-07-15T15:30:00-03:00",
+      "instructorPersonSeedKey": "maria",
+      "maxAttendees": 80,
+      "meetingUrl": "https://teams.microsoft.com/l/meetup-join/unilio-appcc-pratica"
+    },
+    {
+      "seedKey": "event-workshop-lean-planta",
+      "title": "Workshop Lean na Planta — Gemba Walk",
+      "eventType": "workshop",
+      "startsAt": "2026-07-22T09:00:00-03:00",
+      "endsAt": "2026-07-22T12:00:00-03:00",
+      "instructorPersonSeedKey": "julio",
+      "maxAttendees": 25,
+      "meetingUrl": "https://teams.microsoft.com/l/meetup-join/unilio-lean-gemba"
+    },
+    {
+      "seedKey": "event-webinar-lgpd-rh",
+      "title": "Webinar LGPD para Gestores de RH",
+      "eventType": "webinar",
+      "startsAt": "2026-08-05T10:00:00-03:00",
+      "endsAt": "2026-08-05T11:00:00-03:00",
+      "instructorPersonSeedKey": "maria",
+      "maxAttendees": 60,
+      "meetingUrl": "https://teams.microsoft.com/l/meetup-join/unilio-lgpd-rh"
+    },
+    {
+      "seedKey": "event-workshop-power-bi",
+      "title": "Workshop Power BI — Dashboard Operacional",
+      "eventType": "workshop",
+      "startsAt": "2026-08-12T14:00:00-03:00",
+      "endsAt": "2026-08-12T17:00:00-03:00",
+      "instructorPersonSeedKey": "julio",
+      "maxAttendees": 30,
+      "meetingUrl": "https://teams.microsoft.com/l/meetup-join/unilio-power-bi"
+    }
+  ],
+  "communityPosts": [
+    {
+      "seedKey": "post-appcc-dicas",
+      "authorPersonSeedKey": "maria",
+      "courseSeedKey": "ext-appcc-crq",
+      "body": "Terminei o curso de APPCC do CRQ-SP — super recomendo para quem está montando fluxograma de processo na planta. Alguém já aplicou PCC em liofilização?",
+      "likesCount": 12
+    },
+    {
+      "seedKey": "post-liofilizacao-ufv",
+      "authorPersonSeedKey": "carlos",
+      "courseSeedKey": "ext-liofilizacao-ufv",
+      "body": "A aula da UFV sobre liofilização explica muito bem a diferença entre bandeja e atomização. Vale assistir antes do treinamento presencial.",
+      "likesCount": 8
+    },
+    {
+      "seedKey": "post-lean-manufacturing",
+      "authorPersonSeedKey": "julio",
+      "courseSeedKey": "ext-lean-manufacturing",
+      "body": "Compartilhando o vídeo de Lean Manufacturing — usamos vários conceitos desse material no kaizen da linha 2.",
+      "likesCount": 15
+    },
+    {
+      "seedKey": "post-lgpd-colaboradores",
+      "authorPersonSeedKey": "maria",
+      "courseSeedKey": "ext-lgpd-basico",
+      "body": "Lembrem-se: o treinamento de LGPD é obrigatório até o fim do mês. Qualquer dúvida sobre dados de clientes, falem com Jurídico.",
+      "likesCount": 21
+    },
+    {
+      "seedKey": "post-power-bi-iniciantes",
+      "authorPersonSeedKey": "julia",
+      "courseSeedKey": "ext-power-bi-iniciantes",
+      "body": "Para quem está começando em BI, esse guia de Power BI é bem didático. Já montei meu primeiro dashboard de RH com as dicas da aula 1.",
+      "likesCount": 9
+    },
+    {
+      "seedKey": "post-feedback-efetivo",
+      "authorPersonSeedKey": "carlos",
+      "courseSeedKey": "feedback-efetivo",
+      "body": "O módulo interno de feedback efetivo tem exemplos práticos de conversas difíceis. Sugiro para toda equipe de liderança.",
+      "likesCount": 6
+    }
+  ],
+  "integrationLinks": [
+    {
+      "seedKey": "link-biblioteca-guia-cultura",
+      "sourceType": "biblioteca",
+      "sourceKey": "guia-cultura",
+      "courseSeedKey": "onboarding-liotecnica"
+    },
+    {
+      "seedKey": "link-beneficio-educacao",
+      "sourceType": "beneficio",
+      "sourceKey": "educacao",
+      "courseSeedKey": "ext-power-bi-curso"
+    },
+    {
+      "seedKey": "link-loop-aprendizado",
+      "sourceType": "loop",
+      "sourceKey": "aprendizado",
+      "courseSeedKey": "ext-lean-manufacturing"
+    }
+  ],
+  "enrollments": [
+    {
+      "seedKey": "enrollment-julio-onboarding",
+      "personSeedKey": "julio",
+      "courseSeedKey": "onboarding-liotecnica",
+      "status": "in_progress",
+      "progressPct": 0,
+      "startedAt": "2026-07-01T08:00:00-03:00"
+    },
+    {
+      "seedKey": "enrollment-carlos-lean",
+      "personSeedKey": "carlos",
+      "courseSeedKey": "ext-lean-manufacturing",
+      "status": "in_progress",
+      "progressPct": 45,
+      "startedAt": "2026-06-15T10:00:00-03:00"
+    },
+    {
+      "seedKey": "enrollment-maria-appcc",
+      "personSeedKey": "maria",
+      "courseSeedKey": "ext-appcc-crq",
+      "status": "completed",
+      "progressPct": 100,
+      "startedAt": "2026-05-20T09:00:00-03:00",
+      "completedAt": "2026-06-10T16:30:00-03:00",
+      "issueCertificate": true,
+      "certificateCode": "UNILIO-APPCC-2026-MARIA"
+    },
+    {
+      "seedKey": "enrollment-ricardo-nr35",
+      "personSeedKey": "ricardo",
+      "courseSeedKey": "ext-nr35-altura",
+      "status": "in_progress",
+      "progressPct": 30,
+      "startedAt": "2026-04-01T08:00:00-03:00",
+      "dueDate": "2026-06-30T23:59:59-03:00"
+    },
+    {
+      "seedKey": "enrollment-julia-powerbi",
+      "personSeedKey": "julia",
+      "courseSeedKey": "ext-power-bi-iniciantes",
+      "status": "in_progress",
+      "progressPct": 60,
+      "startedAt": "2026-07-05T14:00:00-03:00"
+    }
+  ],
+  "personSkills": [
+    {
+      "personSeedKey": "julio",
+      "skillSeedKey": "lideranca",
+      "level": 4
+    },
+    {
+      "personSeedKey": "julio",
+      "skillSeedKey": "lean-manufacturing",
+      "level": 3
+    },
+    {
+      "personSeedKey": "julio",
+      "skillSeedKey": "liofilizacao",
+      "level": 2
+    },
+    {
+      "personSeedKey": "carlos",
+      "skillSeedKey": "lean-manufacturing",
+      "level": 4
+    },
+    {
+      "personSeedKey": "carlos",
+      "skillSeedKey": "qualidade-alimentar",
+      "level": 3
+    },
+    {
+      "personSeedKey": "carlos",
+      "skillSeedKey": "excel",
+      "level": 2
+    },
+    {
+      "personSeedKey": "maria",
+      "skillSeedKey": "qualidade-alimentar",
+      "level": 5
+    },
+    {
+      "personSeedKey": "maria",
+      "skillSeedKey": "lgpd",
+      "level": 3
+    },
+    {
+      "personSeedKey": "maria",
+      "skillSeedKey": "lideranca",
+      "level": 4
+    }
+  ]
+}

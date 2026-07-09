@@ -142,6 +142,10 @@ public static class AppSettingKeys
     public const string CompassAllowedRoles = "compass.allowed_roles";
     public const string CompassAllowedEmails = "compass.allowed_emails";
 
+    public const string UniLioEnabled = "unilio.enabled";
+    public const string UniLioAllowedRoles = "unilio.allowed_roles";
+    public const string UniLioAllowedEmails = "unilio.allowed_emails";
+
     public const string PortalUiMaturityBadgesEnabled = "portal.ui.maturity_badges_enabled";
     public const string PortalUiMaturityRoadmap = "portal.ui.maturity_roadmap";
 }

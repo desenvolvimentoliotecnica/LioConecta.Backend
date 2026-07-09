@@ -29,6 +29,8 @@ public static class DependencyInjection
         services.AddScoped<ILeaveService, LeaveService>();
         services.AddScoped<LeaveNotifyRecipientResolver>();
         services.AddScoped<ILeaveEmailNotifier, LeaveEmailNotifier>();
+        services.AddScoped<UniLioApprovalRecipientResolver>();
+        services.AddScoped<IUniLioEmailNotifier, UniLioEmailNotifier>();
         services.AddScoped<IHelpDeskService, HelpDeskService>();
         services.AddScoped<IPlannerService, PlannerService>();
         services.AddScoped<IPollClosureService, PollClosureService>();

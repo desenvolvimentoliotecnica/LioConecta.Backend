@@ -33,4 +33,30 @@ public interface INotificationService
         Person celebrated,
         Person author,
         CancellationToken cancellationToken = default);
+
+    Task NotifyUniLioCourseSubmittedAsync(
+        IReadOnlyList<Guid> recipientPersonIds,
+        Guid courseId,
+        string courseTitle,
+        string submitterName,
+        CancellationToken cancellationToken = default);
+
+    Task NotifyUniLioCourseReviewedAsync(
+        Guid instructorPersonId,
+        Guid courseId,
+        string courseTitle,
+        bool approved,
+        string? rejectionReason,
+        CancellationToken cancellationToken = default);
+
+    Task NotifyUniLioCoursePublishedAsync(
+        UniLioCourse course,
+        CancellationToken cancellationToken = default);
+
+    Task NotifyUniLioCourseCompletedToInstructorAsync(
+        Guid instructorPersonId,
+        string learnerName,
+        string courseTitle,
+        Guid courseId,
+        CancellationToken cancellationToken = default);
 }

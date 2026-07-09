@@ -14,11 +14,25 @@ public interface IUniLioService
 
     Task<UniLioCourseDetailDto> GetCourseDetailAsync(Guid courseId, CancellationToken cancellationToken = default);
 
+    Task<UniLioRecommendationsDto> GetCourseRecommendationsAsync(
+        Guid courseId,
+        CancellationToken cancellationToken = default);
+
+    Task<UniLioCourseStartDto> StartCourseAsync(Guid courseId, CancellationToken cancellationToken = default);
+
+    Task<UniLioCourseEnrollmentsDto> GetCourseEnrollmentsAsync(
+        Guid courseId,
+        CancellationToken cancellationToken = default);
+
     Task<UniLioPathsDto> GetPathsAsync(CancellationToken cancellationToken = default);
 
     Task<UniLioPathDetailDto> GetPathDetailAsync(Guid pathId, CancellationToken cancellationToken = default);
 
-    Task<UniLioProgressDto> CompleteModuleAsync(Guid courseId, Guid moduleId, CancellationToken cancellationToken = default);
+    Task<UniLioProgressDto> CompleteModuleAsync(
+        Guid courseId,
+        Guid moduleId,
+        UniLioCompleteModuleRequest? request,
+        CancellationToken cancellationToken = default);
 
     Task<UniLioAssessmentsDto> GetAssessmentsAsync(CancellationToken cancellationToken = default);
 

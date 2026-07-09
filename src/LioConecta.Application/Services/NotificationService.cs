@@ -155,6 +155,97 @@ public sealed class NotificationService(
         }
     }
 
+    public async Task NotifyUniLioCourseSubmittedAsync(
+        IReadOnlyList<Guid> recipientPersonIds,
+        Guid courseId,
+        string courseTitle,
+        string submitterName,
+        CancellationToken cancellationToken = default)
+    {
+        var recipients = await personRepository.GetByIdsAsync(recipientPersonIds, cancellationToken);
+        if (recipients.Count == 0)
+        {
+            return;
+        }
+
+        var href = $"/unilio/admin/aprovacoes/{courseId}";
+        var body = $"{submitterName.Trim()} enviou o curso \"{courseTitle.Trim()}\" para aprovação.";
+        await BroadcastAsync(
+            () => Task.FromResult(recipients),
+            NotificationType.System,
+            "Curso aguardando aprovação",
+            body,
+            href,
+            cancellationToken);
+    }
+
+    public async Task NotifyUniLioCourseReviewedAsync(
+        Guid instructorPersonId,
+        Guid courseId,
+        string courseTitle,
+        bool approved,
+        string? rejectionReason,
+        CancellationToken cancellationToken = default)
+    {
+        var instructor = await personRepository.GetByIdAsync(instructorPersonId, cancellationToken);
+        if (instructor is null)
+        {
+            return;
+        }
+
+        var href = $"/unilio/instrutor/curso/{courseId}/editar";
+        var title = approved ? "Curso aprovado" : "Curso rejeitado";
+        var body = approved
+            ? $"Seu curso \"{courseTitle.Trim()}\" foi aprovado e publicado."
+            : $"Seu curso \"{courseTitle.Trim()}\" foi rejeitado."
+              + (string.IsNullOrWhiteSpace(rejectionReason) ? "" : $" Motivo: {rejectionReason.Trim()}");
+
+        await BroadcastAsync(
+            () => Task.FromResult<IReadOnlyList<Person>>([instructor]),
+            NotificationType.System,
+            title,
+            body,
+            href,
+            cancellationToken);
+    }
+
+    public Task NotifyUniLioCoursePublishedAsync(
+        UniLioCourse course,
+        CancellationToken cancellationToken = default)
+    {
+        var href = $"/unilio/curso/{course.Id}";
+        return BroadcastToAllActivePersonsAsync(
+            NotificationType.System,
+            "Novo curso disponível",
+            course.Title.Trim(),
+            href,
+            cancellationToken);
+    }
+
+    public async Task NotifyUniLioCourseCompletedToInstructorAsync(
+        Guid instructorPersonId,
+        string learnerName,
+        string courseTitle,
+        Guid courseId,
+        CancellationToken cancellationToken = default)
+    {
+        var instructor = await personRepository.GetByIdAsync(instructorPersonId, cancellationToken);
+        if (instructor is null)
+        {
+            return;
+        }
+
+        var href = $"/unilio/instrutor/curso/{courseId}/editar";
+        var body = $"{learnerName.Trim()} concluiu o curso \"{courseTitle.Trim()}\".";
+        await BroadcastAsync(
+            () => Task.FromResult<IReadOnlyList<Person>>([instructor]),
+            NotificationType.System,
+            "Aluno concluiu seu curso",
+            body,
+            href,
+            cancellationToken);
+    }
+
     private Task BroadcastToAllActivePersonsAsync(
         NotificationType type,
         string title,

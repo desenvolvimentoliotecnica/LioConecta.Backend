@@ -149,6 +149,7 @@ internal static class UniLioCatalogSeed
         ["curso-gestao-pessoas-lider-rh"] = Guid.Parse("22222222-2222-2222-2222-22222222001b"),
         ["curso-rh-agil-catharino"] = Guid.Parse("22222222-2222-2222-2222-22222222001c"),
         ["curso-devops-github-actions"] = Guid.Parse("22222222-2222-2222-2222-22222222001d"),
+        ["curso-lavagem-maos-alimenticia"] = Guid.Parse("22222222-2222-2222-2222-22222222001e"),
     };
 
     private static readonly IReadOnlyDictionary<string, Guid> PathIds = new Dictionary<string, Guid>(StringComparer.Ordinal)

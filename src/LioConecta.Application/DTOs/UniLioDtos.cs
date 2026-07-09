@@ -49,7 +49,9 @@ public sealed record UniLioCourseSummaryDto(
     int? ProgressPct,
     string? EnrollmentStatus,
     IReadOnlyList<string> SkillNames,
-    IReadOnlyList<UniLioIntegrationLinkDto> Integrations);
+    IReadOnlyList<UniLioIntegrationLinkDto> Integrations,
+    int EnrolledCount,
+    int CompletedCount);
 
 public sealed record UniLioIntegrationLinkDto(
     string SourceType,
@@ -86,9 +88,29 @@ public sealed record UniLioCourseDetailDto(
     string Status,
     int ProgressPct,
     string EnrollmentStatus,
+    int EnrolledCount,
+    int CompletedCount,
     IReadOnlyList<UniLioModuleDto> Modules,
     IReadOnlyList<string> SkillNames,
     IReadOnlyList<UniLioIntegrationLinkDto> Integrations);
+
+public sealed record UniLioCourseEnrollmentRecordDto(
+    Guid PersonId,
+    string PersonName,
+    string Status,
+    DateTimeOffset? StartedAt,
+    DateTimeOffset? CompletedAt);
+
+public sealed record UniLioCourseEnrollmentsDto(
+    Guid CourseId,
+    int EnrolledCount,
+    int CompletedCount,
+    IReadOnlyList<UniLioCourseEnrollmentRecordDto> Items);
+
+public sealed record UniLioCourseStartDto(
+    Guid CourseId,
+    string EnrollmentStatus,
+    DateTimeOffset StartedAt);
 
 public sealed record UniLioPathSummaryDto(
     Guid Id,
@@ -120,7 +142,8 @@ public sealed record UniLioRecommendationDto(
     string Reason,
     string Area,
     int DurationMinutes,
-    string ContentType);
+    string ContentType,
+    string? ThumbnailUrl);
 
 public sealed record UniLioDashboardDto(
     IReadOnlyList<UniLioKpiDto> Kpis,
@@ -144,6 +167,10 @@ public sealed record UniLioProgressDto(
     int ProgressPct,
     string Status,
     bool CourseCompleted);
+
+public sealed record UniLioCompleteModuleRequest(
+    int? ContentRating = null,
+    string? FeedbackComment = null);
 
 public sealed record UniLioAssessmentSummaryDto(
     Guid Id,
@@ -276,3 +303,91 @@ public sealed record UniLioReportsDto(
     IReadOnlyList<UniLioReportMetricDto> Metrics,
     IReadOnlyList<UniLioCourseSummaryDto> TopCourses,
     IReadOnlyList<UniLioComplianceItemDto> ComplianceGaps);
+
+public sealed record UniLioUpsertCourseRequest(
+    string Title,
+    string Description,
+    string ContentType,
+    int DurationMinutes,
+    bool IsMandatory,
+    string Area,
+    string Department,
+    string InstructorName,
+    string? ThumbnailUrl,
+    string? ExternalUrl,
+    string? Provider,
+    string? VisibilityJson,
+    IReadOnlyList<string>? Tags);
+
+public sealed record UniLioUpsertModuleRequest(
+    int SortOrder,
+    string Title,
+    string ContentType,
+    string? ContentUrl,
+    int DurationMinutes,
+    string? ArticleHtml,
+    string? QuizJson);
+
+public sealed record UniLioAuthoringCourseDto(
+    Guid Id,
+    string SeedKey,
+    string Title,
+    string Description,
+    string ContentType,
+    int DurationMinutes,
+    bool IsMandatory,
+    string Area,
+    string Department,
+    string InstructorName,
+    Guid? InstructorPersonId,
+    string? ThumbnailUrl,
+    string? ExternalUrl,
+    string? Provider,
+    string Status,
+    string? VisibilityJson,
+    IReadOnlyList<string> Tags,
+    DateTimeOffset? PublishedAt,
+    DateTimeOffset? SubmittedAt,
+    string? RejectionReason,
+    IReadOnlyList<UniLioModuleDto> Modules);
+
+public sealed record UniLioAuthoringCourseListDto(
+    IReadOnlyList<UniLioAuthoringCourseSummaryDto> Items);
+
+public sealed record UniLioAuthoringCourseSummaryDto(
+    Guid Id,
+    string Title,
+    string Area,
+    string Status,
+    int ModuleCount,
+    DateTimeOffset? SubmittedAt,
+    DateTimeOffset? PublishedAt);
+
+public sealed record UniLioApprovalReviewDto(
+    Guid Id,
+    string Title,
+    string Description,
+    string Area,
+    int DurationMinutes,
+    bool IsMandatory,
+    string? ThumbnailUrl,
+    string InstructorName,
+    string? SubmittedByName,
+    DateTimeOffset? SubmittedAt,
+    IReadOnlyList<string> Tags,
+    string? VisibilityJson,
+    IReadOnlyList<UniLioApprovalModuleDto> Modules,
+    UniLioApprovalAssessmentDto? Assessment);
+
+public sealed record UniLioApprovalModuleDto(
+    int SortOrder,
+    string Title,
+    string ContentType,
+    int DurationMinutes);
+
+public sealed record UniLioApprovalAssessmentDto(
+    string Title,
+    int PassingScore,
+    int QuestionCount);
+
+public sealed record UniLioRejectCourseRequest(string? Reason);

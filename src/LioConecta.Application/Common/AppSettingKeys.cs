@@ -145,6 +145,12 @@ public static class AppSettingKeys
     public const string UniLioEnabled = "unilio.enabled";
     public const string UniLioAllowedRoles = "unilio.allowed_roles";
     public const string UniLioAllowedEmails = "unilio.allowed_emails";
+    public const string UniLioApprovalNotifyRoles = "unilio.approval_notify_roles";
+    public const string UniLioApprovalNotifyEmails = "unilio.approval_notify_emails";
+    public const string UniLioEmailEnabled = "unilio.email.enabled";
+    public const string UniLioEmailPublicBaseUrl = "unilio.email.public_base_url";
+    public const string UniLioEmailDevOverrideEnabled = "unilio.email.dev_override_enabled";
+    public const string UniLioEmailDevOverrideTo = "unilio.email.dev_override_to";
 
     public const string PortalUiMaturityBadgesEnabled = "portal.ui.maturity_badges_enabled";
     public const string PortalUiMaturityRoadmap = "portal.ui.maturity_roadmap";

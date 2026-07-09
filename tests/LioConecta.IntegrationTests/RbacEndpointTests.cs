@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using LioConecta.Application.DTOs;
+using LioConecta.Domain.Enums;
 using LioConecta.Infrastructure.Persistence;
 using LioConecta.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -78,6 +79,82 @@ public class RbacEndpointTests : IClassFixture<LioConectaWebApplicationFactory>
         Assert.True(
             response.StatusCode is HttpStatusCode.OK or HttpStatusCode.Unauthorized,
             $"Unexpected status: {response.StatusCode}");
+    }
+
+    [Fact]
+    public async Task SearchSubjects_PortalUser_ReturnsMatches()
+    {
+        var login = await LoginAsync();
+        using var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"/api/v1/admin/rbac/subjects/search?subjectType=PortalUser&q={Uri.EscapeDataString("leonardo.mendes")}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", login.AccessToken);
+
+        var response = await _client.SendAsync(request);
+        Assert.True(
+            response.StatusCode is HttpStatusCode.OK or HttpStatusCode.Forbidden,
+            $"Unexpected status: {response.StatusCode}");
+
+        if (response.StatusCode != HttpStatusCode.OK)
+        {
+            return;
+        }
+
+        var results = await response.Content.ReadFromJsonAsync<List<RbacSubjectSearchResultDto>>();
+        Assert.NotNull(results);
+        Assert.NotEmpty(results!);
+        Assert.All(results!, item => Assert.Equal(RbacSubjectType.PortalUser, item.SubjectType));
+    }
+
+    [Fact]
+    public async Task BulkUpdateAssignments_UpdatesMultipleSubjects()
+    {
+        var login = await LoginAsync();
+        using var rolesRequest = new HttpRequestMessage(HttpMethod.Get, "/api/v1/admin/rbac/roles");
+        rolesRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", login.AccessToken);
+        var rolesResponse = await _client.SendAsync(rolesRequest);
+        if (rolesResponse.StatusCode != HttpStatusCode.OK)
+        {
+            return;
+        }
+
+        var roles = await rolesResponse.Content.ReadFromJsonAsync<List<RoleDto>>();
+        Assert.NotNull(roles);
+        var role = roles!.FirstOrDefault(item => item.Slug == "colaborador") ?? roles.First();
+        var roleId = role.Id;
+
+        using var searchRequest = new HttpRequestMessage(
+            HttpMethod.Get,
+            "/api/v1/admin/rbac/subjects/search?subjectType=Person&q=leo");
+        searchRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", login.AccessToken);
+        var searchResponse = await _client.SendAsync(searchRequest);
+        if (searchResponse.StatusCode != HttpStatusCode.OK)
+        {
+            return;
+        }
+
+        var subjects = await searchResponse.Content.ReadFromJsonAsync<List<RbacSubjectSearchResultDto>>();
+        Assert.NotNull(subjects);
+        if (subjects!.Count < 2)
+        {
+            return;
+        }
+
+        var bulkBody = new BulkUpdateSubjectAssignmentsRequest(
+            subjects.Take(2).Select(subject => new UpdateSubjectAssignmentsRequest(
+                subject.SubjectType,
+                subject.SubjectId,
+                [roleId])).ToList());
+
+        using var bulkRequest = new HttpRequestMessage(HttpMethod.Put, "/api/v1/admin/rbac/assignments/bulk")
+        {
+            Content = JsonContent.Create(bulkBody),
+        };
+        bulkRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", login.AccessToken);
+        var bulkResponse = await _client.SendAsync(bulkRequest);
+        Assert.True(
+            bulkResponse.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.Forbidden,
+            $"Unexpected status: {bulkResponse.StatusCode}");
     }
 
     private async Task<LoginResponse> LoginAsync()

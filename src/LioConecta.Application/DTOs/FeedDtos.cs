@@ -29,4 +29,8 @@ public sealed record CreatePostRequest(
 
 public sealed record CreateCommentRequest(string Text);
 
+public sealed record CreatePostMediaCommentRequest(string Text, string MediaUrl);
+
+public sealed record PostMediaCommentsResponse(IReadOnlyList<CommentDto> Items);
+
 public sealed record ReactionRequest(string ReactionType);

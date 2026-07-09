@@ -23,6 +23,14 @@ public interface IRbacAdminService
 
     Task UpdateAssignmentsAsync(UpdateSubjectAssignmentsRequest request, CancellationToken cancellationToken = default);
 
+    Task BulkUpdateAssignmentsAsync(BulkUpdateSubjectAssignmentsRequest request, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<RbacSubjectSearchResultDto>> SearchSubjectsAsync(
+        RbacSubjectType subjectType,
+        string query,
+        int limit = 8,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<TestUserDto>> GetTestUsersAsync(CancellationToken cancellationToken = default);
 
     Task<TestUserDto> CreateTestUserAsync(CreateTestUserRequest request, CancellationToken cancellationToken = default);

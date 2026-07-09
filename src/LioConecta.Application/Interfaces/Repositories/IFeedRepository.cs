@@ -23,6 +23,13 @@ public interface IFeedRepository
 
     Task AddCommentAsync(Comment comment, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<PostMediaComment>> GetPostMediaCommentsAsync(
+        Guid postId,
+        string mediaUrl,
+        CancellationToken cancellationToken = default);
+
+    Task AddPostMediaCommentAsync(PostMediaComment comment, CancellationToken cancellationToken = default);
+
     Task<Reaction?> GetReactionAsync(Guid postId, Guid personId, CancellationToken cancellationToken = default);
 
     Task AddReactionAsync(Reaction reaction, CancellationToken cancellationToken = default);

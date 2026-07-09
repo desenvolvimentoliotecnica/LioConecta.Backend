@@ -1,4 +1,5 @@
 using LioConecta.Application.Common;
+using LioConecta.Application.Common;
 using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Repositories;
 using LioConecta.Application.Interfaces.Services;
@@ -89,7 +90,8 @@ public sealed class FeedService(
             AuthorId = authorId,
             Type = request.Type,
             Content = request.Content.Trim(),
-            MetadataJson = JsonMapper.SerializeObjectDictionary(request.Metadata),
+            MetadataJson = JsonMapper.SerializeObjectDictionary(
+                FeedPostMediaHelper.NormalizeMetadataForCreate(request.Metadata)),
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -287,6 +289,75 @@ public sealed class FeedService(
         return FeedMapper.ToCommentDto(savedComment);
     }
 
+    public async Task<IReadOnlyList<CommentDto>> GetPostMediaCommentsAsync(
+        Guid postId,
+        string mediaUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var post = await feedRepository.GetByIdAsync(postId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Post {postId} was not found.");
+
+        var metadata = FeedPostMediaHelper.DeserializeMetadata(post.MetadataJson);
+        if (!FeedPostMediaHelper.TryResolveMediaUrl(metadata, mediaUrl, out var normalizedMediaUrl))
+        {
+            throw new KeyNotFoundException($"Media for post {postId} was not found.");
+        }
+
+        var comments = await feedRepository.GetPostMediaCommentsAsync(
+            postId,
+            normalizedMediaUrl,
+            cancellationToken);
+
+        return comments
+            .OrderBy(comment => comment.CreatedAt)
+            .Select(FeedMapper.ToCommentDto)
+            .ToList();
+    }
+
+    public async Task<CommentDto> AddPostMediaCommentAsync(
+        Guid postId,
+        CreatePostMediaCommentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var text = request.Text.Trim();
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            throw new ArgumentException("Comment text is required.", nameof(request));
+        }
+
+        var post = await feedRepository.GetByIdAsync(postId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Post {postId} was not found.");
+
+        var metadata = FeedPostMediaHelper.DeserializeMetadata(post.MetadataJson);
+        if (!FeedPostMediaHelper.TryResolveMediaUrl(metadata, request.MediaUrl, out var normalizedMediaUrl))
+        {
+            throw new KeyNotFoundException($"Media for post {postId} was not found.");
+        }
+
+        var authorId = await currentUserService.GetPersonIdAsync(cancellationToken);
+        var now = DateTimeOffset.UtcNow;
+        var comment = new PostMediaComment
+        {
+            Id = Guid.NewGuid(),
+            PostId = post.Id,
+            MediaUrl = normalizedMediaUrl,
+            AuthorId = authorId,
+            Text = text,
+            CreatedAt = now,
+            UpdatedAt = now
+        };
+
+        await feedRepository.AddPostMediaCommentAsync(comment, cancellationToken);
+
+        var savedComments = await feedRepository.GetPostMediaCommentsAsync(
+            postId,
+            normalizedMediaUrl,
+            cancellationToken);
+        var savedComment = savedComments.FirstOrDefault(item => item.Id == comment.Id) ?? comment;
+
+        return FeedMapper.ToCommentDto(savedComment);
+    }
+
     private async Task TrackCommentEventAsync(
         Guid personId,
         Guid postId,
@@ -316,6 +387,7 @@ public sealed class FeedService(
             ?? throw new KeyNotFoundException($"Post {postId} was not found.");
 
         var existing = await feedRepository.GetReactionAsync(postId, personId, cancellationToken);
+        var isFirstReaction = existing is null;
         if (existing is not null)
         {
             if (string.Equals(existing.ReactionType, request.ReactionType, StringComparison.OrdinalIgnoreCase))
@@ -340,6 +412,15 @@ public sealed class FeedService(
         }, cancellationToken);
 
         await TrackReactionEventAsync("FeedPostLiked", personId, post.Id, request.ReactionType, cancellationToken);
+
+        if (isFirstReaction && post.AuthorId != personId)
+        {
+            var liker = await personRepository.GetByIdAsync(personId, cancellationToken);
+            if (liker is not null)
+            {
+                await notificationService.NotifyFeedPostLikedAsync(post, liker, cancellationToken);
+            }
+        }
     }
 
     private async Task TrackReactionEventAsync(

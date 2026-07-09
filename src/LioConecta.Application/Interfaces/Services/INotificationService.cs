@@ -34,6 +34,11 @@ public interface INotificationService
         Person author,
         CancellationToken cancellationToken = default);
 
+    Task NotifyFeedPostLikedAsync(
+        FeedPost post,
+        Person liker,
+        CancellationToken cancellationToken = default);
+
     Task NotifyUniLioCourseSubmittedAsync(
         IReadOnlyList<Guid> recipientPersonIds,
         Guid courseId,

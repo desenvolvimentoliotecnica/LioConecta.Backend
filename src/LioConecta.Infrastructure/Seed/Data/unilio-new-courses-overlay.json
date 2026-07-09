@@ -1,0 +1,281 @@
+{
+  "courses": [
+    {
+      "seedKey": "curso-gestao-pessoas-lider-rh",
+      "thumbnailUrl": "/unilio/courses/gestao-pessoas-lider-rh/assets/hero-unilio-gestao-pessoas.png",
+      "description": "Trilha interativa sobre divisão de papéis entre liderança e RH — baseada em Mariá Menezes (Mestre do ERP). Leitura guiada, vídeo complementar e avaliação final.",
+      "durationMinutes": 25,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Introdução",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 3,
+          "articleHtml": "<p><em>Trilha · Gestão de Pessoas e Liderança</em></p><img src=\"/unilio/courses/gestao-pessoas-lider-rh/assets/hero-unilio-gestao-pessoas.png\" alt=\"Colaboradores aprendendo no UniLio\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><h2>Gestão de Pessoas: papel do líder e do RH</h2><p>Entenda a divisão de responsabilidades entre liderança e Recursos Humanos — e como essa parceria gera resultados para pessoas e negócio.</p><ul><li>⏱ 15 min de leitura + 6 min de vídeo</li><li>👥 Líderes, gestores e RH</li></ul><p><strong>Como estudar:</strong> avance pelos módulos na barra lateral e marque cada um como concluído ao finalizar a leitura.</p>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Objetivos de aprendizagem",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 3,
+          "articleHtml": "<h2>Objetivos de aprendizagem</h2><p>Ao concluir este conteúdo, você será capaz de:</p><ul><li><strong>Diferenciar</strong> gestão de pessoas e a função do RH.</li><li><strong>Identificar</strong> as responsabilidades do líder no dia a dia.</li><li><strong>Reconhecer</strong> o RH como parceiro estratégico.</li><li><strong>Aplicar</strong> a divisão de papéis em situações reais.</li><li><strong>Compreender</strong> que pessoas e negócio caminham juntos.</li></ul><p><strong>Para refletir:</strong> Quem você acha que é o principal responsável pela gestão das pessoas do seu time?</p>"
+        },
+        {
+          "sortOrder": 3,
+          "title": "O que é gestão de pessoas?",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 4,
+          "articleHtml": "<h2>O que é gestão de pessoas?</h2><img src=\"/unilio/courses/gestao-pessoas-lider-rh/assets/modulo-1-gestao-pessoas.png\" alt=\"Jornada do colaborador\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><p>Gestão de pessoas é uma <strong>prática ampla de gestão</strong>: administração, coordenação e organização do trabalho, acompanhando a <strong>jornada do colaborador</strong>.</p><table><thead><tr><th>Categoria</th><th>Exemplos</th></tr></thead><tbody><tr><td><strong>Ciclo de vida</strong></td><td>Recrutamento, integração, desenvolvimento, desligamento</td></tr><tr><td><strong>Desempenho</strong></td><td>Feedback, avaliação, metas</td></tr><tr><td><strong>Desenvolvimento</strong></td><td>Treinamentos, capacitação, PDI</td></tr><tr><td><strong>Operação</strong></td><td>Férias, horas extras, ponto</td></tr></tbody></table><p><strong>Ponto-chave:</strong> Gestão de pessoas ≠ RH. O RH apoia; a gestão acontece na linha de frente.</p>"
+        },
+        {
+          "sortOrder": 4,
+          "title": "Papel do líder",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 4,
+          "articleHtml": "<h2>Quem é o principal responsável?</h2><img src=\"/unilio/courses/gestao-pessoas-lider-rh/assets/modulo-2-lideranca.png\" alt=\"Líder conduzindo equipe\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><p><strong>A liderança é a principal responsável</strong> pela gestão das pessoas no negócio.</p><ul><li>Conhece contexto e dinâmicas do time</li><li>Acompanha desempenho e comportamento</li><li>Dá feedback e orienta continuamente</li><li>Define e acompanha metas</li><li>Identifica sinais de sobrecarga ou desmotivação</li></ul><p><strong>Na Liotecnica:</strong> Desempenho abaixo do esperado? A primeira conversa é <strong>sua responsabilidade como líder</strong>, com apoio do RH.</p>"
+        },
+        {
+          "sortOrder": 5,
+          "title": "Papel do RH",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 4,
+          "articleHtml": "<h2>Qual é o papel do RH?</h2><img src=\"/unilio/courses/gestao-pessoas-lider-rh/assets/modulo-3-papel-rh.png\" alt=\"RH como parceiro estratégico\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><h3>Parceiro estratégico</h3><ul><li>Ferramentas, métodos e frameworks para a liderança</li><li>Políticas e padrões (benefícios, jornada, compliance)</li><li>Indicadores, relatórios e alertas</li></ul><h3>Operador de processos</h3><ul><li>Admissão, folha, benefícios, ponto</li><li>Conformidade legal e sindical</li><li>Sistemas e fluxos do dia a dia</li></ul><p>Os nomes mudam (RH, Gente &amp; Gestão, Pessoas e Cultura), mas a essência é <strong>estruturar para a liderança gerir com qualidade</strong>.</p>"
+        },
+        {
+          "sortOrder": 6,
+          "title": "Divisão de papéis na prática",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 4,
+          "articleHtml": "<h2>Divisão de papéis na prática</h2><img src=\"/unilio/courses/gestao-pessoas-lider-rh/assets/modulo-4-divisao-papeis.png\" alt=\"Líder e RH com papéis complementares\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><h3>Exemplo: controle de jornada</h3><table><thead><tr><th>Agente</th><th>Responsabilidade</th></tr></thead><tbody><tr><td><strong>Líder</strong></td><td>Acompanha atrasos, horas extras, sobrecarga no dia a dia</td></tr><tr><td><strong>RH</strong></td><td>Painéis, alertas, políticas e conformidade legal</td></tr></tbody></table><p><strong>O líder gerencia. O RH equipa e padroniza.</strong></p><table><thead><tr><th>Situação</th><th>Líder</th><th>RH</th></tr></thead><tbody><tr><td>Feedback</td><td>Conduz e acompanha</td><td>Modelo e calendário</td></tr><tr><td>Treinamento</td><td>Identifica e aplica</td><td>Conteúdos no UniLio</td></tr><tr><td>Desligamento</td><td>Comunica ao time</td><td>Processo legal</td></tr></tbody></table>"
+        },
+        {
+          "sortOrder": 7,
+          "title": "Objetivo comum: pessoas e negócio",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 3,
+          "articleHtml": "<h2>Objetivo comum: pessoas e negócio</h2><img src=\"/unilio/courses/gestao-pessoas-lider-rh/assets/modulo-5-objetivo-comum.png\" alt=\"Pessoas e negócio juntos\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><p>Objetivo único: gerar o melhor resultado <strong>para as pessoas e para o negócio</strong>.</p><p>GESTÃO DE PESSOAS — jornada, desempenho, desenvolvimento<br/>LÍDER → dia a dia · RH → ferramentas + políticas<br/>OBJETIVO COMUM → Pessoas + Negócio</p><h3>Sinais de alerta</h3><ul><li>\"Gestão de pessoas é problema do RH\"</li><li>\"O gestor não faz a parte dele\"</li><li>Processos existem no papel, mas não são usados</li></ul>"
+        },
+        {
+          "sortOrder": 8,
+          "title": "Vídeo complementar",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=jiUotcPVPdc",
+          "durationMinutes": 6
+        },
+        {
+          "sortOrder": 9,
+          "title": "Reflexão guiada",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 5,
+          "articleHtml": "<h2>Reflexão guiada</h2><p>Reserve alguns minutos para pensar sobre sua realidade antes de seguir para a avaliação. Anote suas respostas em um caderno ou documento pessoal.</p><h3>1. Papéis no dia a dia</h3><p>No seu time hoje, quais atividades de gestão de pessoas você executa diretamente? Quais delega ou espera que o RH resolva?</p><h3>2. Caso recente</h3><p>Pense em um caso recente (feedback, hora extra, desempenho). Quem deveria ter agido — líder, RH ou ambos? O que aconteceu?</p><h3>3. Próximos passos</h3><p>O que você pode fazer diferente a partir desta semana para fortalecer a parceria com o RH?</p>"
+        },
+        {
+          "sortOrder": 10,
+          "title": "Avaliação final",
+          "contentType": "quiz",
+          "contentUrl": null,
+          "durationMinutes": 8,
+          "quizJson": "{\"passingScore\":80,\"questions\":[{\"id\":\"q1\",\"text\":\"Gestão de pessoas e RH são a mesma coisa?\",\"options\":[{\"id\":\"a\",\"label\":\"Sim, são sinônimos\"},{\"id\":\"b\",\"label\":\"Não — gestão de pessoas é mais ampla; RH apoia e estrutura\"}],\"correctAnswer\":\"b\"},{\"id\":\"q2\",\"text\":\"Quem é o principal responsável pela gestão das pessoas no dia a dia?\",\"options\":[{\"id\":\"a\",\"label\":\"RH\"},{\"id\":\"b\",\"label\":\"Liderança\"},{\"id\":\"c\",\"label\":\"Diretoria\"}],\"correctAnswer\":\"b\"},{\"id\":\"q3\",\"text\":\"Qual é um papel típico do RH em controle de jornada?\",\"options\":[{\"id\":\"a\",\"label\":\"Substituir o líder no acompanhamento diário\"},{\"id\":\"b\",\"label\":\"Definir políticas, fornecer indicadores e alertas\"},{\"id\":\"c\",\"label\":\"Aplicar advertências diretamente\"}],\"correctAnswer\":\"b\"},{\"id\":\"q4\",\"text\":\"O objetivo comum de líderes e RH é:\",\"options\":[{\"id\":\"a\",\"label\":\"Reduzir custos com pessoas\"},{\"id\":\"b\",\"label\":\"Cumprir apenas exigências legais\"},{\"id\":\"c\",\"label\":\"Gerar o melhor resultado para pessoas e para o negócio\"}],\"correctAnswer\":\"c\"},{\"id\":\"q5\",\"text\":\"Um sinal de parceria saudável entre líder e RH é:\",\"options\":[{\"id\":\"a\",\"label\":\"Líder ignora processos e resolve tudo informalmente\"},{\"id\":\"b\",\"label\":\"RH decide sobre o time sem envolver o gestor\"},{\"id\":\"c\",\"label\":\"Líder usa ferramentas e políticas do RH no dia a dia\"}],\"correctAnswer\":\"c\"}]}"
+        }
+      ]
+    },
+    {
+      "seedKey": "curso-rh-agil-catharino",
+      "thumbnailUrl": "/unilio/courses/rh-agil-catharino/assets/hero-rh-agil.png",
+      "description": "Mindset ágil, MVP, inovação e cases práticos de transformação do RH — com base na entrevista de Antônio Catharino (Foursales / Serasa Experian).",
+      "durationMinutes": 35,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Introdução",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 3,
+          "articleHtml": "<p><em>Trilha · Gestão de Pessoas e Liderança · Módulo 2</em></p><img src=\"/unilio/courses/rh-agil-catharino/assets/hero-rh-agil.png\" alt=\"RH ágil e adaptação às mudanças\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><h2>RH Ágil: como se adaptar rápido às mudanças</h2><p>Com base na entrevista com <strong>Antônio Catharino</strong> (CHRO, Serasa Experian) no programa Gestão de Pessoas — Foursales. Aprenda mindset ágil, MVP, inovação e cases práticos de transformação do RH.</p><ul><li>⏱ 20 min de leitura + vídeo completo</li><li>👥 RH, liderança e TI</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Objetivos de aprendizagem",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 3,
+          "articleHtml": "<h2>Objetivos de aprendizagem</h2><p>Ao concluir este conteúdo, você será capaz de:</p><ul><li><strong>Compreender</strong> o que significa RH ágil — mindset de resposta rápida ao negócio.</li><li><strong>Diferenciar</strong> cultura ágil de metodologia aplicada de forma rígida.</li><li><strong>Aplicar</strong> conceitos de MVP, inception e entregas incrementais no RH.</li><li><strong>Identificar</strong> subsistemas de RH com maior ganho imediato (recrutamento, shared services).</li><li><strong>Relacionar</strong> inovação, usabilidade e protagonismo do RH diante de crises.</li></ul><p><strong>Para refletir:</strong> O RH da sua empresa responde às demandas do negócio com a velocidade necessária?</p>"
+        },
+        {
+          "sortOrder": 3,
+          "title": "O que é RH ágil",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 4,
+          "articleHtml": "<h2>O que é RH ágil?</h2><img src=\"/unilio/courses/rh-agil-catharino/assets/modulo-1-rh-agil-mindset.png\" alt=\"Mindset ágil no RH\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><p>Para Antônio Catharino, ser ágil é criar uma <strong>organização inserida</strong> no contexto certo para <strong>adaptar-se às necessidades do negócio de forma rápida e eficiente</strong>.</p><p>O mundo é cada vez mais <strong>VUCA</strong> (volátil, incerto, complexo e ambíguo). A pandemia acelerou isso — trabalho remoto virou exemplo de resposta ágil em semanas.</p><table><thead><tr><th>Princípio</th><th>Na prática</th></tr></thead><tbody><tr><td><strong>Velocidade</strong></td><td>Respostas rápidas às demandas do negócio</td></tr><tr><td><strong>Valor</strong></td><td>Evitar projetos longos que chegam desatualizados</td></tr><tr><td><strong>Mindset</strong></td><td>Mudança de mentalidade — não só ferramentas</td></tr><tr><td><strong>Integração</strong></td><td>RH trabalha para dentro e para fora da organização</td></tr></tbody></table><p><strong>Ponto-chave:</strong> RH ágil = mindset de adaptação rápida + geração de valor para pessoas e rentabilidade do negócio.</p>"
+        },
+        {
+          "sortOrder": 4,
+          "title": "Cultura ágil vs metodologia",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 4,
+          "articleHtml": "<h2>Cultura ágil vs. metodologia</h2><img src=\"/unilio/courses/rh-agil-catharino/assets/modulo-2-cultura-agil.png\" alt=\"Cultura ágil versus metodologia rígida\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><p>Antônio tira a palavra <strong>\"metodologia\"</strong> da equação e coloca <strong>\"cultura ágil\"</strong> — ela pode entrar em qualquer lugar, inclusive na vida pessoal.</p><p><strong>Erro comum:</strong> tentar implantar Scrum/Kanban 100% fiel à metodologia, de forma forçada. Na Serasa, a área de RH chegou a usar Kanban, percebeu que não tinha preparo para 100% ágil e recalibraram.</p><ul><li>Cultura de MVP — entregar o mínimo viável e evoluir</li><li>Menos burocracia, mais simplicidade</li><li>Melhoria contínua no \"sangue\" do time</li><li>Permitir falhas sem \"matar\" o profissional inovador</li></ul><p><strong>Lição:</strong> Não force metodologia. Plante cultura ágil gradualmente no contexto da sua organização.</p>"
+        },
+        {
+          "sortOrder": 5,
+          "title": "Práticas MVP e autonomia",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 4,
+          "articleHtml": "<h2>Práticas: MVP, inception e autonomia</h2><img src=\"/unilio/courses/rh-agil-catharino/assets/modulo-3-praticas-mvp.png\" alt=\"Workshop inception e MVP\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><h3>Dentro e fora do RH</h3><p>Na Serasa, times de tecnologia já operam em ágil. O RH aprendeu a replicar o modelo em processos de negócio — com <strong>inception</strong> (workshop de 2 dias para desenhar o processo ideal) e definição de <strong>MVP</strong>.</p><h3>Case Oracle HCM — velocidade</h3><p>Primeiro go-live de Oracle em <strong>3 meses</strong> (antes, projetos similares levavam 1,5 ano). Decisão pragmática: manter salário anual no sistema em vez de atrasar o projeto por customização — adaptação em 1 semana.</p><ul><li>Times multifuncionais com autonomia para decidir</li><li>Líder valida — não microgerencia cada detalhe</li><li>Entrega fase 1 → correções na sprint seguinte</li><li>Confiança no time é pré-requisito</li></ul>"
+        },
+        {
+          "sortOrder": 6,
+          "title": "Onde aplicar primeiro",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 4,
+          "articleHtml": "<h2>Onde aplicar ágil primeiro?</h2><img src=\"/unilio/courses/rh-agil-catharino/assets/modulo-4-recrutamento-services.png\" alt=\"Recrutamento ágil e shared services\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><p>Antônio aponta dois subsistemas com <strong>maior ganho imediato</strong>:</p><table><thead><tr><th>Área</th><th>Por quê</th><th>Meta</th></tr></thead><tbody><tr><td><strong>Recrutamento</strong></td><td>Guerra por talentos; experiência do candidato ponta a ponta</td><td>De 60 dias para ~1 semana (tech)</td></tr><tr><td><strong>Shared Services</strong></td><td>Processos transacionais lentos (admissão, férias, promoção)</td><td>Experiência mobile, ordem natural sem burocracia</td></tr></tbody></table><p><strong>Ordem natural:</strong> admissão → recrutamento → demissão → promoção → transferência → férias. Se o básico transacional não funciona, nada mais funciona.</p><p>Cultura ágil precisa <strong>permear a organização inteira</strong> — não ficar isolada no RH.</p>"
+        },
+        {
+          "sortOrder": 7,
+          "title": "Inovação e tecnologia",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 4,
+          "articleHtml": "<h2>Inovação, front-end e usabilidade</h2><img src=\"/unilio/courses/rh-agil-catharino/assets/modulo-5-inovacao-tech.png\" alt=\"Inovação e experiência digital no RH\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><p>Inovação é <strong>cultura</strong>, não projeto pontual. Na Serasa, toda quinta-feira há reunião dedicada — parte operacional, parte inovação.</p><h3>Front-end sobre back-end robusto</h3><p>ERP (Oracle) como backend + <strong>front-end customizado</strong> para o usuário. Exemplo: abrir vaga de recrutamento em <strong>1 minuto</strong> via formulário simples, enquanto o ATS roda por trás.</p><ul><li>Usabilidade = adesão à mudança de processo</li><li>Front-end ágil permite ajustes em semanas, não meses</li><li>Líderes de frente trazem tendências do mercado (1 slide, não 1h de pitch)</li><li>Tecnologia serve a experiência — não o contrário</li></ul><p><strong>Dica prática:</strong> Abra a cabeça — muita coisa no RH se repete há 20 anos. Há espaço para inovar dentro das restrições legais.</p>"
+        },
+        {
+          "sortOrder": 8,
+          "title": "Case Oracle e protagonismo",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 4,
+          "articleHtml": "<h2>Case Oracle + protagonismo na crise</h2><img src=\"/unilio/courses/rh-agil-catharino/assets/modulo-6-case-oracle.png\" alt=\"Case de transformação digital RH\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><h3>Resultados do Oracle HCM na Serasa</h3><ul><li>Go-live em 3 meses com time multifuncional de alta autonomia</li><li>Fase 1 rodando; fase 2 em andamento</li><li>Comunicação intensa para a organização sentir a mudança cultural</li><li>Priorizar o que vale a pena \"brigar\" — deixar o resto para sprints futuras</li></ul><h3>Protagonismo: fábrica em chamas (PepsiCo, 2008)</h3><p>Antônio pediu tempo antes de demitir 600 pessoas após incêndio na fábrica. Montou squads multifuncionais, realocou talentos, treinou com Sebrae — entregou <strong>200% de bônus</strong> no ano e ganhou prêmio internacional.</p><p><strong>Mensagem final:</strong> Levante a mão. Tenha senso de dono. Comece com MVP, entregue rápido, evolua incrementalmente.</p>"
+        },
+        {
+          "sortOrder": 9,
+          "title": "Vídeo completo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/live/pfDNiSea1GQ",
+          "durationMinutes": 10
+        },
+        {
+          "sortOrder": 10,
+          "title": "Reflexão guiada",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 5,
+          "articleHtml": "<h2>Reflexão guiada</h2><p>Antes da avaliação final, reflita sobre como aplicar RH ágil na sua realidade. Anote suas respostas em um caderno ou documento pessoal.</p><h3>1. Gargalos de agilidade</h3><p>Qual processo do RH na sua empresa demora demais para responder ao negócio? O que impede a agilidade?</p><h3>2. MVP possível</h3><p>Existe algum projeto de RH que poderia ser entregue como MVP em semanas, em vez de meses? Qual seria a versão mínima?</p><h3>3. Ação esta semana</h3><p>O que você pode fazer esta semana para plantar cultura ágil no seu time — sem esperar um projeto grande?</p>"
+        },
+        {
+          "sortOrder": 11,
+          "title": "Avaliação final",
+          "contentType": "quiz",
+          "contentUrl": null,
+          "durationMinutes": 8,
+          "quizJson": "{\"passingScore\":80,\"questions\":[{\"id\":\"q1\",\"text\":\"Segundo Antônio Catharino, RH ágil é principalmente:\",\"options\":[{\"id\":\"a\",\"label\":\"Implantar Scrum/Kanban 100% fiel ao manual\"},{\"id\":\"b\",\"label\":\"Mindset de adaptação rápida às necessidades do negócio\"}],\"correctAnswer\":\"b\"},{\"id\":\"q2\",\"text\":\"Quais subsistemas de RH Antônio aponta com maior ganho imediato de agilidade?\",\"options\":[{\"id\":\"a\",\"label\":\"Folha de pagamento e compliance\"},{\"id\":\"b\",\"label\":\"Treinamento e clima organizacional\"},{\"id\":\"c\",\"label\":\"Recrutamento e shared services (processos transacionais)\"}],\"correctAnswer\":\"c\"},{\"id\":\"q3\",\"text\":\"O que é inception no contexto da Serasa?\",\"options\":[{\"id\":\"a\",\"label\":\"Workshop para desenhar o processo ideal antes de definir o MVP\"},{\"id\":\"b\",\"label\":\"Auditoria anual de conformidade trabalhista\"},{\"id\":\"c\",\"label\":\"Treinamento obrigatório de metodologia Scrum\"}],\"correctAnswer\":\"a\"},{\"id\":\"q4\",\"text\":\"Por que a Serasa investe em front-end customizado sobre o ERP?\",\"options\":[{\"id\":\"a\",\"label\":\"Para substituir completamente o sistema backend\"},{\"id\":\"b\",\"label\":\"Para oferecer experiência simples, rápida e com alta adesão do usuário\"},{\"id\":\"c\",\"label\":\"Para cumprir exigências legais de auditoria\"}],\"correctAnswer\":\"b\"},{\"id\":\"q5\",\"text\":\"Qual é a dica prática de Antônio para implementar ágil no RH?\",\"options\":[{\"id\":\"a\",\"label\":\"Esperar aprovação de um projeto de 2 anos antes de começar\"},{\"id\":\"b\",\"label\":\"Copiar exatamente a metodologia de empresas de tecnologia\"},{\"id\":\"c\",\"label\":\"Começar com MVP — entregar rápido e evoluir incrementalmente\"}],\"correctAnswer\":\"c\"}]}"
+        }
+      ]
+    },
+    {
+      "seedKey": "curso-devops-github-actions",
+      "thumbnailUrl": "/unilio/courses/devops-github-actions/assets/hero-devops-github.png",
+      "description": "Fluxo DevOps automatizado com GitHub Actions — pipeline CI/CD do zero ao deploy. Baseado no tutorial de Fernanda Kipper (Kipper Dev). Leitura guiada, vídeo completo e avaliação final.",
+      "durationMinutes": 45,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Introdução",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 3,
+          "articleHtml": "<p><em>Trilha · Tecnologia · DevOps</em></p><img src=\"/unilio/courses/devops-github-actions/assets/hero-devops-github.png\" alt=\"DevOps com GitHub Actions\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><h2>DevOps com GitHub Actions: pipeline CI/CD</h2><p>Aprenda a automatizar integração contínua e deploy com <strong>GitHub Actions</strong> — a ferramenta nativa do GitHub para pipelines de software.</p><ul><li>⏱ 30 min de leitura + vídeo completo (~1h30)</li><li>👥 Desenvolvedores, analistas de TI e líderes técnicos</li><li>📺 Baseado em <strong>Fernanda Kipper | Dev</strong></li></ul><p><strong>Como estudar:</strong> avance pelos módulos na barra lateral. O vídeo complementa a prática hands-on do tutorial original.</p>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Objetivos de aprendizagem",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 3,
+          "articleHtml": "<h2>Objetivos de aprendizagem</h2><p>Ao concluir este conteúdo, você será capaz de:</p><ul><li><strong>Explicar</strong> o que é DevOps, CI e CD no contexto de entrega de software.</li><li><strong>Identificar</strong> triggers, jobs e steps em um workflow do GitHub Actions.</li><li><strong>Configurar</strong> uma pipeline de integração contínua (install, build, test).</li><li><strong>Reutilizar</strong> actions do Marketplace para acelerar a automação.</li><li><strong>Separar</strong> workflows por ambiente (beta, produção) e validar Pull Requests antes do merge.</li></ul><p><strong>Para refletir:</strong> Hoje o deploy do seu time é manual ou automatizado?</p>"
+        },
+        {
+          "sortOrder": 3,
+          "title": "DevOps, CI/CD e GitHub Actions",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 5,
+          "articleHtml": "<h2>DevOps, CI/CD e GitHub Actions</h2><img src=\"/unilio/courses/devops-github-actions/assets/modulo-1-conceitos-cicd.png\" alt=\"Fluxo DevOps CI/CD\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><p><strong>GitHub Actions</strong> permite automatizar processos a partir de eventos no repositório: push, merge, abertura de issue, comentário e muito mais.</p><h3>O que é uma pipeline?</h3><p>Um <strong>script automatizado</strong> acionado por um gatilho (trigger). Toda vez que o evento configurado ocorre, o workflow executa as etapas definidas.</p><table><thead><tr><th>Conceito</th><th>Significado</th></tr></thead><tbody><tr><td><strong>CI</strong> (Continuous Integration)</td><td>Testar continuamente se o código integrado ainda funciona (build, testes unitários)</td></tr><tr><td><strong>CD</strong> (Continuous Delivery/Deploy)</td><td>Entregar/deployar continuamente quando o código estável chega na branch principal</td></tr><tr><td><strong>Trigger</strong></td><td>Evento que dispara o workflow (ex.: push na main, merge na beta)</td></tr></tbody></table><h3>Exemplos reais</h3><ul><li><strong>Vercel:</strong> deploy automático em merge + preview em Pull Request</li><li><strong>AWS Lambda:</strong> zip do código enviado automaticamente após build</li><li><strong>Qualquer stack:</strong> front, back, mobile, data science — GitHub Actions funciona para todos</li></ul><p><strong>Ponto-chave:</strong> Pipeline bem configurada elimina deploy manual, reduz erros humanos e garante que testes rodem antes de ir para produção.</p>"
+        },
+        {
+          "sortOrder": 4,
+          "title": "Estrutura de workflows (YAML)",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 5,
+          "articleHtml": "<h2>Estrutura de workflows em YAML</h2><img src=\"/unilio/courses/devops-github-actions/assets/modulo-2-estrutura-workflow.png\" alt=\"Estrutura .github/workflows\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><p>Workflows ficam obrigatoriamente em <code>.github/workflows/</code>, com extensão <code>.yml</code> ou <code>.yaml</code>.</p><h3>Anatomia de um workflow</h3><pre><code>name: CI Pipeline\non:\n  push:\n    branches: [main]\njobs:\n  build-and-test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm test</code></pre><table><thead><tr><th>Elemento</th><th>Função</th></tr></thead><tbody><tr><td><code>name</code></td><td>Nome exibido na aba Actions do GitHub</td></tr><tr><td><code>on</code></td><td>Quando executar (push, pull_request, schedule…)</td></tr><tr><td><code>jobs</code></td><td>Etapas macro da pipeline</td></tr><tr><td><code>runs-on</code></td><td>Runner (ubuntu-latest, windows-latest, macos-latest)</td></tr><tr><td><code>steps</code></td><td>Micro-etapas dentro de cada job</td></tr></tbody></table><h3>Jobs vs Steps</h3><p><strong>Job</strong> = etapa macro (ex.: rodar testes unitários). <strong>Steps</strong> = micro-etapas (checkout → setup Node → install → test). Jobs sem <code>needs</code> rodam em paralelo; use <code>needs: [job-anterior]</code> para dependências.</p><p><strong>Importante:</strong> o runner começa vazio — você precisa baixar código, instalar runtime e dependências em cada job.</p>"
+        },
+        {
+          "sortOrder": 5,
+          "title": "Criando sua pipeline de CI",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 6,
+          "articleHtml": "<h2>Criando sua pipeline de CI</h2><img src=\"/unilio/courses/devops-github-actions/assets/modulo-3-pipeline-ci.png\" alt=\"Pipeline install build test\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><p>Pipeline típica de integração contínua segue esta sequência:</p><ol><li><strong>Checkout</strong> — clonar o repositório na branch do evento</li><li><strong>Setup</strong> — configurar runtime (Node, Java, Go…)</li><li><strong>Install</strong> — instalar dependências (<code>npm ci</code>, <code>pip install</code>…)</li><li><strong>Build</strong> — compilar/empacotar a aplicação</li><li><strong>Test</strong> — executar testes unitários e de integração</li></ol><pre><code>name: CI Pipeline\non: [push, pull_request]\njobs:\n  build-and-test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with:\n          node-version: 22\n      - run: npm ci\n        working-directory: ./src\n      - run: npm test\n        working-directory: ./src</code></pre><h3>Deploy (CD)</h3><p>Após o build, o CD pode: gerar zip (ex.: AWS Lambda), fazer upload para S3, publicar em VPS ou acionar action de deploy. Cada projeto tem etapas específicas — mapeie o que você faz manualmente hoje e transforme em <code>run</code> ou <code>uses</code>.</p><p><strong>Segurança:</strong> nunca commite credenciais no YAML. Use <code>${{ secrets.NOME_DA_SECRET }}</code> configurada em Settings → Secrets and variables → Actions.</p>"
+        },
+        {
+          "sortOrder": 6,
+          "title": "Reutilizando Actions do Marketplace",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 5,
+          "articleHtml": "<h2>Reutilizando Actions do Marketplace</h2><img src=\"/unilio/courses/devops-github-actions/assets/modulo-4-marketplace-actions.png\" alt=\"GitHub Actions Marketplace\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><p>Em vez de reinventar a roda, reutilize <strong>actions prontas</strong> com <code>uses:</code>:</p><table><thead><tr><th>Action</th><th>Função</th></tr></thead><tbody><tr><td><code>actions/checkout@v4</code></td><td>Clonar repositório (git clone + checkout da branch)</td></tr><tr><td><code>actions/setup-node@v4</code></td><td>Instalar Node.js em versão específica</td></tr><tr><td><code>actions/setup-java@v4</code></td><td>Configurar JDK</td></tr><tr><td>Actions oficiais AWS/Azure/Docker</td><td>Deploy e integração com cloud (badge verified)</td></tr></tbody></table><h3>uses vs run</h3><ul><li><code>uses: actions/checkout@v4</code> — executa action reutilizável (com parâmetros em <code>with:</code>)</li><li><code>run: npm install</code> — comando shell direto no runner</li></ul><h3>Boas práticas de segurança</h3><ul><li>Prefira actions <strong>oficiais do GitHub</strong> e de empresas verificadas (badge ✓)</li><li>Actions da comunidade: avalie mantenedor, stars e atualizações</li><li>Empresas podem criar actions internas reutilizáveis em todos os projetos</li></ul><p><strong>Na Liotecnica:</strong> padronizar actions internas de deploy reduz duplicação e acelera onboarding de novos repositórios.</p>"
+        },
+        {
+          "sortOrder": 7,
+          "title": "Múltiplos workflows",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 4,
+          "articleHtml": "<h2>Múltiplos workflows no mesmo repositório</h2><img src=\"/unilio/courses/devops-github-actions/assets/modulo-5-multiplos-workflows.png\" alt=\"Workflows separados por ambiente\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><p>Um mesmo evento (ex.: push na beta) pode disparar <strong>vários workflows</strong> simultaneamente — cada arquivo em <code>.github/workflows/</code> é independente.</p><h3>Estratégia por ambiente</h3><table><thead><tr><th>Arquivo</th><th>Branch</th><th>Propósito</th></tr></thead><tbody><tr><td><code>beta-deploy.yml</code></td><td>beta</td><td>Deploy em ambiente de homologação/teste</td></tr><tr><td><code>production-deploy.yml</code></td><td>main</td><td>Deploy em produção</td></tr><tr><td><code>ci-tests.yml</code></td><td>todas</td><td>Testes em qualquer push</td></tr></tbody></table><p>Cada ambiente pode ter variáveis, secrets e etapas diferentes (ex.: banco de homologação vs produção).</p><h3>Proteção de branches</h3><p>Configure <strong>branch protection rules</strong>: exigir Pull Request, aprovações de code owners (<code>CODEOWNERS</code>) e que a pipeline passe antes do merge. Assim, deploy não é acionado por push direto indevido.</p><p><strong>Ponto-chave:</strong> segregar jobs permite paralelizar (testes + deploy) e reaproveitar etapas com <code>needs</code>.</p>"
+        },
+        {
+          "sortOrder": 8,
+          "title": "Pipeline para Pull Requests",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 5,
+          "articleHtml": "<h2>Pipeline para Pull Requests</h2><img src=\"/unilio/courses/devops-github-actions/assets/modulo-6-pull-request.png\" alt=\"Validação em Pull Request\" style=\"max-width:100%;border-radius:8px;margin:12px 0\" /><p>Workflow de PR valida o código <strong>antes do merge</strong> — impedindo que código quebrado entre na branch protegida.</p><pre><code>name: Pull Request CI\non:\n  pull_request:\n    branches: [main, beta]\njobs:\n  validate:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with:\n          node-version: 22\n      - run: npm ci\n      - run: npm test</code></pre><h3>Integração com branch rules</h3><p>Em Settings → Branches → Branch protection:</p><ul><li>Require pull request before merging</li><li>Require status checks to pass (selecione o workflow de PR)</li><li>Require review from CODEOWNERS</li></ul><p>Se a pipeline falhar (ex.: teste quebrado, build com erro), o botão de merge fica bloqueado — exatamente o comportamento esperado de CI.</p><p><strong>Exemplo Vercel:</strong> cada PR gera um ambiente de preview automaticamente. O mesmo princípio se aplica a qualquer stack com GitHub Actions.</p>"
+        },
+        {
+          "sortOrder": 9,
+          "title": "Vídeo completo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=df_WMXk7JxE",
+          "durationMinutes": 92
+        },
+        {
+          "sortOrder": 10,
+          "title": "Reflexão guiada",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 5,
+          "articleHtml": "<h2>Reflexão guiada</h2><p>Antes da avaliação final, reflita sobre o fluxo DevOps do seu time. Anote suas respostas em um caderno ou documento pessoal.</p><h3>1. Estado atual</h3><p>Como o deploy é feito hoje no seu projeto ou área? Quais etapas são manuais e poderiam ser automatizadas?</p><h3>2. Primeiro workflow</h3><p>Se você criasse um workflow amanhã, qual seria o trigger (push, PR, merge) e quais steps incluiria?</p><h3>3. Segurança e governança</h3><p>Onde as credenciais de deploy estão hoje? O time usa branch protection e revisão de PR antes de ir para produção?</p>"
+        },
+        {
+          "sortOrder": 11,
+          "title": "Avaliação final",
+          "contentType": "quiz",
+          "contentUrl": null,
+          "durationMinutes": 8,
+          "quizJson": "{\"passingScore\":80,\"questions\":[{\"id\":\"q1\",\"text\":\"Onde os arquivos de workflow do GitHub Actions devem ficar no repositório?\",\"options\":[{\"id\":\"a\",\"label\":\"Na raiz do projeto, como pipeline.yml\"},{\"id\":\"b\",\"label\":\"Em .github/workflows/ com extensão .yml ou .yaml\"}],\"correctAnswer\":\"b\"},{\"id\":\"q2\",\"text\":\"O que significa CI (Continuous Integration)?\",\"options\":[{\"id\":\"a\",\"label\":\"Deploy automático sempre que alguém faz push\"},{\"id\":\"b\",\"label\":\"Verificar continuamente se o código integrado ainda funciona (build e testes)\"},{\"id\":\"c\",\"label\":\"Integrar apenas no final do sprint\"}],\"correctAnswer\":\"b\"},{\"id\":\"q3\",\"text\":\"Qual é a forma correta de usar credenciais sensíveis em um workflow?\",\"options\":[{\"id\":\"a\",\"label\":\"Escrever diretamente no arquivo YAML\"},{\"id\":\"b\",\"label\":\"Usar secrets do repositório (${{ secrets.NOME }})\"},{\"id\":\"c\",\"label\":\"Enviar por e-mail para o time de DevOps\"}],\"correctAnswer\":\"b\"},{\"id\":\"q4\",\"text\":\"Para que serve actions/checkout@v4 em um step?\",\"options\":[{\"id\":\"a\",\"label\":\"Publicar o código no npm\"},{\"id\":\"b\",\"label\":\"Clonar o repositório e fazer checkout da branch do evento\"},{\"id\":\"c\",\"label\":\"Aprovar automaticamente Pull Requests\"}],\"correctAnswer\":\"b\"},{\"id\":\"q5\",\"text\":\"Por que configurar um workflow com on: pull_request?\",\"options\":[{\"id\":\"a\",\"label\":\"Para fazer deploy direto em produção sem revisão\"},{\"id\":\"b\",\"label\":\"Para validar o código antes do merge e bloquear PRs com falhas\"},{\"id\":\"c\",\"label\":\"Para desabilitar testes automatizados\"}],\"correctAnswer\":\"b\"}]}"
+        }
+      ]
+    }
+  ]
+}

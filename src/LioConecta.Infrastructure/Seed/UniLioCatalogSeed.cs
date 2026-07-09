@@ -112,6 +112,9 @@ internal sealed record UniLioContentOverlayFile(
     int Version,
     IReadOnlyList<UniLioCourseSeed> Courses);
 
+internal sealed record UniLioNewCoursesOverlayFile(
+    IReadOnlyList<UniLioCourseSeed> Courses);
+
 internal static class UniLioCatalogSeed
 {
     // Stable GUID maps — mirrored in SeedIds.cs (UniLio section) for idempotent seeding.
@@ -143,6 +146,9 @@ internal static class UniLioCatalogSeed
         ["seguranca-informacao"] = Guid.Parse("22222222-2222-2222-2222-222222220018"),
         ["feedback-efetivo"] = Guid.Parse("22222222-2222-2222-2222-222222220019"),
         ["onboarding-liotecnica"] = Guid.Parse("22222222-2222-2222-2222-22222222001a"),
+        ["curso-gestao-pessoas-lider-rh"] = Guid.Parse("22222222-2222-2222-2222-22222222001b"),
+        ["curso-rh-agil-catharino"] = Guid.Parse("22222222-2222-2222-2222-22222222001c"),
+        ["curso-devops-github-actions"] = Guid.Parse("22222222-2222-2222-2222-22222222001d"),
     };
 
     private static readonly IReadOnlyDictionary<string, Guid> PathIds = new Dictionary<string, Guid>(StringComparer.Ordinal)
@@ -164,6 +170,7 @@ internal static class UniLioCatalogSeed
         ["excel"] = Guid.Parse("44444444-4444-4444-4444-444444440006"),
         ["lgpd"] = Guid.Parse("44444444-4444-4444-4444-444444440007"),
         ["seguranca-trabalho"] = Guid.Parse("44444444-4444-4444-4444-444444440008"),
+        ["devops-cicd"] = Guid.Parse("44444444-4444-4444-4444-444444440009"),
     };
 
     private static readonly IReadOnlyDictionary<string, Guid> AssessmentIds = new Dictionary<string, Guid>(StringComparer.Ordinal)
@@ -245,7 +252,30 @@ internal static class UniLioCatalogSeed
             payload = MergeContentOverlay(payload, overlay);
         }
 
+        var newCoursesOverlay = TryLoadNewCoursesOverlay();
+        if (newCoursesOverlay is not null)
+        {
+            payload = MergeContentOverlay(payload, new UniLioContentOverlayFile(0, newCoursesOverlay.Courses));
+        }
+
         return payload;
+    }
+
+    private static UniLioNewCoursesOverlayFile? TryLoadNewCoursesOverlay()
+    {
+        var candidates = new[]
+        {
+            Path.Combine(AppContext.BaseDirectory, "Seed", "Data", "unilio-new-courses-overlay.json"),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Seed", "Data", "unilio-new-courses-overlay.json")),
+        };
+
+        var path = candidates.FirstOrDefault(File.Exists);
+        if (path is null)
+        {
+            return null;
+        }
+
+        return JsonSerializer.Deserialize<UniLioNewCoursesOverlayFile>(File.ReadAllText(path), JsonOptions);
     }
 
     private static UniLioContentOverlayFile? TryLoadContentOverlay()
@@ -407,6 +437,95 @@ internal static class UniLioCatalogSeed
         return updatedCourses;
     }
 
+    public static async Task<int> SyncMissingCatalogAsync(AppDbContext db, CancellationToken cancellationToken)
+    {
+        var payload = LoadFromJson();
+        var seedTime = DateTimeOffset.UtcNow;
+        var changes = 0;
+
+        foreach (var skillSeed in payload.Skills)
+        {
+            if (await db.UniLioSkills.AnyAsync(s => s.SeedKey == skillSeed.SeedKey, cancellationToken))
+            {
+                continue;
+            }
+
+            db.UniLioSkills.Add(ToSkillEntity(skillSeed, seedTime));
+            changes++;
+        }
+
+        foreach (var courseSeed in payload.Courses)
+        {
+            if (await db.UniLioCourses.AnyAsync(c => c.SeedKey == courseSeed.SeedKey, cancellationToken))
+            {
+                continue;
+            }
+
+            db.UniLioCourses.Add(ToCourseEntity(courseSeed, seedTime));
+            await db.UniLioCourseModules.AddRangeAsync(
+                ToModuleEntities(courseSeed, seedTime),
+                cancellationToken);
+            await db.UniLioCourseSkills.AddRangeAsync(
+                ToCourseSkillEntities(courseSeed, seedTime),
+                cancellationToken);
+            changes++;
+        }
+
+        foreach (var pathSeed in payload.Paths)
+        {
+            var path = await db.UniLioLearningPaths
+                .Include(p => p.PathCourses)
+                .FirstOrDefaultAsync(p => p.SeedKey == pathSeed.SeedKey, cancellationToken);
+            if (path is null)
+            {
+                continue;
+            }
+
+            var linkedCourseIds = path.PathCourses.Select(pc => pc.CourseId).ToHashSet();
+            var sortOrder = path.PathCourses.Count;
+            foreach (var courseSeedKey in pathSeed.CourseSeedKeys)
+            {
+                var courseId = ResolveCourseId(courseSeedKey);
+                if (linkedCourseIds.Contains(courseId))
+                {
+                    continue;
+                }
+
+                sortOrder++;
+                var pathCourseSuffix = $"{ResolvePathNumericSuffix(pathSeed.SeedKey):x4}{sortOrder:x4}0000";
+                db.UniLioPathCourses.Add(new UniLioPathCourse
+                {
+                    Id = Guid.Parse($"33333333-3333-3333-3333-{pathCourseSuffix}"),
+                    PathId = path.Id,
+                    CourseId = courseId,
+                    SortOrder = sortOrder,
+                    CreatedAt = seedTime,
+                    UpdatedAt = seedTime,
+                });
+                changes++;
+            }
+        }
+
+        foreach (var assessmentSeed in payload.Assessments)
+        {
+            var courseId = ResolveCourseId(assessmentSeed.CourseSeedKey);
+            if (await db.UniLioAssessments.AnyAsync(a => a.CourseId == courseId, cancellationToken))
+            {
+                continue;
+            }
+
+            db.UniLioAssessments.Add(ToAssessmentEntity(assessmentSeed, seedTime));
+            changes++;
+        }
+
+        if (changes > 0)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        return changes;
+    }
+
     public static Guid ResolveCourseId(string seedKey) =>
         CourseIds.TryGetValue(seedKey, out var id)
             ? id
@@ -425,7 +544,7 @@ internal static class UniLioCatalogSeed
     public static Guid ResolveAssessmentId(string courseSeedKey) =>
         AssessmentIds.TryGetValue(courseSeedKey, out var id)
             ? id
-            : throw new KeyNotFoundException($"Unknown UniLio assessment course seed key: {courseSeedKey}");
+            : Guid.Parse($"55555555-5555-5555-5555-{ResolveCourseNumericSuffix(courseSeedKey):x12}");
 
     public static Guid ResolveEventId(string seedKey) =>
         EventIds.TryGetValue(seedKey, out var id)

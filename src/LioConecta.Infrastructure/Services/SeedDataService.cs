@@ -712,6 +712,12 @@ private async Task EnsurePhoneExtensionsCatalogAsync(CancellationToken cancellat
 
     private async Task RefreshUniLioCourseContentAsync(CancellationToken cancellationToken)
     {
+        var inserted = await UniLioCatalogSeed.SyncMissingCatalogAsync(db, cancellationToken);
+        if (inserted > 0)
+        {
+            logger.LogInformation("Synced missing UniLio catalog entries ({Count} changes).", inserted);
+        }
+
         var updated = await UniLioCatalogSeed.RefreshCourseContentAsync(db, cancellationToken);
         if (updated > 0)
         {

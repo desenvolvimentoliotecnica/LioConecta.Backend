@@ -683,6 +683,95 @@
           "durationMinutes": 22
         }
       ]
+    },
+    {
+      "seedKey": "curso-gestao-pessoas-lider-rh",
+      "title": "Gestão de Pessoas: papel do líder e do RH",
+      "description": "Trilha interativa sobre divisão de papéis entre liderança e RH — baseada em Mariá Menezes (Mestre do ERP).",
+      "contentType": "article",
+      "durationMinutes": 25,
+      "isMandatory": false,
+      "area": "Gestão",
+      "department": "RH",
+      "rating": 4.7,
+      "instructorName": "Mariá Menezes",
+      "externalUrl": "https://www.youtube.com/watch?v=jiUotcPVPdc",
+      "provider": "Mestre do ERP",
+      "status": "published",
+      "skillSeedKeys": ["lideranca"],
+      "tags": ["RH", "gestão de pessoas", "liderança", "trilha interativa"],
+      "modules": [
+        { "sortOrder": 1, "title": "Introdução", "contentType": "article", "durationMinutes": 3 },
+        { "sortOrder": 2, "title": "Objetivos de aprendizagem", "contentType": "article", "durationMinutes": 3 },
+        { "sortOrder": 3, "title": "O que é gestão de pessoas?", "contentType": "article", "durationMinutes": 4 },
+        { "sortOrder": 4, "title": "Papel do líder", "contentType": "article", "durationMinutes": 4 },
+        { "sortOrder": 5, "title": "Papel do RH", "contentType": "article", "durationMinutes": 4 },
+        { "sortOrder": 6, "title": "Divisão de papéis na prática", "contentType": "article", "durationMinutes": 4 },
+        { "sortOrder": 7, "title": "Objetivo comum: pessoas e negócio", "contentType": "article", "durationMinutes": 3 },
+        { "sortOrder": 8, "title": "Vídeo complementar", "contentType": "external", "contentUrl": "https://www.youtube.com/watch?v=jiUotcPVPdc", "durationMinutes": 6 },
+        { "sortOrder": 9, "title": "Reflexão guiada", "contentType": "article", "durationMinutes": 5 },
+        { "sortOrder": 10, "title": "Avaliação final", "contentType": "quiz", "durationMinutes": 8 }
+      ]
+    },
+    {
+      "seedKey": "curso-rh-agil-catharino",
+      "title": "RH Ágil: adaptação rápida às mudanças",
+      "description": "Mindset ágil, MVP, inovação e cases — entrevista com Antônio Catharino (Foursales / Serasa Experian).",
+      "contentType": "article",
+      "durationMinutes": 35,
+      "isMandatory": false,
+      "area": "Gestão",
+      "department": "RH",
+      "rating": 4.8,
+      "instructorName": "Antônio Catharino",
+      "externalUrl": "https://www.youtube.com/live/pfDNiSea1GQ",
+      "provider": "Foursales",
+      "status": "published",
+      "skillSeedKeys": ["lideranca"],
+      "tags": ["RH ágil", "MVP", "inovação", "liderança"],
+      "modules": [
+        { "sortOrder": 1, "title": "Introdução", "contentType": "article", "durationMinutes": 3 },
+        { "sortOrder": 2, "title": "Objetivos de aprendizagem", "contentType": "article", "durationMinutes": 3 },
+        { "sortOrder": 3, "title": "O que é RH ágil", "contentType": "article", "durationMinutes": 4 },
+        { "sortOrder": 4, "title": "Cultura ágil vs metodologia", "contentType": "article", "durationMinutes": 4 },
+        { "sortOrder": 5, "title": "Práticas MVP e autonomia", "contentType": "article", "durationMinutes": 4 },
+        { "sortOrder": 6, "title": "Onde aplicar primeiro", "contentType": "article", "durationMinutes": 4 },
+        { "sortOrder": 7, "title": "Inovação e tecnologia", "contentType": "article", "durationMinutes": 4 },
+        { "sortOrder": 8, "title": "Case Oracle e protagonismo", "contentType": "article", "durationMinutes": 4 },
+        { "sortOrder": 9, "title": "Vídeo completo", "contentType": "external", "contentUrl": "https://www.youtube.com/live/pfDNiSea1GQ", "durationMinutes": 10 },
+        { "sortOrder": 10, "title": "Reflexão guiada", "contentType": "article", "durationMinutes": 5 },
+        { "sortOrder": 11, "title": "Avaliação final", "contentType": "quiz", "durationMinutes": 8 }
+      ]
+    },
+    {
+      "seedKey": "curso-devops-github-actions",
+      "title": "DevOps com GitHub Actions: pipeline CI/CD",
+      "description": "Fluxo DevOps automatizado com GitHub Actions — baseado em Fernanda Kipper (Kipper Dev).",
+      "contentType": "article",
+      "durationMinutes": 45,
+      "isMandatory": false,
+      "area": "Tecnologia",
+      "department": "TI",
+      "rating": 4.8,
+      "instructorName": "Fernanda Kipper",
+      "externalUrl": "https://www.youtube.com/watch?v=df_WMXk7JxE",
+      "provider": "YouTube",
+      "status": "published",
+      "skillSeedKeys": ["devops-cicd"],
+      "tags": ["devops", "github actions", "CI/CD", "pipeline", "automação"],
+      "modules": [
+        { "sortOrder": 1, "title": "Introdução", "contentType": "article", "durationMinutes": 3 },
+        { "sortOrder": 2, "title": "Objetivos de aprendizagem", "contentType": "article", "durationMinutes": 3 },
+        { "sortOrder": 3, "title": "DevOps, CI/CD e GitHub Actions", "contentType": "article", "durationMinutes": 5 },
+        { "sortOrder": 4, "title": "Estrutura de workflows (YAML)", "contentType": "article", "durationMinutes": 5 },
+        { "sortOrder": 5, "title": "Criando sua pipeline de CI", "contentType": "article", "durationMinutes": 6 },
+        { "sortOrder": 6, "title": "Reutilizando Actions do Marketplace", "contentType": "article", "durationMinutes": 5 },
+        { "sortOrder": 7, "title": "Múltiplos workflows", "contentType": "article", "durationMinutes": 4 },
+        { "sortOrder": 8, "title": "Pipeline para Pull Requests", "contentType": "article", "durationMinutes": 5 },
+        { "sortOrder": 9, "title": "Vídeo completo", "contentType": "external", "contentUrl": "https://www.youtube.com/watch?v=df_WMXk7JxE", "durationMinutes": 92 },
+        { "sortOrder": 10, "title": "Reflexão guiada", "contentType": "article", "durationMinutes": 5 },
+        { "sortOrder": 11, "title": "Avaliação final", "contentType": "quiz", "durationMinutes": 8 }
+      ]
     }
   ],
   "paths": [
@@ -737,6 +826,8 @@
       "description": "Competências essenciais para líderes: gestão de pessoas, negociação e feedback.",
       "courseSeedKeys": [
         "ext-gestao-pessoas-rh",
+        "curso-gestao-pessoas-lider-rh",
+        "curso-rh-agil-catharino",
         "ext-lideranca-negociar",
         "feedback-efetivo"
       ]
@@ -790,6 +881,12 @@
       "name": "Segurança do Trabalho",
       "category": "Compliance",
       "description": "Normas regulamentadoras, NR-35 e práticas de SST."
+    },
+    {
+      "seedKey": "devops-cicd",
+      "name": "DevOps e CI/CD",
+      "category": "Tecnologia",
+      "description": "Integração contínua, entrega contínua e automação com GitHub Actions."
     }
   ],
   "assessments": [
@@ -881,6 +978,170 @@
             "Opcionais em produções pequenas"
           ],
           "correctAnswer": "Mensuráveis e monitorados"
+        }
+      ]
+    },
+    {
+      "courseSeedKey": "curso-gestao-pessoas-lider-rh",
+      "title": "Avaliação — Gestão de Pessoas",
+      "passingScore": 80,
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Gestão de pessoas e RH são a mesma coisa?",
+          "options": [
+            "Sim, são sinônimos",
+            "Não — gestão de pessoas é mais ampla; RH apoia e estrutura"
+          ],
+          "correctAnswer": "Não — gestão de pessoas é mais ampla; RH apoia e estrutura"
+        },
+        {
+          "id": "q2",
+          "text": "Quem é o principal responsável pela gestão das pessoas no dia a dia?",
+          "options": ["RH", "Liderança", "Diretoria"],
+          "correctAnswer": "Liderança"
+        },
+        {
+          "id": "q3",
+          "text": "Qual é um papel típico do RH em controle de jornada?",
+          "options": [
+            "Substituir o líder no acompanhamento diário",
+            "Definir políticas, fornecer indicadores e alertas",
+            "Aplicar advertências diretamente"
+          ],
+          "correctAnswer": "Definir políticas, fornecer indicadores e alertas"
+        },
+        {
+          "id": "q4",
+          "text": "O objetivo comum de líderes e RH é:",
+          "options": [
+            "Reduzir custos com pessoas",
+            "Cumprir apenas exigências legais",
+            "Gerar o melhor resultado para pessoas e para o negócio"
+          ],
+          "correctAnswer": "Gerar o melhor resultado para pessoas e para o negócio"
+        },
+        {
+          "id": "q5",
+          "text": "Um sinal de parceria saudável entre líder e RH é:",
+          "options": [
+            "Líder ignora processos e resolve tudo informalmente",
+            "RH decide sobre o time sem envolver o gestor",
+            "Líder usa ferramentas e políticas do RH no dia a dia"
+          ],
+          "correctAnswer": "Líder usa ferramentas e políticas do RH no dia a dia"
+        }
+      ]
+    },
+    {
+      "courseSeedKey": "curso-rh-agil-catharino",
+      "title": "Avaliação — RH Ágil",
+      "passingScore": 80,
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Segundo Antônio Catharino, RH ágil é principalmente:",
+          "options": [
+            "Implantar Scrum/Kanban 100% fiel ao manual",
+            "Mindset de adaptação rápida às necessidades do negócio"
+          ],
+          "correctAnswer": "Mindset de adaptação rápida às necessidades do negócio"
+        },
+        {
+          "id": "q2",
+          "text": "Quais subsistemas de RH Antônio aponta com maior ganho imediato de agilidade?",
+          "options": [
+            "Folha de pagamento e compliance",
+            "Treinamento e clima organizacional",
+            "Recrutamento e shared services (processos transacionais)"
+          ],
+          "correctAnswer": "Recrutamento e shared services (processos transacionais)"
+        },
+        {
+          "id": "q3",
+          "text": "O que é inception no contexto da Serasa?",
+          "options": [
+            "Workshop para desenhar o processo ideal antes de definir o MVP",
+            "Auditoria anual de conformidade trabalhista",
+            "Treinamento obrigatório de metodologia Scrum"
+          ],
+          "correctAnswer": "Workshop para desenhar o processo ideal antes de definir o MVP"
+        },
+        {
+          "id": "q4",
+          "text": "Por que a Serasa investe em front-end customizado sobre o ERP?",
+          "options": [
+            "Para substituir completamente o sistema backend",
+            "Para oferecer experiência simples, rápida e com alta adesão do usuário",
+            "Para cumprir exigências legais de auditoria"
+          ],
+          "correctAnswer": "Para oferecer experiência simples, rápida e com alta adesão do usuário"
+        },
+        {
+          "id": "q5",
+          "text": "Qual é a dica prática de Antônio para implementar ágil no RH?",
+          "options": [
+            "Esperar aprovação de um projeto de 2 anos antes de começar",
+            "Copiar exatamente a metodologia de empresas de tecnologia",
+            "Começar com MVP — entregar rápido e evoluir incrementalmente"
+          ],
+          "correctAnswer": "Começar com MVP — entregar rápido e evoluir incrementalmente"
+        }
+      ]
+    },
+    {
+      "courseSeedKey": "curso-devops-github-actions",
+      "title": "Avaliação — DevOps com GitHub Actions",
+      "passingScore": 80,
+      "questions": [
+        {
+          "id": "q1",
+          "text": "Onde os arquivos de workflow do GitHub Actions devem ficar no repositório?",
+          "options": [
+            "Na raiz do projeto, como pipeline.yml",
+            "Em .github/workflows/ com extensão .yml ou .yaml"
+          ],
+          "correctAnswer": "Em .github/workflows/ com extensão .yml ou .yaml"
+        },
+        {
+          "id": "q2",
+          "text": "O que significa CI (Continuous Integration)?",
+          "options": [
+            "Deploy automático sempre que alguém faz push",
+            "Verificar continuamente se o código integrado ainda funciona (build e testes)",
+            "Integrar apenas no final do sprint"
+          ],
+          "correctAnswer": "Verificar continuamente se o código integrado ainda funciona (build e testes)"
+        },
+        {
+          "id": "q3",
+          "text": "Qual é a forma correta de usar credenciais sensíveis em um workflow?",
+          "options": [
+            "Escrever diretamente no arquivo YAML",
+            "Usar secrets do repositório (${{ secrets.NOME }})",
+            "Enviar por e-mail para o time de DevOps"
+          ],
+          "correctAnswer": "Usar secrets do repositório (${{ secrets.NOME }})"
+        },
+        {
+          "id": "q4",
+          "text": "Para que serve actions/checkout@v4 em um step?",
+          "options": [
+            "Publicar o código no npm",
+            "Clonar o repositório e fazer checkout da branch do evento",
+            "Aprovar automaticamente Pull Requests"
+          ],
+          "correctAnswer": "Clonar o repositório e fazer checkout da branch do evento"
+        },
+        {
+          "id": "q5",
+          "text": "Por que configurar um workflow com on: pull_request?",
+          "options": [
+            "Para fazer deploy direto em produção sem revisão",
+            "Para validar o código antes do merge e bloquear PRs com falhas",
+            "Para desabilitar testes automatizados"
+          ],
+          "correctAnswer": "Para validar o código antes do merge e bloquear PRs com falhas"
         }
       ]
     }

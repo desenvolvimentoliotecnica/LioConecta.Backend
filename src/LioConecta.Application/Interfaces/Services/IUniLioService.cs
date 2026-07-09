@@ -58,4 +58,36 @@ public interface IUniLioService
     Task<UniLioInstructorCoursesDto> GetInstructorCoursesAsync(CancellationToken cancellationToken = default);
 
     Task<UniLioReportsDto> GetReportsSummaryAsync(UniLioQuery query, CancellationToken cancellationToken = default);
+
+    Task<UniLioQuestionDetailDto> CreateModuleQuestionAsync(
+        Guid courseId,
+        Guid? moduleId,
+        CreateUniLioQuestionRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<UniLioQuestionsPageDto> GetModuleQuestionsAsync(
+        Guid courseId,
+        Guid moduleId,
+        CancellationToken cancellationToken = default);
+
+    Task<UniLioQuestionsPageDto> GetMyQuestionsAsync(
+        UniLioQuestionQuery query,
+        CancellationToken cancellationToken = default);
+
+    Task<UniLioQuestionsPageDto> GetInstructorQuestionsAsync(
+        UniLioQuestionQuery query,
+        CancellationToken cancellationToken = default);
+
+    Task<UniLioQuestionDetailDto> GetInstructorQuestionDetailAsync(
+        Guid questionId,
+        CancellationToken cancellationToken = default);
+
+    Task<UniLioQuestionDetailDto> ReplyToQuestionAsync(
+        Guid questionId,
+        ReplyUniLioQuestionRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task MarkInstructorQuestionReadAsync(Guid questionId, CancellationToken cancellationToken = default);
+
+    Task MarkLearnerQuestionReadAsync(Guid questionId, CancellationToken cancellationToken = default);
 }

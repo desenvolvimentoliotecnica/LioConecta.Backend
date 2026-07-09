@@ -11,11 +11,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LioConecta.Infrastructure.Services;
 
-public sealed class UniLioService(
+public sealed partial class UniLioService(
     AppDbContext db,
     IAppSettingsProvider settingsProvider,
     ICurrentUserService currentUserService,
-    UniLioCompletionService completionService) : IUniLioService
+    UniLioCompletionService completionService,
+    INotificationService notificationService) : IUniLioService
 {
     private const string SeedInstructorName = "Maria Silva";
     private const int SkillGapTargetLevel = 3;
@@ -862,7 +863,9 @@ public sealed class UniLioService(
         var namePattern = $"%{viewer.Name}%";
 
         var courses = await db.UniLioCourses.AsNoTracking()
-            .Where(c => EF.Functions.ILike(c.InstructorName, namePattern))
+            .Where(c =>
+                (c.InstructorPersonId.HasValue && c.InstructorPersonId == viewer.PersonId)
+                || EF.Functions.ILike(c.InstructorName, namePattern))
             .OrderBy(c => c.Title)
             .ToListAsync(cancellationToken);
 

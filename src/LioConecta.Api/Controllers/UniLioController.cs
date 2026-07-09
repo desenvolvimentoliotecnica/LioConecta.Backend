@@ -144,4 +144,78 @@ public sealed class UniLioController(IUniLioService uniLioService) : ControllerB
         [FromQuery] UniLioQuery query,
         CancellationToken cancellationToken)
         => Ok(await uniLioService.GetReportsSummaryAsync(query, cancellationToken));
+
+    [HttpPost("courses/{courseId:guid}/modules/{moduleId:guid}/questions")]
+    [ProducesResponseType(typeof(UniLioQuestionDetailDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UniLioQuestionDetailDto>> CreateModuleQuestion(
+        Guid courseId,
+        Guid moduleId,
+        [FromBody] CreateUniLioQuestionRequest request,
+        CancellationToken cancellationToken)
+        => Ok(await uniLioService.CreateModuleQuestionAsync(courseId, moduleId, request, cancellationToken));
+
+    [HttpPost("courses/{courseId:guid}/questions")]
+    [ProducesResponseType(typeof(UniLioQuestionDetailDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UniLioQuestionDetailDto>> CreateCourseQuestion(
+        Guid courseId,
+        [FromBody] CreateUniLioQuestionRequest request,
+        CancellationToken cancellationToken)
+        => Ok(await uniLioService.CreateModuleQuestionAsync(courseId, null, request, cancellationToken));
+
+    [HttpGet("courses/{courseId:guid}/modules/{moduleId:guid}/questions")]
+    [ProducesResponseType(typeof(UniLioQuestionsPageDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UniLioQuestionsPageDto>> GetModuleQuestions(
+        Guid courseId,
+        Guid moduleId,
+        CancellationToken cancellationToken)
+        => Ok(await uniLioService.GetModuleQuestionsAsync(courseId, moduleId, cancellationToken));
+
+    [HttpGet("me/questions")]
+    [ProducesResponseType(typeof(UniLioQuestionsPageDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UniLioQuestionsPageDto>> GetMyQuestions(
+        [FromQuery] UniLioQuestionQuery query,
+        CancellationToken cancellationToken)
+        => Ok(await uniLioService.GetMyQuestionsAsync(query, cancellationToken));
+
+    [HttpGet("instructor/questions")]
+    [ProducesResponseType(typeof(UniLioQuestionsPageDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UniLioQuestionsPageDto>> GetInstructorQuestions(
+        [FromQuery] UniLioQuestionQuery query,
+        CancellationToken cancellationToken)
+        => Ok(await uniLioService.GetInstructorQuestionsAsync(query, cancellationToken));
+
+    [HttpGet("instructor/questions/{id:guid}")]
+    [ProducesResponseType(typeof(UniLioQuestionDetailDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UniLioQuestionDetailDto>> GetInstructorQuestionDetail(
+        Guid id,
+        CancellationToken cancellationToken)
+        => Ok(await uniLioService.GetInstructorQuestionDetailAsync(id, cancellationToken));
+
+    [HttpPost("instructor/questions/{id:guid}/reply")]
+    [ProducesResponseType(typeof(UniLioQuestionDetailDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UniLioQuestionDetailDto>> ReplyToQuestion(
+        Guid id,
+        [FromBody] ReplyUniLioQuestionRequest request,
+        CancellationToken cancellationToken)
+        => Ok(await uniLioService.ReplyToQuestionAsync(id, request, cancellationToken));
+
+    [HttpPatch("instructor/questions/{id:guid}/read")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> MarkInstructorQuestionRead(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        await uniLioService.MarkInstructorQuestionReadAsync(id, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPatch("questions/{id:guid}/read")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> MarkLearnerQuestionRead(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        await uniLioService.MarkLearnerQuestionReadAsync(id, cancellationToken);
+        return NoContent();
+    }
 }

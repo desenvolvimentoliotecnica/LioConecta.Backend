@@ -391,3 +391,64 @@ public sealed record UniLioApprovalAssessmentDto(
     int QuestionCount);
 
 public sealed record UniLioRejectCourseRequest(string? Reason);
+
+public sealed record UniLioQuestionQuery(
+    Guid? CourseId = null,
+    string? Status = null,
+    bool? UnreadOnly = null,
+    int Page = 1,
+    int PageSize = 20);
+
+public sealed record CreateUniLioQuestionRequest(
+    string Body,
+    string Visibility = "private",
+    Guid? ModuleId = null);
+
+public sealed record ReplyUniLioQuestionRequest(string Body);
+
+public sealed record UniLioQuestionReplyDto(
+    Guid Id,
+    string AuthorName,
+    bool IsInstructorReply,
+    string Body,
+    DateTimeOffset CreatedAt);
+
+public sealed record UniLioQuestionSummaryDto(
+    Guid Id,
+    Guid CourseId,
+    string CourseTitle,
+    Guid? ModuleId,
+    string? ModuleTitle,
+    Guid AuthorPersonId,
+    string AuthorName,
+    string Body,
+    string Visibility,
+    string Status,
+    bool Unread,
+    DateTimeOffset CreatedAt,
+    int ReplyCount,
+    string? LastInstructorReply = null,
+    DateTimeOffset? LastInstructorReplyAt = null);
+
+public sealed record UniLioQuestionDetailDto(
+    Guid Id,
+    Guid CourseId,
+    string CourseTitle,
+    Guid? ModuleId,
+    string? ModuleTitle,
+    Guid AuthorPersonId,
+    string AuthorName,
+    string Body,
+    string Visibility,
+    string Status,
+    bool Unread,
+    DateTimeOffset CreatedAt,
+    IReadOnlyList<UniLioQuestionReplyDto> Replies);
+
+public sealed record UniLioQuestionsPageDto(
+    IReadOnlyList<UniLioQuestionSummaryDto> Items,
+    int Page,
+    int PageSize,
+    int TotalCount,
+    int TotalPages,
+    int UnreadCount);

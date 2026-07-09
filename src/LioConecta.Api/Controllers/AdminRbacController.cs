@@ -75,6 +75,30 @@ public sealed class AdminRbacController(
         return NoContent();
     }
 
+    [HttpPut("assignments/bulk")]
+    [RequirePermission("rbac.assignments.manage")]
+    public async Task<IActionResult> BulkUpdateAssignments([FromBody] BulkUpdateSubjectAssignmentsRequest request, CancellationToken cancellationToken)
+    {
+        await rbacAdminService.BulkUpdateAssignmentsAsync(request, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpGet("subjects/search")]
+    [RequirePermission("rbac.assignments.manage")]
+    public async Task<ActionResult<IReadOnlyList<RbacSubjectSearchResultDto>>> SearchSubjects(
+        [FromQuery] string subjectType,
+        [FromQuery] string? q,
+        [FromQuery] int limit = 8,
+        CancellationToken cancellationToken = default)
+    {
+        if (!Enum.TryParse<Domain.Enums.RbacSubjectType>(subjectType, true, out var parsed))
+        {
+            return BadRequest("subjectType inválido.");
+        }
+
+        return Ok(await rbacAdminService.SearchSubjectsAsync(parsed, q ?? string.Empty, limit, cancellationToken));
+    }
+
     [HttpGet("test-users")]
     [RequirePermission("rbac.test_users.manage")]
     public async Task<ActionResult<IReadOnlyList<TestUserDto>>> GetTestUsers(CancellationToken cancellationToken)

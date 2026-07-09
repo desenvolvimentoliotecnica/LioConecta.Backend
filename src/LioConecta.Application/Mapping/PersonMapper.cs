@@ -329,6 +329,13 @@ public static class FeedMapper
             comment.Text,
             PersonMapper.ToSummary(comment.Author ?? new Person { Name = "Desconhecido" }),
             comment.CreatedAt);
+
+    public static CommentDto ToCommentDto(PostMediaComment comment)
+        => new(
+            comment.Id,
+            comment.Text,
+            PersonMapper.ToSummary(comment.Author ?? new Person { Name = "Desconhecido" }),
+            comment.CreatedAt);
 }
 
 public static class ComunicadoMapper

@@ -11,7 +11,8 @@ namespace LioConecta.Infrastructure.Services;
 public sealed class RbacAdminService(
     AppDbContext db,
     ICurrentUserService currentUserService,
-    IPermissionService permissionService) : IRbacAdminService
+    IPermissionService permissionService,
+    IPersonService personService) : IRbacAdminService
 {
     public async Task<IReadOnlyList<PermissionCatalogItemDto>> GetPermissionsAsync(CancellationToken cancellationToken = default)
     {
@@ -163,6 +164,111 @@ public sealed class RbacAdminService(
     public async Task UpdateAssignmentsAsync(UpdateSubjectAssignmentsRequest request, CancellationToken cancellationToken = default)
     {
         await permissionService.EnsurePermissionAsync("rbac.assignments.manage", cancellationToken: cancellationToken);
+        await ApplyAssignmentsAsync(request, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task BulkUpdateAssignmentsAsync(BulkUpdateSubjectAssignmentsRequest request, CancellationToken cancellationToken = default)
+    {
+        await permissionService.EnsurePermissionAsync("rbac.assignments.manage", cancellationToken: cancellationToken);
+        if (request.Items.Count == 0)
+        {
+            return;
+        }
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            foreach (var item in request.Items)
+            {
+                await ApplyAssignmentsAsync(item, cancellationToken);
+            }
+
+            await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    public async Task<IReadOnlyList<RbacSubjectSearchResultDto>> SearchSubjectsAsync(
+        RbacSubjectType subjectType,
+        string query,
+        int limit = 8,
+        CancellationToken cancellationToken = default)
+    {
+        await permissionService.EnsurePermissionAsync("rbac.assignments.manage", cancellationToken: cancellationToken);
+        var term = query.Trim();
+        if (term.Length < 2)
+        {
+            return [];
+        }
+
+        var cappedLimit = Math.Clamp(limit, 1, 20);
+        return subjectType switch
+        {
+            RbacSubjectType.Person => await SearchPeopleSubjectsAsync(term, cappedLimit, cancellationToken),
+            RbacSubjectType.TestUser => await SearchTestUserSubjectsAsync(term, cappedLimit, cancellationToken),
+            RbacSubjectType.PortalUser => await SearchPortalUserSubjectsAsync(term, cappedLimit, cancellationToken),
+            _ => [],
+        };
+    }
+
+    private async Task<IReadOnlyList<RbacSubjectSearchResultDto>> SearchPeopleSubjectsAsync(
+        string term,
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        var people = await personService.SearchAsync(term, limit, cancellationToken);
+        return people.Select(person => new RbacSubjectSearchResultDto(
+            RbacSubjectType.Person,
+            person.Id,
+            person.Name,
+            person.DepartmentName)).ToList();
+    }
+
+    private async Task<IReadOnlyList<RbacSubjectSearchResultDto>> SearchTestUserSubjectsAsync(
+        string term,
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        return await db.TestUsers.AsNoTracking()
+            .Where(user => user.IsActive
+                && (user.Email.Contains(term) || user.DisplayName.Contains(term)))
+            .OrderBy(user => user.DisplayName)
+            .Take(limit)
+            .Select(user => new RbacSubjectSearchResultDto(
+                RbacSubjectType.TestUser,
+                user.Id,
+                user.DisplayName,
+                user.Email))
+            .ToListAsync(cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<RbacSubjectSearchResultDto>> SearchPortalUserSubjectsAsync(
+        string term,
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        return await db.PortalUsers.AsNoTracking()
+            .Where(user => user.IsActive && user.Email.Contains(term))
+            .OrderBy(user => user.Email)
+            .Take(limit)
+            .Select(user => new RbacSubjectSearchResultDto(
+                RbacSubjectType.PortalUser,
+                user.Id,
+                user.Email,
+                null))
+            .ToListAsync(cancellationToken);
+    }
+
+    private async Task ApplyAssignmentsAsync(
+        UpdateSubjectAssignmentsRequest request,
+        CancellationToken cancellationToken)
+    {
         var existing = await db.SubjectRoleAssignments
             .Where(a => a.SubjectType == request.SubjectType && a.SubjectId == request.SubjectId)
             .ToListAsync(cancellationToken);
@@ -193,8 +299,6 @@ public sealed class RbacAdminService(
                 UpdatedAt = now,
             });
         }
-
-        await db.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<TestUserDto>> GetTestUsersAsync(CancellationToken cancellationToken = default)
@@ -223,6 +327,12 @@ public sealed class RbacAdminService(
         }
 
         var now = DateTimeOffset.UtcNow;
+        var personId = await TestUserPersonProvisioning.ResolvePersonIdForNewTestUserAsync(
+            db,
+            email,
+            request.DisplayName.Trim(),
+            request.OptionalPersonId,
+            cancellationToken);
         var user = new TestUser
         {
             Id = Guid.NewGuid(),
@@ -230,7 +340,7 @@ public sealed class RbacAdminService(
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             DisplayName = request.DisplayName.Trim(),
             BusinessArea = request.BusinessArea,
-            OptionalPersonId = request.OptionalPersonId,
+            OptionalPersonId = personId,
             IsActive = true,
             ExpiresAt = request.ExpiresAt ?? now.AddDays(90),
             Notes = request.Notes,

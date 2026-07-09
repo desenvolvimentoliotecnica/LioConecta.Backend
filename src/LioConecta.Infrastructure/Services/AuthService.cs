@@ -282,43 +282,8 @@ public sealed class AuthService(
 
 
 
-    private async Task<Person> ResolveTestUserPersonAsync(TestUser testUser, CancellationToken cancellationToken)
-
-    {
-
-        if (testUser.OptionalPersonId is Guid personId)
-
-        {
-
-            var linked = await db.People.FirstOrDefaultAsync(p => p.Id == personId, cancellationToken);
-
-            if (linked is not null)
-
-            {
-
-                return linked;
-
-            }
-
-        }
-
-
-
-        var byEmail = await db.People.FirstOrDefaultAsync(p => p.Email.ToLower() == testUser.Email, cancellationToken);
-
-        if (byEmail is not null)
-
-        {
-
-            return byEmail;
-
-        }
-
-
-
-        throw new UnauthorizedAccessException("Test user sem Person vinculada. Configure OptionalPersonId.");
-
-    }
+    private async Task<Person> ResolveTestUserPersonAsync(TestUser testUser, CancellationToken cancellationToken) =>
+        await TestUserPersonProvisioning.ResolvePersonAsync(db, testUser, cancellationToken);
 
 
 

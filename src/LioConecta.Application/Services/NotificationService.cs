@@ -155,6 +155,58 @@ public sealed class NotificationService(
         }
     }
 
+    public async Task NotifyFeedPostLikedAsync(
+        FeedPost post,
+        Person liker,
+        CancellationToken cancellationToken = default)
+    {
+        if (post.AuthorId == liker.Id)
+        {
+            return;
+        }
+
+        var author = await personRepository.GetByIdAsync(post.AuthorId, cancellationToken);
+        if (author is null)
+        {
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var body = post.Content.Trim();
+        if (body.Length > 200)
+        {
+            body = $"{body[..197]}...";
+        }
+
+        var notification = new Notification
+        {
+            Id = Guid.NewGuid(),
+            PersonId = author.Id,
+            Type = NotificationType.Feed,
+            Title = $"{liker.Name.Trim()} curtiu sua publicação",
+            Body = string.IsNullOrWhiteSpace(body) ? "Veja no feed." : body,
+            Href = $"/?post={post.Id}",
+            IsRead = false,
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+
+        await notificationRepository.AddRangeAsync([notification], cancellationToken);
+
+        var dto = NotificationMapper.ToDto(notification);
+        try
+        {
+            await notificationBroadcaster.SendToPersonAsync(
+                PersonGroupKey.Resolve(author),
+                dto,
+                cancellationToken);
+        }
+        catch
+        {
+            // Real-time delivery is best-effort; notifications are persisted regardless.
+        }
+    }
+
     public async Task NotifyUniLioCourseSubmittedAsync(
         IReadOnlyList<Guid> recipientPersonIds,
         Guid courseId,

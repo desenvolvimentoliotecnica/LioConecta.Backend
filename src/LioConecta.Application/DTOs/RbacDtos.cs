@@ -57,6 +57,15 @@ public record UpdateSubjectAssignmentsRequest(
     Guid SubjectId,
     IReadOnlyList<Guid> RoleIds);
 
+public record BulkUpdateSubjectAssignmentsRequest(
+    IReadOnlyList<UpdateSubjectAssignmentsRequest> Items);
+
+public record RbacSubjectSearchResultDto(
+    RbacSubjectType SubjectType,
+    Guid SubjectId,
+    string Label,
+    string? Subtitle);
+
 public record TestUserDto(
     Guid Id,
     string Email,

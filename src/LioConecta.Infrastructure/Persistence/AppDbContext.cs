@@ -9,6 +9,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Department> Departments => Set<Department>();
     public DbSet<FeedPost> FeedPosts => Set<FeedPost>();
     public DbSet<Comment> Comments => Set<Comment>();
+    public DbSet<PostMediaComment> PostMediaComments => Set<PostMediaComment>();
     public DbSet<Reaction> Reactions => Set<Reaction>();
     public DbSet<Poll> Polls => Set<Poll>();
     public DbSet<PollOption> PollOptions => Set<PollOption>();
@@ -210,6 +211,26 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany()
                 .HasForeignKey(c => c.AuthorId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PostMediaComment>(entity =>
+        {
+            entity.HasIndex(c => new { c.PostId, c.MediaUrl, c.CreatedAt });
+            entity.HasIndex(c => c.AuthorId);
+            entity.Property(c => c.MediaUrl).HasMaxLength(512).IsRequired();
+            entity.Property(c => c.Text).IsRequired();
+
+            entity.HasOne(c => c.Post)
+                .WithMany()
+                .HasForeignKey(c => c.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(c => c.Author)
+                .WithMany()
+                .HasForeignKey(c => c.AuthorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.ToTable("post_media_comments");
         });
 
         modelBuilder.Entity<Reaction>(entity =>

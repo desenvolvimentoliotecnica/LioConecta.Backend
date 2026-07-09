@@ -126,6 +126,54 @@ public sealed class FeedController(
         return Created(string.Empty, comment);
     }
 
+    [HttpGet("posts/{postId:guid}/media/comments")]
+    [ProducesResponseType(typeof(PostMediaCommentsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetPostMediaComments(
+        Guid postId,
+        [FromQuery] string mediaUrl,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(mediaUrl))
+        {
+            return BadRequest(new { message = "mediaUrl é obrigatório." });
+        }
+
+        try
+        {
+            var comments = await feedService.GetPostMediaCommentsAsync(postId, mediaUrl, cancellationToken);
+            return Ok(new PostMediaCommentsResponse(comments));
+        }
+        catch (KeyNotFoundException exception)
+        {
+            return NotFound(new { message = exception.Message });
+        }
+    }
+
+    [HttpPost("posts/{postId:guid}/media/comments")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddPostMediaComment(
+        Guid postId,
+        [FromBody] CreatePostMediaCommentRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var comment = await feedService.AddPostMediaCommentAsync(postId, request, cancellationToken);
+            return Created(string.Empty, comment);
+        }
+        catch (ArgumentException exception)
+        {
+            return BadRequest(new { message = exception.Message });
+        }
+        catch (KeyNotFoundException exception)
+        {
+            return NotFound(new { message = exception.Message });
+        }
+    }
+
     [HttpPost("posts/{postId:guid}/reactions")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> React(

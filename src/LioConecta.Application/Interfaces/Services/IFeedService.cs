@@ -15,6 +15,16 @@ public interface IFeedService
 
     Task<CommentDto> AddCommentAsync(Guid postId, CreateCommentRequest request, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<CommentDto>> GetPostMediaCommentsAsync(
+        Guid postId,
+        string mediaUrl,
+        CancellationToken cancellationToken = default);
+
+    Task<CommentDto> AddPostMediaCommentAsync(
+        Guid postId,
+        CreatePostMediaCommentRequest request,
+        CancellationToken cancellationToken = default);
+
     Task ReactAsync(Guid postId, ReactionRequest request, CancellationToken cancellationToken = default);
 
     Task<PollDto?> GetPollAsync(Guid postId, CancellationToken cancellationToken = default);

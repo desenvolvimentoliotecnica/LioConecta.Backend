@@ -118,6 +118,23 @@ public sealed class FeedRepository(AppDbContext db) : IFeedRepository
         await db.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<PostMediaComment>> GetPostMediaCommentsAsync(
+        Guid postId,
+        string mediaUrl,
+        CancellationToken cancellationToken = default) =>
+        await db.PostMediaComments
+            .Include(comment => comment.Author)
+            .AsNoTracking()
+            .Where(comment => comment.PostId == postId && comment.MediaUrl == mediaUrl)
+            .OrderBy(comment => comment.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+    public async Task AddPostMediaCommentAsync(PostMediaComment comment, CancellationToken cancellationToken = default)
+    {
+        db.PostMediaComments.Add(comment);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
     public Task<Reaction?> GetReactionAsync(
         Guid postId,
         Guid personId,

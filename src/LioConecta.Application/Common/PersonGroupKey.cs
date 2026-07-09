@@ -5,20 +5,7 @@ namespace LioConecta.Application.Common;
 public static class PersonGroupKey
 {
     /// <summary>
-    /// Resolves the SignalR group key for a person (oid, slug, or id — same order as NotificationHub).
+    /// Resolves the SignalR group key for a person. Matches JWT <c>oid</c> and NotificationHub (always Person.Id).
     /// </summary>
-    public static string Resolve(Person person)
-    {
-        if (person.AzureAdObjectId.HasValue)
-        {
-            return person.AzureAdObjectId.Value.ToString();
-        }
-
-        if (!string.IsNullOrWhiteSpace(person.Slug))
-        {
-            return person.Slug;
-        }
-
-        return person.Id.ToString();
-    }
+    public static string Resolve(Person person) => person.Id.ToString();
 }

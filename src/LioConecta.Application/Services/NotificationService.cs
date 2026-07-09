@@ -246,6 +246,61 @@ public sealed class NotificationService(
             cancellationToken);
     }
 
+    public async Task NotifyUniLioQuestionToInstructorAsync(
+        Guid instructorPersonId,
+        string learnerName,
+        string courseTitle,
+        string? moduleTitle,
+        Guid questionId,
+        CancellationToken cancellationToken = default)
+    {
+        var instructor = await personRepository.GetByIdAsync(instructorPersonId, cancellationToken);
+        if (instructor is null)
+        {
+            return;
+        }
+
+        var context = string.IsNullOrWhiteSpace(moduleTitle)
+            ? $"curso \"{courseTitle.Trim()}\""
+            : $"módulo \"{moduleTitle.Trim()}\" do curso \"{courseTitle.Trim()}\"";
+        var href = $"/unilio/instrutor/duvidas?question={questionId}";
+        var body = $"{learnerName.Trim()} enviou uma dúvida sobre o {context}.";
+        await BroadcastAsync(
+            () => Task.FromResult<IReadOnlyList<Person>>([instructor]),
+            NotificationType.System,
+            "Nova dúvida de aluno",
+            body,
+            href,
+            cancellationToken);
+    }
+
+    public async Task NotifyUniLioQuestionAnsweredToLearnerAsync(
+        Guid learnerPersonId,
+        string courseTitle,
+        string? moduleTitle,
+        Guid questionId,
+        CancellationToken cancellationToken = default)
+    {
+        var learner = await personRepository.GetByIdAsync(learnerPersonId, cancellationToken);
+        if (learner is null)
+        {
+            return;
+        }
+
+        var context = string.IsNullOrWhiteSpace(moduleTitle)
+            ? $"curso \"{courseTitle.Trim()}\""
+            : $"módulo \"{moduleTitle.Trim()}\"";
+        var href = $"/unilio/minhas-duvidas?question={questionId}";
+        var body = $"O instrutor respondeu sua dúvida sobre o {context}.";
+        await BroadcastAsync(
+            () => Task.FromResult<IReadOnlyList<Person>>([learner]),
+            NotificationType.System,
+            "Resposta à sua dúvida",
+            body,
+            href,
+            cancellationToken);
+    }
+
     private Task BroadcastToAllActivePersonsAsync(
         NotificationType type,
         string title,

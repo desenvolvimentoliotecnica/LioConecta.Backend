@@ -85,4 +85,47 @@ public class UniLioEndpointTests : IClassFixture<LioConectaWebApplicationFactory
         Assert.NotNull(paths);
         Assert.True(paths.Items.Count >= 5);
     }
+
+    [Fact]
+    public async Task MyQuestions_ReturnsLearnerInbox()
+    {
+        var response = await _client.GetAsync("/api/v1/unilio/me/questions");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var page = await response.Content.ReadFromJsonAsync<UniLioQuestionsPageDto>();
+        Assert.NotNull(page);
+        Assert.NotEmpty(page.Items);
+    }
+
+    [Fact]
+    public async Task ModuleQuestions_IncludesPublicFaq()
+    {
+        var courseId = Guid.Parse("22222222-2222-2222-2222-22222222001a");
+        var moduleId = Guid.Parse("22222222-2222-2222-2222-001a00010000");
+
+        var response = await _client.GetAsync(
+            $"/api/v1/unilio/courses/{courseId}/modules/{moduleId}/questions");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var page = await response.Content.ReadFromJsonAsync<UniLioQuestionsPageDto>();
+        Assert.NotNull(page);
+        Assert.Contains(page.Items, item => item.Visibility == "public");
+    }
+
+    [Fact]
+    public async Task CreateModuleQuestion_PersistsPrivateQuestion()
+    {
+        var courseId = Guid.Parse("22222222-2222-2222-2222-22222222001a");
+        var moduleId = Guid.Parse("22222222-2222-2222-2222-001a00020000");
+
+        var response = await _client.PostAsJsonAsync(
+            $"/api/v1/unilio/courses/{courseId}/modules/{moduleId}/questions",
+            new CreateUniLioQuestionRequest("Dúvida de teste de integração", "private"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var detail = await response.Content.ReadFromJsonAsync<UniLioQuestionDetailDto>();
+        Assert.NotNull(detail);
+        Assert.Equal("private", detail.Visibility);
+        Assert.Equal("Dúvida de teste de integração", detail.Body);
+    }
 }

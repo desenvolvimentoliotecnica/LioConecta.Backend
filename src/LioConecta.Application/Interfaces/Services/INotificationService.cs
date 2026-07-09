@@ -59,4 +59,19 @@ public interface INotificationService
         string courseTitle,
         Guid courseId,
         CancellationToken cancellationToken = default);
+
+    Task NotifyUniLioQuestionToInstructorAsync(
+        Guid instructorPersonId,
+        string learnerName,
+        string courseTitle,
+        string? moduleTitle,
+        Guid questionId,
+        CancellationToken cancellationToken = default);
+
+    Task NotifyUniLioQuestionAnsweredToLearnerAsync(
+        Guid learnerPersonId,
+        string courseTitle,
+        string? moduleTitle,
+        Guid questionId,
+        CancellationToken cancellationToken = default);
 }

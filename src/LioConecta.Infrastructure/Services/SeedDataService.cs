@@ -637,6 +637,7 @@ private async Task EnsurePhoneExtensionsCatalogAsync(CancellationToken cancellat
         if (await db.UniLioCourses.AnyAsync(c => c.Id == markerCourseId, cancellationToken))
         {
             await RefreshUniLioCourseContentAsync(cancellationToken);
+            await EnsureUniLioSampleQuestionsAsync(DateTimeOffset.UtcNow, cancellationToken);
             return;
         }
 
@@ -703,11 +704,74 @@ private async Task EnsurePhoneExtensionsCatalogAsync(CancellationToken cancellat
         }
 
         await db.SaveChangesAsync(cancellationToken);
+        await EnsureUniLioSampleQuestionsAsync(seedTime, cancellationToken);
         logger.LogInformation(
             "Seeded UniLio catalog with {Courses} courses, {Paths} paths, {Skills} skills.",
             payload.Courses.Count,
             payload.Paths.Count,
             payload.Skills.Count);
+    }
+
+    private async Task EnsureUniLioSampleQuestionsAsync(DateTimeOffset seedTime, CancellationToken cancellationToken)
+    {
+        if (await db.UniLioModuleQuestions.AnyAsync(cancellationToken))
+        {
+            return;
+        }
+
+        var courseId = UniLioCatalogSeed.ResolveCourseId("onboarding-liotecnica");
+        var moduleId = UniLioCatalogSeed.ResolveModuleId("onboarding-liotecnica", 1);
+        var julioId = UniLioCatalogSeed.ResolvePersonId("julio");
+        var mariaId = UniLioCatalogSeed.ResolvePersonId("maria");
+
+        var questionPublicId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb001");
+        var questionPrivateId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb002");
+        var replyId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb003");
+
+        var questionPublic = new UniLioModuleQuestion
+        {
+            Id = questionPublicId,
+            CourseId = courseId,
+            ModuleId = moduleId,
+            AuthorPersonId = julioId,
+            Body = "Qual a diferença entre onboarding presencial e remoto neste módulo?",
+            Visibility = "public",
+            Status = "answered",
+            InstructorReadAt = seedTime.AddDays(1),
+            LearnerReadAt = seedTime.AddDays(2),
+            CreatedAt = seedTime,
+            UpdatedAt = seedTime.AddDays(2),
+        };
+
+        var questionPrivate = new UniLioModuleQuestion
+        {
+            Id = questionPrivateId,
+            CourseId = courseId,
+            ModuleId = moduleId,
+            AuthorPersonId = julioId,
+            Body = "Posso refazer o quiz se não atingir a nota mínima?",
+            Visibility = "private",
+            Status = "open",
+            LearnerReadAt = seedTime,
+            CreatedAt = seedTime.AddHours(2),
+            UpdatedAt = seedTime.AddHours(2),
+        };
+
+        var reply = new UniLioModuleQuestionReply
+        {
+            Id = replyId,
+            QuestionId = questionPublicId,
+            AuthorPersonId = mariaId,
+            Body = "O onboarding remoto cobre os mesmos tópicos; a diferença está no formato das atividades práticas.",
+            IsInstructorReply = true,
+            CreatedAt = seedTime.AddDays(1),
+            UpdatedAt = seedTime.AddDays(1),
+        };
+
+        db.UniLioModuleQuestions.AddRange(questionPublic, questionPrivate);
+        db.UniLioModuleQuestionReplies.Add(reply);
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Seeded sample UniLio module questions.");
     }
 
     private async Task RefreshUniLioCourseContentAsync(CancellationToken cancellationToken)

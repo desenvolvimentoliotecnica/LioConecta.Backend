@@ -74,6 +74,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<UniLioCommunityPost> UniLioCommunityPosts => Set<UniLioCommunityPost>();
     public DbSet<UniLioPersonSkill> UniLioPersonSkills => Set<UniLioPersonSkill>();
     public DbSet<UniLioIntegrationLink> UniLioIntegrationLinks => Set<UniLioIntegrationLink>();
+    public DbSet<UniLioModuleQuestion> UniLioModuleQuestions => Set<UniLioModuleQuestion>();
+    public DbSet<UniLioModuleQuestionReply> UniLioModuleQuestionReplies => Set<UniLioModuleQuestionReply>();
     public DbSet<PhoneExtension> PhoneExtensions => Set<PhoneExtension>();
     public DbSet<PortalSystem> PortalSystems => Set<PortalSystem>();
 
@@ -1085,6 +1087,42 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany()
                 .HasForeignKey(p => p.CourseId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<UniLioModuleQuestion>(entity =>
+        {
+            entity.HasIndex(q => new { q.CourseId, q.ModuleId });
+            entity.HasIndex(q => q.AuthorPersonId);
+            entity.HasIndex(q => new { q.CourseId, q.Visibility, q.Status });
+            entity.Property(q => q.Body).HasMaxLength(2000);
+            entity.Property(q => q.Visibility).HasMaxLength(16);
+            entity.Property(q => q.Status).HasMaxLength(16);
+            entity.HasOne(q => q.Course)
+                .WithMany()
+                .HasForeignKey(q => q.CourseId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(q => q.Module)
+                .WithMany()
+                .HasForeignKey(q => q.ModuleId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(q => q.Author)
+                .WithMany()
+                .HasForeignKey(q => q.AuthorPersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UniLioModuleQuestionReply>(entity =>
+        {
+            entity.HasIndex(r => r.QuestionId);
+            entity.Property(r => r.Body).HasMaxLength(2000);
+            entity.HasOne(r => r.Question)
+                .WithMany(q => q.Replies)
+                .HasForeignKey(r => r.QuestionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(r => r.Author)
+                .WithMany()
+                .HasForeignKey(r => r.AuthorPersonId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<UniLioPersonSkill>(entity =>

@@ -246,6 +246,7 @@ public static class AppSettingCatalog
         ..LeavePortalSettingCatalog.ToAppSettingDefinitions(),
         ..FacilitiesMenuSettingCatalog.ToAppSettingDefinitions(),
         ..RamaisSettingCatalog.ToAppSettingDefinitions(),
+        ..BenefitsSettingCatalog.ToAppSettingDefinitions(),
         ..SystemsSettingCatalog.ToAppSettingDefinitions(),
         ..LoopSettingCatalog.ToAppSettingDefinitions(),
         ..CompassSettingCatalog.ToAppSettingDefinitions(),

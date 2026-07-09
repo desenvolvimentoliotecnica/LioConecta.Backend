@@ -3,6 +3,7 @@ using System;
 using LioConecta.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LioConecta.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260708200850_AddBenefitCatalog")]
+    partial class AddBenefitCatalog
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -259,77 +262,6 @@ namespace LioConecta.Infrastructure.Migrations
                     b.HasIndex("TransactionId");
 
                     b.ToTable("audit_events");
-                });
-
-            modelBuilder.Entity("LioConecta.Domain.Entities.BenefitCatalog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("CatalogKey")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DefaultDetailsJson")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<decimal?>("DefaultMonthlyValue")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("Desc")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("Featured")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("HelpText")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("PortalUrl")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Provider")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CatalogKey")
-                        .IsUnique();
-
-                    b.HasIndex("Category");
-
-                    b.HasIndex("IsActive");
-
-                    b.ToTable("benefit_catalog", (string)null);
                 });
 
             modelBuilder.Entity("LioConecta.Domain.Entities.CafeteriaMenu", b =>

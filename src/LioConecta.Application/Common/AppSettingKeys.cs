@@ -126,6 +126,9 @@ public static class AppSettingKeys
     public const string RamaisAllowedRoles = "ramais.allowed_roles";
     public const string RamaisAllowedEmails = "ramais.allowed_emails";
 
+    public const string BenefitsAllowedRoles = "benefits.allowed_roles";
+    public const string BenefitsAllowedEmails = "benefits.allowed_emails";
+
     public const string PortalEnvironment = "portal.environment";
     public const string SystemsAllowedRoles = "systems.allowed_roles";
     public const string SystemsAllowedEmails = "systems.allowed_emails";

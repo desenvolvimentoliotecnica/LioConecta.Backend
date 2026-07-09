@@ -5,8 +5,8 @@ using LioConecta.Application.Interfaces.Services;
 using LioConecta.Domain.Entities;
 using LioConecta.Domain.Enums;
 using LioConecta.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 
 namespace LioConecta.Infrastructure.Services;
 
@@ -14,7 +14,7 @@ public sealed class SystemCatalogService(
     AppDbContext db,
     ICurrentUserService currentUserService,
     IAppSettingsProvider settingsProvider,
-    IWebHostEnvironment hostEnvironment) : ISystemCatalogService
+    IHostEnvironment hostEnvironment) : ISystemCatalogService
 {
     private const long MaxIconSizeBytes = 2_097_152;
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };

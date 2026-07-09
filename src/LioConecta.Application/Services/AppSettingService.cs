@@ -35,6 +35,8 @@ public sealed class AppSettingService(
             ["leave"] = ("Férias e ausências", "URLs dos portais e links externos dos serviços de férias, licenças e afastamentos."),
             ["facilities"] = ("Facilities", "Cardápio do refeitório — permissões de edição e envio por e-mail."),
             ["loop"] = ("Loop de Projetos", "Permissões do módulo Loop de Projetos e Pulse Ágil."),
+            ["compass"] = ("Compass IBP", "Permissões do módulo Compass de planejamento integrado."),
+            ["unilio"] = ("UniLio", "Permissões do módulo UniLio — universidade corporativa LMS/LXP."),
         };
 
     private static readonly HashSet<string> RestartKeys =
@@ -215,6 +217,9 @@ public sealed class AppSettingService(
         "benefits" => 17,
         "leave" => 18,
         "observability" => 19,
+        "loop" => 20,
+        "compass" => 21,
+        "unilio" => 22,
         _ => 99,
     };
 }

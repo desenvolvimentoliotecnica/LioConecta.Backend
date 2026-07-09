@@ -26,6 +26,7 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             await EnsurePhoneExtensionsCatalogAsync(cancellationToken);
             await EnsurePortalSystemsCatalogAsync(cancellationToken);
             await EnsureCompassCatalogAsync(cancellationToken);
+            await EnsureUniLioCatalogAsync(cancellationToken);
             await EnsurePollSeedAsync(cancellationToken);
             await EnsureEmployeeIdsAsync(cancellationToken);
             await EnsureDevTestUserProfileAsync(cancellationToken);
@@ -628,6 +629,94 @@ private async Task EnsurePhoneExtensionsCatalogAsync(CancellationToken cancellat
         }
 
         logger.LogInformation("Seeded Compass IBP snapshot with {Count} rows.", rows.Count);
+    }
+
+    private async Task EnsureUniLioCatalogAsync(CancellationToken cancellationToken)
+    {
+        var markerCourseId = UniLioCatalogSeed.ResolveCourseId("ext-liofilizacao-ufv");
+        if (await db.UniLioCourses.AnyAsync(c => c.Id == markerCourseId, cancellationToken))
+        {
+            await RefreshUniLioCourseContentAsync(cancellationToken);
+            return;
+        }
+
+        var seedTime = DateTimeOffset.UtcNow;
+        var payload = UniLioCatalogSeed.LoadFromJson();
+
+        foreach (var courseSeed in payload.Courses)
+        {
+            db.UniLioCourses.Add(UniLioCatalogSeed.ToCourseEntity(courseSeed, seedTime));
+            await db.UniLioCourseModules.AddRangeAsync(
+                UniLioCatalogSeed.ToModuleEntities(courseSeed, seedTime),
+                cancellationToken);
+            await db.UniLioCourseSkills.AddRangeAsync(
+                UniLioCatalogSeed.ToCourseSkillEntities(courseSeed, seedTime),
+                cancellationToken);
+        }
+
+        foreach (var skillSeed in payload.Skills)
+        {
+            db.UniLioSkills.Add(UniLioCatalogSeed.ToSkillEntity(skillSeed, seedTime));
+        }
+
+        foreach (var pathSeed in payload.Paths)
+        {
+            db.UniLioLearningPaths.Add(UniLioCatalogSeed.ToPathEntity(pathSeed, seedTime));
+            await db.UniLioPathCourses.AddRangeAsync(
+                UniLioCatalogSeed.ToPathCourseEntities(pathSeed, seedTime),
+                cancellationToken);
+        }
+
+        foreach (var assessmentSeed in payload.Assessments)
+        {
+            db.UniLioAssessments.Add(UniLioCatalogSeed.ToAssessmentEntity(assessmentSeed, seedTime));
+        }
+
+        foreach (var eventSeed in payload.Events)
+        {
+            db.UniLioEvents.Add(UniLioCatalogSeed.ToEventEntity(eventSeed, seedTime));
+        }
+
+        foreach (var postSeed in payload.CommunityPosts)
+        {
+            db.UniLioCommunityPosts.Add(UniLioCatalogSeed.ToCommunityPostEntity(postSeed, seedTime));
+        }
+
+        foreach (var linkSeed in payload.IntegrationLinks)
+        {
+            db.UniLioIntegrationLinks.Add(UniLioCatalogSeed.ToIntegrationLinkEntity(linkSeed, seedTime));
+        }
+
+        foreach (var enrollmentSeed in payload.Enrollments)
+        {
+            db.UniLioEnrollments.Add(UniLioCatalogSeed.ToEnrollmentEntity(enrollmentSeed, seedTime));
+            var certificate = UniLioCatalogSeed.ToCertificateEntity(enrollmentSeed, seedTime);
+            if (certificate is not null)
+            {
+                db.UniLioCertificates.Add(certificate);
+            }
+        }
+
+        foreach (var personSkillSeed in payload.PersonSkills)
+        {
+            db.UniLioPersonSkills.Add(UniLioCatalogSeed.ToPersonSkillEntity(personSkillSeed, seedTime));
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation(
+            "Seeded UniLio catalog with {Courses} courses, {Paths} paths, {Skills} skills.",
+            payload.Courses.Count,
+            payload.Paths.Count,
+            payload.Skills.Count);
+    }
+
+    private async Task RefreshUniLioCourseContentAsync(CancellationToken cancellationToken)
+    {
+        var updated = await UniLioCatalogSeed.RefreshCourseContentAsync(db, cancellationToken);
+        if (updated > 0)
+        {
+            logger.LogInformation("Refreshed UniLio course content for {Count} courses.", updated);
+        }
     }
 
     private async Task EnsureArchivedAtBackfillAsync(CancellationToken cancellationToken)

@@ -1,0 +1,723 @@
+{
+  "version": 2,
+  "courses": [
+    {
+      "seedKey": "codigo-conduta",
+      "thumbnailUrl": "/bg-comunicado-security.png",
+      "description": "Política interna de ética, integridade e conduta esperada de todos os colaboradores da LioTécnica. Inclui leitura do documento oficial, casos práticos do dia a dia na indústria alimentícia e avaliação final obrigatória.",
+      "durationMinutes": 60,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Introdução ao Código de Conduta",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Por que temos um Código de Conduta?</h2><p>A LioTécnica atua há mais de três décadas na indústria de alimentos, com processos de liofilização, secagem e embalagem que exigem rigor técnico e confiança de clientes, fornecedores e colaboradores. O Código de Conduta traduz nossos valores em comportamentos concretos no trabalho diário.</p><p>Todo colaborador — seja na produção, qualidade, logística, comercial ou administrativo — representa a empresa perante terceiros. Decisões aparentemente pequenas, como aceitar um presente de fornecedor ou omitir um desvio de processo, podem comprometer a reputação construída ao longo dos anos.</p><h3>Princípios fundamentais</h3><ul><li><strong>Integridade:</strong> agir com honestidade em todas as relações profissionais.</li><li><strong>Respeito:</strong> tratar colegas, clientes e parceiros com dignidade, sem discriminação.</li><li><strong>Conformidade:</strong> cumprir leis, normas regulamentadoras e políticas internas (BPF, APPCC, LGPD).</li><li><strong>Responsabilidade:</strong> reportar situações de risco, conflito de interesses ou conduta inadequada.</li></ul><p>Neste curso você lerá o documento oficial, analisará casos práticos e fará uma avaliação para confirmar sua compreensão.</p>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Leitura do Código de Conduta",
+          "contentType": "pdf",
+          "contentUrl": "/documents/politicas-internas/codigo-conduta.pdf",
+          "durationMinutes": 20
+        },
+        {
+          "sortOrder": 3,
+          "title": "Casos Práticos — Ética no Dia a Dia",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Situações reais na LioTécnica</h2><p>Conhecer o código é diferente de aplicá-lo. Veja cenários frequentes em plantas de alimentos e como agir corretamente.</p><h3>Caso 1 — Fornecedor oferece ingressos</h3><p>Um representante de embalagens oferece ingressos para um jogo durante negociação de preços. Mesmo sem intenção explícita de favorecimento, presentes acima do limite da política podem configurar conflito de interesses. <strong>Ação correta:</strong> recusar educadamente e declarar a oferta ao gestor ou canal de ética.</p><h3>Caso 2 — Desvio não documentado na linha</h3><p>Um operador identifica temperatura fora do limite crítico em câmara de liofilização, mas ajusta o equipamento sem registrar no sistema APPCC. <strong>Ação correta:</strong> segregar o lote conforme procedimento, registrar o desvio e acionar qualidade imediatamente.</p><h3>Caso 3 — Dados de colegas no RH</h3><p>Um colaborador solicita lista de e-mails pessoais de funcionários para campanha interna. <strong>Ação correta:</strong> negar o compartilhamento e orientar a solicitar via RH, respeitando a LGPD.</p><ul><li>Em dúvida, consulte gestor, RH ou Jurídico.</li><li>Use o canal de denúncias para relatos confidenciais.</li><li>Quem reporta de boa-fé está protegido pela política de não retaliação.</li></ul>"
+        },
+        {
+          "sortOrder": 4,
+          "title": "Avaliação — Código de Conduta",
+          "contentType": "quiz",
+          "contentUrl": null,
+          "durationMinutes": 10,
+          "quizJson": "{\"passingScore\": 70, \"questions\": [{\"id\": \"q1\", \"text\": \"Qual é o principal objetivo do Código de Conduta da LioTécnica?\", \"options\": [{\"id\": \"a\", \"label\": \"Definir metas de produção diária\"}, {\"id\": \"b\", \"label\": \"Orientar comportamentos éticos e integridade\"}, {\"id\": \"c\", \"label\": \"Estabelecer política salarial\"}, {\"id\": \"d\", \"label\": \"Regular férias e benefícios\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q2\", \"text\": \"Em caso de conflito de interesses, o colaborador deve:\", \"options\": [{\"id\": \"a\", \"label\": \"Ignorar se não houver prejuízo financeiro\"}, {\"id\": \"b\", \"label\": \"Comunicar imediatamente ao gestor ou canal de ética\"}, {\"id\": \"c\", \"label\": \"Resolver apenas com colegas da equipe\"}, {\"id\": \"d\", \"label\": \"Aguardar a auditoria anual\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q3\", \"text\": \"Presentes de fornecedores acima do limite da política devem ser:\", \"options\": [{\"id\": \"a\", \"label\": \"Aceitos e divididos com a equipe\"}, {\"id\": \"b\", \"label\": \"Recusados ou declarados conforme a política\"}, {\"id\": \"c\", \"label\": \"Guardados para eventos internos\"}, {\"id\": \"d\", \"label\": \"Vendidos para custear confraternizações\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q4\", \"text\": \"Um desvio de temperatura em PCC de liofilização sem registro é:\", \"options\": [{\"id\": \"a\", \"label\": \"Aceitável se o produto parecer normal\"}, {\"id\": \"b\", \"label\": \"Violação de BPF/APPCC e do código de conduta\"}, {\"id\": \"c\", \"label\": \"Responsabilidade apenas da manutenção\"}, {\"id\": \"d\", \"label\": \"Problema apenas se o cliente reclamar\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q5\", \"text\": \"Quem reporta irregularidades de boa-fé na LioTécnica:\", \"options\": [{\"id\": \"a\", \"label\": \"Pode sofrer retaliação\"}, {\"id\": \"b\", \"label\": \"Está protegido pela política de não retaliação\"}, {\"id\": \"c\", \"label\": \"Deve provar culpa antes de reportar\"}, {\"id\": \"d\", \"label\": \"Deve reportar apenas por escrito ao CEO\"}], \"correctAnswer\": \"b\"}]}"
+        }
+      ]
+    },
+    {
+      "seedKey": "seguranca-informacao",
+      "thumbnailUrl": "/bg-comunicado-security.png",
+      "description": "Boas práticas de segurança digital para colaboradores da LioTécnica: proteção de credenciais, identificação de phishing, uso seguro de dispositivos e conformidade com a LGPD no ambiente corporativo.",
+      "durationMinutes": 50,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Fundamentos de Segurança da Informação",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Segurança da informação na LioTécnica</h2><p>Na indústria alimentícia, dados de formulação, lotes de produção, certificações APPCC/FSSC e informações de clientes são ativos estratégicos. A perda ou vazamento desses dados pode gerar recall, multas regulatórias e danos irreparáveis à marca.</p><p>Segurança da informação não é responsabilidade exclusiva de TI: cada colaborador é a primeira linha de defesa contra ameaças digitais.</p><h3>Princípios básicos</h3><ul><li><strong>Confidencialidade:</strong> acessar apenas dados necessários à sua função.</li><li><strong>Integridade:</strong> não alterar registros de produção, qualidade ou RH sem autorização.</li><li><strong>Disponibilidade:</strong> reportar indisponibilidade de sistemas críticos (ERP, MES, portal).</li></ul><p>Políticas de senha, MFA e bloqueio de tela são obrigatórias em todos os postos de trabalho, inclusive na planta.</p>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Vídeo Institucional — Cultura de Segurança",
+          "contentType": "video",
+          "contentUrl": "/videos/lioconecta-intro.mp4",
+          "durationMinutes": 10
+        },
+        {
+          "sortOrder": 3,
+          "title": "Phishing e Engenharia Social",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Reconhecendo ataques de phishing</h2><p>Phishing é a tentativa de enganar colaboradores para revelar senhas, clicar em links maliciosos ou transferir arquivos confidenciais. Em empresas do setor alimentício, ataques frequentemente se disfarçam de fornecedores de embalagem, auditorias de certificação ou atualizações do ERP.</p><h3>Sinais de alerta</h3><ul><li>Remetente com domínio similar mas incorreto (ex.: liotecnica.com em vez de liotecnica.com.br).</li><li>Urgência artificial: \"sua conta será bloqueada em 2 horas\".</li><li>Anexos inesperados em formatos .zip, .html ou planilhas com macros.</li><li>Solicitação de credenciais por e-mail ou WhatsApp — a TI nunca pede senha por esses canais.</li></ul><p><strong>O que fazer:</strong> não clique em links suspeitos; encaminhe o e-mail para segurança@liotecnica.com.br; em caso de clique acidental, desconecte-se e acione TI imediatamente.</p>"
+        },
+        {
+          "sortOrder": 4,
+          "title": "Avaliação — Segurança da Informação",
+          "contentType": "quiz",
+          "contentUrl": null,
+          "durationMinutes": 10,
+          "quizJson": "{\"passingScore\": 70, \"questions\": [{\"id\": \"q1\", \"text\": \"Quem é responsável pela segurança da informação na LioTécnica?\", \"options\": [{\"id\": \"a\", \"label\": \"Apenas o departamento de TI\"}, {\"id\": \"b\", \"label\": \"Todos os colaboradores\"}, {\"id\": \"c\", \"label\": \"Apenas gestores\"}, {\"id\": \"d\", \"label\": \"Apenas o Jurídico\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q2\", \"text\": \"Ao receber e-mail suspeito solicitando senha, você deve:\", \"options\": [{\"id\": \"a\", \"label\": \"Responder com a senha atual\"}, {\"id\": \"b\", \"label\": \"Clicar no link para verificar\"}, {\"id\": \"c\", \"label\": \"Reportar à TI sem interagir\"}, {\"id\": \"d\", \"label\": \"Encaminhar para colegas perguntando se é real\"}], \"correctAnswer\": \"c\"}, {\"id\": \"q3\", \"text\": \"Dados de formulação e lotes de produção são:\", \"options\": [{\"id\": \"a\", \"label\": \"Públicos e podem ser compartilhados\"}, {\"id\": \"b\", \"label\": \"Informações confidenciais da empresa\"}, {\"id\": \"c\", \"label\": \"Responsabilidade apenas do cliente\"}, {\"id\": \"d\", \"label\": \"Descartáveis após 30 dias\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q4\", \"text\": \"MFA (autenticação multifator) na LioTécnica é:\", \"options\": [{\"id\": \"a\", \"label\": \"Opcional para todos\"}, {\"id\": \"b\", \"label\": \"Obrigatório conforme política de TI\"}, {\"id\": \"c\", \"label\": \"Apenas para diretores\"}, {\"id\": \"d\", \"label\": \"Substituto de senha forte\"}], \"correctAnswer\": \"b\"}]}"
+        }
+      ]
+    },
+    {
+      "seedKey": "feedback-efetivo",
+      "thumbnailUrl": "/bg-celebration.png",
+      "description": "Técnicas de feedback construtivo baseadas no modelo SBI (Situação-Comportamento-Impacto) para líderes e colaboradores da LioTécnica em rotinas de gestão de desempenho.",
+      "durationMinutes": 40,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Modelo SBI — Feedback Estruturado",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>O modelo SBI na prática</h2><p>Feedback efetivo não é elogio genérico nem crítica vaga. O modelo <strong>SBI (Situação, Comportamento, Impacto)</strong> estrutura conversas difíceis de forma objetiva e respeitosa — essencial em plantas industriais onde comunicação clara evita retrabalho e acidentes.</p><h3>Componentes do SBI</h3><ul><li><strong>Situação:</strong> contexto específico — \"na inspeção do lote 4521 na linha de liofilização, ontem às 14h\".</li><li><strong>Comportamento:</strong> fato observável — \"você registrou a temperatura sem conferir o termômetro calibrado\".</li><li><strong>Impacto:</strong> consequência — \"isso compromete a rastreabilidade APPCC e pode gerar não conformidade na auditoria\".</li></ul><p>Evite julgamentos de caráter (\"você é desatento\"). Foque em comportamentos corrigíveis e combine plano de ação com prazo e suporte.</p><p>Na LioTécnica, feedback contínuo complementa avaliações formais de desempenho e reforça cultura de melhoria.</p>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Vídeo — Feedback na Prática",
+          "contentType": "video",
+          "contentUrl": "/videos/lioconecta-intro.mp4",
+          "durationMinutes": 15
+        },
+        {
+          "sortOrder": 3,
+          "title": "Avaliação — Feedback Efetivo",
+          "contentType": "quiz",
+          "contentUrl": null,
+          "durationMinutes": 10,
+          "quizJson": "{\"passingScore\": 70, \"questions\": [{\"id\": \"q1\", \"text\": \"No modelo SBI, o \\\"B\\\" representa:\", \"options\": [{\"id\": \"a\", \"label\": \"Benefício financeiro\"}, {\"id\": \"b\", \"label\": \"Comportamento observável\"}, {\"id\": \"c\", \"label\": \"Burocracia do RH\"}, {\"id\": \"d\", \"label\": \"Benchmark de mercado\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q2\", \"text\": \"Um feedback efetivo deve evitar:\", \"options\": [{\"id\": \"a\", \"label\": \"Exemplos concretos\"}, {\"id\": \"b\", \"label\": \"Julgamentos de caráter\"}, {\"id\": \"c\", \"label\": \"Plano de ação\"}, {\"id\": \"d\", \"label\": \"Menção ao impacto\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q3\", \"text\": \"Após dar feedback corretivo, o líder deve:\", \"options\": [{\"id\": \"a\", \"label\": \"Encerrar sem combinar próximos passos\"}, {\"id\": \"b\", \"label\": \"Combinar ação, prazo e suporte\"}, {\"id\": \"c\", \"label\": \"Comunicar apenas por e-mail\"}, {\"id\": \"d\", \"label\": \"Esperar a avaliação anual\"}], \"correctAnswer\": \"b\"}]}"
+        }
+      ]
+    },
+    {
+      "seedKey": "onboarding-liotecnica",
+      "thumbnailUrl": "/logo-lioconecta.png",
+      "description": "Boas-vindas à LioTécnica: história da empresa, cultura organizacional, benefícios e primeiros passos no ecossistema LioConecta para novos colaboradores.",
+      "durationMinutes": 75,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Bem-vindo à LioTécnica",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Nossa história</h2><p>A LioTécnica nasceu da paixão por transformar alimentos com tecnologia e qualidade. Ao longo de mais de 30 anos, evoluímos de uma operação regional para referência em liofilização, secagem e soluções para a indústria alimentícia brasileira.</p><p>Nossas instalações combinam engenharia de processos, controle de qualidade rigoroso e equipes multidisciplinares — da produção ao comercial, passando por P&D e certificações internacionais.</p><h3>O que fazemos</h3><ul><li>Processamento por liofilização (freeze-drying) de frutas, vegetais, cafés e ingredientes.</li><li>Desenvolvimento de produtos e embalagens para marcas próprias e private label.</li><li>Consultoria em BPF, APPCC e excelência operacional para parceiros do setor.</li></ul><p>Você faz parte dessa história. Seu onboarding é o primeiro passo para entender como cada área contribui para entregar alimentos seguros e inovadores ao mercado.</p>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Vídeo Institucional LioConecta",
+          "contentType": "video",
+          "contentUrl": "/videos/lioconecta-intro.mp4",
+          "durationMinutes": 12
+        },
+        {
+          "sortOrder": 3,
+          "title": "Cultura e Valores",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Como trabalhamos</h2><p>A cultura LioTécnica equilibra tradição industrial com inovação contínua. Valorizamos segurança alimentar, respeito às pessoas, melhoria constante (Kaizen) e transparência nas relações.</p><h3>Valores em ação</h3><ul><li><strong>Qualidade sem atalhos:</strong> BPF e APPCC não são burocracia — protegem o consumidor e a empresa.</li><li><strong>Segurança primeiro:</strong> NR-35, EPIs e procedimentos de SST são inegociáveis na planta.</li><li><strong>Colaboração:</strong> produção, qualidade e manutenção resolvem problemas juntos no gemba.</li><li><strong>Aprendizado:</strong> o UniLio e o LioConecta centralizam treinamentos, políticas e benefícios.</li></ul><p>Gestores e RH estão disponíveis para integração nas primeiras semanas. Não hesite em perguntar.</p>"
+        },
+        {
+          "sortOrder": 4,
+          "title": "Mapa de Benefícios e Recursos",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Seus benefícios e ferramentas</h2><p>Além da remuneração, a LioTécnica oferece pacote de benefícios competitivo e ferramentas digitais para facilitar seu dia a dia.</p><h3>Benefícios principais</h3><ul><li>Plano de saúde e odontológico com coparticipação conforme política vigente.</li><li>Vale-refeição/alimentação e vale-transporte ou estacionamento na planta.</li><li>Programa de educação corporativa via UniLio (cursos internos e externos).</li><li>Seguro de vida e auxílio conforme convenção coletiva.</li></ul><h3>No LioConecta você encontra</h3><ul><li>Portal RH: holerite, férias, ponto e solicitações.</li><li>Biblioteca: manuais BPF, políticas internas e modelos.</li><li>UniLio: trilhas de onboarding, compliance e desenvolvimento técnico.</li></ul>"
+        },
+        {
+          "sortOrder": 5,
+          "title": "Avaliação — Onboarding",
+          "contentType": "quiz",
+          "contentUrl": null,
+          "durationMinutes": 10,
+          "quizJson": "{\"passingScore\": 70, \"questions\": [{\"id\": \"q1\", \"text\": \"A LioTécnica atua principalmente em:\", \"options\": [{\"id\": \"a\", \"label\": \"Software e consultoria de TI\"}, {\"id\": \"b\", \"label\": \"Indústria de alimentos e liofilização\"}, {\"id\": \"c\", \"label\": \"Construção civil\"}, {\"id\": \"d\", \"label\": \"Serviços financeiros\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q2\", \"text\": \"BPF e APPCC na empresa significam:\", \"options\": [{\"id\": \"a\", \"label\": \"Opcionais em produções pequenas\"}, {\"id\": \"b\", \"label\": \"Fundamentais para segurança alimentar\"}, {\"id\": \"c\", \"label\": \"Apenas documentos para auditoria externa\"}, {\"id\": \"d\", \"label\": \"Responsabilidade só da diretoria\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q3\", \"text\": \"O UniLio é usado para:\", \"options\": [{\"id\": \"a\", \"label\": \"Apenas folha de pagamento\"}, {\"id\": \"b\", \"label\": \"Treinamentos e desenvolvimento\"}, {\"id\": \"c\", \"label\": \"Controle de estoque de supermercado\"}, {\"id\": \"d\", \"label\": \"Vendas externas\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q4\", \"text\": \"Em caso de dúvida no onboarding, você deve:\", \"options\": [{\"id\": \"a\", \"label\": \"Esperar seis meses\"}, {\"id\": \"b\", \"label\": \"Procurar gestor, RH ou colegas de buddy\"}, {\"id\": \"c\", \"label\": \"Ignorar procedimentos\"}, {\"id\": \"d\", \"label\": \"Perguntar apenas ao cliente\"}], \"correctAnswer\": \"b\"}]}"
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-nr35-altura",
+      "thumbnailUrl": "/bg-comunicado-security.png",
+      "description": "Treinamento completo sobre NR-35 para trabalho em altura na LioTécnica, com conteúdo introdutório, vídeo externo e avaliação de reciclagem.",
+      "durationMinutes": 105,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Introdução à NR-35 e SST na Planta",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Trabalho em altura na indústria alimentícia</h2><p>A NR-35 regulamenta atividades acima de 2 metros do nível inferior, comuns em manutenção de silos, dutos, câmaras frias e estruturas da planta LioTécnica. Acidentes em altura estão entre os mais graves da SST.</p><p>Todo colaborador exposto deve possuir treinamento válido, ASO compatível e utilizar EPI adequado (cinto paraquedista, trava-quedas, capacete com jugular).</p><ul><li>Permissão de Trabalho (PT) obrigatória para serviços em altura.</li><li>Inspeção de andaimes, escadas e pontos de ancoragem antes do uso.</li><li>Proibido trabalhar em altura sem supervisão quando exigido pelo procedimento.</li><li>Condições climáticas adversas podem suspender a atividade.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Conteúdo em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=JE0pdE7iUNo",
+          "durationMinutes": 80
+        },
+        {
+          "sortOrder": 3,
+          "title": "Avaliação — NR-35",
+          "contentType": "quiz",
+          "contentUrl": null,
+          "durationMinutes": 10,
+          "quizJson": "{\"passingScore\": 70, \"questions\": [{\"id\": \"q1\", \"text\": \"A NR-35 se aplica a trabalhos acima de:\", \"options\": [{\"id\": \"a\", \"label\": \"1 metro\"}, {\"id\": \"b\", \"label\": \"2 metros\"}, {\"id\": \"c\", \"label\": \"5 metros\"}, {\"id\": \"d\", \"label\": \"10 metros\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q2\", \"text\": \"Antes de trabalho em altura é obrigatório:\", \"options\": [{\"id\": \"a\", \"label\": \"Apenas informar o colega\"}, {\"id\": \"b\", \"label\": \"Treinamento, ASO e EPI adequados\"}, {\"id\": \"c\", \"label\": \"Usar apenas capacete comum\"}, {\"id\": \"d\", \"label\": \"Trabalhar sozinho para agilizar\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q3\", \"text\": \"Permissão de Trabalho (PT) serve para:\", \"options\": [{\"id\": \"a\", \"label\": \"Autorizar e controlar riscos da atividade\"}, {\"id\": \"b\", \"label\": \"Substituir treinamento\"}, {\"id\": \"c\", \"label\": \"Apenas documentação burocrática\"}, {\"id\": \"d\", \"label\": \"Liberar uso de celular na altura\"}], \"correctAnswer\": \"a\"}, {\"id\": \"q4\", \"text\": \"Ponto de ancoragem deve ser:\", \"options\": [{\"id\": \"a\", \"label\": \"Qualquer tubulação disponível\"}, {\"id\": \"b\", \"label\": \"Inspecionado e certificado conforme procedimento\"}, {\"id\": \"c\", \"label\": \"Opcional com cinto\"}, {\"id\": \"d\", \"label\": \"Substituído por escada\"}], \"correctAnswer\": \"b\"}]}"
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-lgpd-basico",
+      "thumbnailUrl": "/bg-comunicado-security.png",
+      "description": "Fundamentos da LGPD para colaboradores da LioTécnica: bases legais, direitos dos titulares, incidentes e boas práticas no tratamento de dados pessoais.",
+      "durationMinutes": 55,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Introdução à LGPD",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>LGPD no contexto LioTécnica</h2><p>A Lei Geral de Proteção de Dados (Lei 13.709/2018) regula o tratamento de dados pessoais de colaboradores, clientes, fornecedores e visitantes. Na indústria alimentícia, dados de saúde ocupacional, cadastro de funcionários e informações comerciais exigem cuidado redobrado.</p><p>A LioTécnica trata dados com base em consentimento, execução de contrato, obrigação legal e legítimo interesse, conforme registro de operações.</p><ul><li>Acesse apenas dados necessários à sua função (princípio da necessidade).</li><li>Não compartilhe planilhas com CPF, ASO ou holerites por canais não corporativos.</li><li>Incidentes de vazamento devem ser reportados à TI e ao Encarregado (DPO) em até 2 horas.</li><li>Titulares podem solicitar acesso, correção ou exclusão via canal oficial.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Conteúdo em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=1cpffJ0rfyI",
+          "durationMinutes": 30
+        },
+        {
+          "sortOrder": 3,
+          "title": "Avaliação — LGPD",
+          "contentType": "quiz",
+          "contentUrl": null,
+          "durationMinutes": 10,
+          "quizJson": "{\"passingScore\": 70, \"questions\": [{\"id\": \"q1\", \"text\": \"LGPD significa:\", \"options\": [{\"id\": \"a\", \"label\": \"Lei Geral de Proteção de Dados\"}, {\"id\": \"b\", \"label\": \"Lei de Gestão de Produção Diária\"}, {\"id\": \"c\", \"label\": \"Legislação de Grãos e Produtos Derivados\"}, {\"id\": \"d\", \"label\": \"Lei de Garantia de Produtos Dietéticos\"}], \"correctAnswer\": \"a\"}, {\"id\": \"q2\", \"text\": \"Dados de colaboradores na LioTécnica devem ser:\", \"options\": [{\"id\": \"a\", \"label\": \"Compartilhados livremente entre áreas\"}, {\"id\": \"b\", \"label\": \"Tratados conforme necessidade e política\"}, {\"id\": \"c\", \"label\": \"Publicados no mural\"}, {\"id\": \"d\", \"label\": \"Enviados por WhatsApp pessoal\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q3\", \"text\": \"Em caso de suspeita de vazamento de dados:\", \"options\": [{\"id\": \"a\", \"label\": \"Aguardar uma semana\"}, {\"id\": \"b\", \"label\": \"Reportar imediatamente à TI/DPO\"}, {\"id\": \"c\", \"label\": \"Apagar evidências\"}, {\"id\": \"d\", \"label\": \"Informar apenas colegas\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q4\", \"text\": \"O titular de dados pessoais tem direito a:\", \"options\": [{\"id\": \"a\", \"label\": \"Apenas pagar multa\"}, {\"id\": \"b\", \"label\": \"Acesso, correção e informação sobre tratamento\"}, {\"id\": \"c\", \"label\": \"Ignorar políticas internas\"}, {\"id\": \"d\", \"label\": \"Copiar base completa de clientes\"}], \"correctAnswer\": \"b\"}]}"
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-appcc-crq",
+      "thumbnailUrl": "/bg-benefits.png",
+      "description": "Introdução ao sistema APPCC (HACCP) com conteúdo preparatório, vídeo do CRQ-SP e avaliação sobre perigos, PCC e limites críticos na indústria alimentícia.",
+      "durationMinutes": 50,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Introdução ao APPCC na LioTécnica",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>APPCC — Análise de Perigos e Pontos Críticos de Controle</h2><p>O APPCC é metodologia sistemática para garantir segurança alimentar, exigida por BPF, exportadores e certificações como FSSC 22000. Na LioTécnica, aplica-se desde recebimento de matéria-prima até expedição de produtos liofilizados.</p><p>As sete etapas incluem: diagnóstico, identificação de perigos, determinação de PCCs, limites críticos, monitoramento, ações corretivas e verificação.</p><ul><li><strong>Perigos biológicos:</strong> Salmonella, Listeria, fungos.</li><li><strong>Perigos químicos:</strong> resíduos de sanitizantes, alérgenos.</li><li><strong>Perigos físicos:</strong> metal, vidro, plástico.</li><li>PCCs típicos em liofilização: congelamento, pressão de vácuo, temperatura de placa, detecção de metal.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Conteúdo em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=MZMv4BSNRp8",
+          "durationMinutes": 25
+        },
+        {
+          "sortOrder": 3,
+          "title": "Avaliação — APPCC",
+          "contentType": "quiz",
+          "contentUrl": null,
+          "durationMinutes": 10,
+          "quizJson": "{\"passingScore\": 70, \"questions\": [{\"id\": \"q1\", \"text\": \"APPCC significa:\", \"options\": [{\"id\": \"a\", \"label\": \"Análise de Perigos e Pontos Críticos de Controle\"}, {\"id\": \"b\", \"label\": \"Avaliação de Performance de Colaboradores\"}, {\"id\": \"c\", \"label\": \"Auditoria de Produtos Certificados\"}, {\"id\": \"d\", \"label\": \"Análise de Processos de Calibração\"}], \"correctAnswer\": \"a\"}, {\"id\": \"q2\", \"text\": \"Perigo biológico em alimentos inclui:\", \"options\": [{\"id\": \"a\", \"label\": \"Pedaço de metal\"}, {\"id\": \"b\", \"label\": \"Bactérias e vírus\"}, {\"id\": \"c\", \"label\": \"Rótulo errado\"}, {\"id\": \"d\", \"label\": \"Caixa amassada\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q3\", \"text\": \"Um PCC é etapa onde:\", \"options\": [{\"id\": \"a\", \"label\": \"O produto é embalado cosmeticamente\"}, {\"id\": \"b\", \"label\": \"Controle previne ou reduz perigo a nível aceitável\"}, {\"id\": \"c\", \"label\": \"A equipe faz intervalo\"}, {\"id\": \"d\", \"label\": \"O estoque é contado\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q4\", \"text\": \"Limites críticos devem ser:\", \"options\": [{\"id\": \"a\", \"label\": \"Subjetivos\"}, {\"id\": \"b\", \"label\": \"Mensuráveis e monitorados\"}, {\"id\": \"c\", \"label\": \"Definidos uma vez na vida\"}, {\"id\": \"d\", \"label\": \"Opcionais\"}], \"correctAnswer\": \"b\"}]}"
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-liofilizacao-ufv",
+      "thumbnailUrl": "/bg-news.png",
+      "description": "Processos de desidratação, atomização e liofilização aplicados à indústria de alimentos, com contexto LioTécnica e aula acadêmica da UFV.",
+      "durationMinutes": 55,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Liofilização na LioTécnica",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>O processo de liofilização</h2><p>A liofilização (freeze-drying) remove água por sublimação sob vácuo, preservando nutrientes, cor e aroma — ideal para frutas, cafés, ervas e ingredientes funcionais produzidos pela LioTécnica.</p><p>O ciclo típico: congelamento rápido → primário (sublimação do gelo) → secundário (remoção de água ligada) → acondicionamento em ambiente controlado.</p><ul><li>Parâmetros críticos: temperatura de placa, pressão de vácuo, tempo de ciclo, teor de umidade final.</li><li>Desvios impactam reconstituição, shelf life e conformidade com especificação do cliente.</li><li>Instrumentação calibrada e registros são essenciais para APPCC e auditorias.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Conteúdo em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=Fg7ufqJTaqQ",
+          "durationMinutes": 30
+        },
+        {
+          "sortOrder": 3,
+          "title": "Avaliação — Liofilização",
+          "contentType": "quiz",
+          "contentUrl": null,
+          "durationMinutes": 10,
+          "quizJson": "{\"passingScore\": 70, \"questions\": [{\"id\": \"q1\", \"text\": \"Liofilização remove água principalmente por:\", \"options\": [{\"id\": \"a\", \"label\": \"Fritura\"}, {\"id\": \"b\", \"label\": \"Sublimação sob vácuo\"}, {\"id\": \"c\", \"label\": \"Ebulição a 100°C\"}, {\"id\": \"d\", \"label\": \"Pressão manual\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q2\", \"text\": \"Vantagem da liofilização para alimentos:\", \"options\": [{\"id\": \"a\", \"label\": \"Aumenta água livre\"}, {\"id\": \"b\", \"label\": \"Preserva nutrientes e estrutura\"}, {\"id\": \"c\", \"label\": \"Elimina necessidade de embalagem\"}, {\"id\": \"d\", \"label\": \"Substitui BPF\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q3\", \"text\": \"Parâmetro crítico em liofilização inclui:\", \"options\": [{\"id\": \"a\", \"label\": \"Cor da parede da fábrica\"}, {\"id\": \"b\", \"label\": \"Pressão de vácuo e temperatura de placa\"}, {\"id\": \"c\", \"label\": \"Número de funcionários\"}, {\"id\": \"d\", \"label\": \"Preço do dólar\"}], \"correctAnswer\": \"b\"}]}"
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-lean-manufacturing",
+      "thumbnailUrl": "/bg-news-innovation.png",
+      "description": "Fundamentos de Lean Manufacturing e melhoria contínua aplicados à produção industrial e linhas de processamento da LioTécnica.",
+      "durationMinutes": 60,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Lean Manufacturing — Conceitos",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Lean na planta alimentícia</h2><p>Lean Manufacturing busca maximizar valor ao cliente eliminando desperdícios (muda): superprodução, espera, transporte excessivo, processamento desnecessário, estoque, movimentação e defeitos.</p><p>Na LioTécnica, Lean se traduz em fluxo contínuo entre recebimento, preparo, liofilização, seleção e expedição — com indicadores de OEE, tempo de ciclo e taxa de refugo.</p><ul><li>5S: organização do posto de trabalho reduz contaminação cruzada.</li><li>Kanban: reposição visual de insumos e embalagens.</li><li>Kaizen: melhorias pequenas e frequentes com equipe da linha.</li><li>Gemba: ir ao chão de fábrica para ver o processo real.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Conteúdo em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=KLirS_S6wYI",
+          "durationMinutes": 35
+        },
+        {
+          "sortOrder": 3,
+          "title": "Avaliação — Lean",
+          "contentType": "quiz",
+          "contentUrl": null,
+          "durationMinutes": 10,
+          "quizJson": "{\"passingScore\": 70, \"questions\": [{\"id\": \"q1\", \"text\": \"Desperdício (muda) em Lean inclui:\", \"options\": [{\"id\": \"a\", \"label\": \"Melhoria contínua\"}, {\"id\": \"b\", \"label\": \"Espera e defeitos\"}, {\"id\": \"c\", \"label\": \"Treinamento\"}, {\"id\": \"d\", \"label\": \"Padronização\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q2\", \"text\": \"Gemba significa:\", \"options\": [{\"id\": \"a\", \"label\": \"Escritório da diretoria\"}, {\"id\": \"b\", \"label\": \"Ir ao local real do trabalho\"}, {\"id\": \"c\", \"label\": \"Reunião online\"}, {\"id\": \"d\", \"label\": \"Auditoria externa\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q3\", \"text\": \"5S contribui para:\", \"options\": [{\"id\": \"a\", \"label\": \"Desorganização\"}, {\"id\": \"b\", \"label\": \"Organização e segurança no posto\"}, {\"id\": \"c\", \"label\": \"Aumento de refugo intencional\"}, {\"id\": \"d\", \"label\": \"Eliminar BPF\"}], \"correctAnswer\": \"b\"}]}"
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-gestao-pessoas-rh",
+      "thumbnailUrl": "/bg-celebration.png",
+      "description": "Fronteiras e complementaridade entre RH e liderança na gestão de pessoas, desempenho e clima organizacional na LioTécnica.",
+      "durationMinutes": 50,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "RH e Liderança — Papéis Complementares",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Quem faz o quê na gestão de pessoas?</h2><p>Na LioTécnica, RH atua como parceiro estratégico: políticas de remuneração, benefícios, recrutamento, desenvolvimento (UniLio), compliance trabalhista e clima. O líder direto é responsável pelo dia a dia: metas, feedback, segurança da equipe e engajamento.</p><p>Confusão de papéis gera frustração — o colaborador não sabe se fala com gestor ou RH sobre promoção, conflito ou adaptação na planta.</p><ul><li><strong>Líder:</strong> feedback contínuo, escala, EPIs, produtividade, 1:1.</li><li><strong>RH:</strong> admissão, folha, treinamentos obrigatórios, mediação, políticas.</li><li><strong>Juntos:</strong> planos de desenvolvimento, sucessão, investigações de conduta.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Conteúdo em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=jiUotcPVPdc",
+          "durationMinutes": 25
+        },
+        {
+          "sortOrder": 3,
+          "title": "Avaliação — Gestão de Pessoas",
+          "contentType": "quiz",
+          "contentUrl": null,
+          "durationMinutes": 10,
+          "quizJson": "{\"passingScore\": 70, \"questions\": [{\"id\": \"q1\", \"text\": \"O líder direto é responsável por:\", \"options\": [{\"id\": \"a\", \"label\": \"Apenas folha de pagamento\"}, {\"id\": \"b\", \"label\": \"Feedback e gestão do dia a dia da equipe\"}, {\"id\": \"c\", \"label\": \"Certificação FSSC\"}, {\"id\": \"d\", \"label\": \"Calibração de vácuo\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q2\", \"text\": \"O RH atua como:\", \"options\": [{\"id\": \"a\", \"label\": \"Apenas arquivo de documentos\"}, {\"id\": \"b\", \"label\": \"Parceiro estratégico em políticas e desenvolvimento\"}, {\"id\": \"c\", \"label\": \"Substituto do líder na produção\"}, {\"id\": \"d\", \"label\": \"Fornecedor de matéria-prima\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q3\", \"text\": \"Conflito entre colegas deve ser:\", \"options\": [{\"id\": \"a\", \"label\": \"Ignorado\"}, {\"id\": \"b\", \"label\": \"Tratado com líder e RH conforme gravidade\"}, {\"id\": \"c\", \"label\": \"Divulgado em rede social\"}, {\"id\": \"d\", \"label\": \"Resolvido apenas por e-mail anônimo externo\"}], \"correctAnswer\": \"b\"}]}"
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-power-bi-curso",
+      "thumbnailUrl": "/bg-poll.png",
+      "description": "Introdução ao Power BI para análise de dados operacionais, qualidade e RH na LioTécnica, com vídeo prático e avaliação.",
+      "durationMinutes": 55,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Business Intelligence na LioTécnica",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Por que BI na indústria alimentícia?</h2><p>Dashboards em Power BI consolidam dados de produção (OEE, lotes), qualidade (NC, CAPA), estoque e RH — permitindo decisões rápidas sem planilhas dispersas.</p><p>Na LioTécnica, áreas usam BI para acompanhar meta de liofilização, refugo por linha, treinamentos UniLio e indicadores de SST.</p><ul><li>Conecte apenas fontes autorizadas (ERP, planilhas oficiais).</li><li>Respeite LGPD ao exibir dados pessoais — use agregações quando possível.</li><li>Padronize definições (ex.: o que conta como \"lote concluído\").</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Conteúdo em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=37oxzq2pSbI",
+          "durationMinutes": 30
+        },
+        {
+          "sortOrder": 3,
+          "title": "Avaliação — Power BI",
+          "contentType": "quiz",
+          "contentUrl": null,
+          "durationMinutes": 10,
+          "quizJson": "{\"passingScore\": 70, \"questions\": [{\"id\": \"q1\", \"text\": \"Power BI é usado principalmente para:\", \"options\": [{\"id\": \"a\", \"label\": \"Editar vídeos\"}, {\"id\": \"b\", \"label\": \"Visualizar e analisar dados\"}, {\"id\": \"c\", \"label\": \"Controlar liofilizadores\"}, {\"id\": \"d\", \"label\": \"Substituir APPCC\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q2\", \"text\": \"Ao publicar dashboard com dados de colaboradores:\", \"options\": [{\"id\": \"a\", \"label\": \"Ignore LGPD\"}, {\"id\": \"b\", \"label\": \"Respeite privacidade e permissões\"}, {\"id\": \"c\", \"label\": \"Compartilhe link público\"}, {\"id\": \"d\", \"label\": \"Inclua CPF de todos\"}], \"correctAnswer\": \"b\"}, {\"id\": \"q3\", \"text\": \"Fonte de dados confiável na LioTécnica:\", \"options\": [{\"id\": \"a\", \"label\": \"Planilha pessoal desatualizada\"}, {\"id\": \"b\", \"label\": \"ERP e bases oficiais autorizadas\"}, {\"id\": \"c\", \"label\": \"Grupo de WhatsApp\"}, {\"id\": \"d\", \"label\": \"Rumor de corredor\"}], \"correctAnswer\": \"b\"}]}"
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-nr35-resumo",
+      "thumbnailUrl": "/bg-comunicado-security.png",
+      "description": "Resumo objetivo dos requisitos da NR-35 para reciclagem e consulta rápida de colaboradores expostos a trabalho em altura.",
+      "durationMinutes": 35,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Resumo NR-35 — Trabalho em Altura",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>NR-35 em pontos-chave</h2><p>Esta recapitulação destina-se a colaboradores já treinados que precisam revisar conceitos antes de atividades em silos, passarelas e manutenção de equipamentos elevados na LioTécnica.</p><ul><li>Capacitação inicial e periódica conforme NR-35 e procedimento interno.</li><li>Análise de Risco (APR) e Permissão de Trabalho quando aplicável.</li><li>Sistemas de proteção contra quedas: cinto, talabarte, trava-quedas, linha de vida.</li><li>Proibido improvisar ancoragem em estruturas não certificadas.</li><li>Acidente ou quase-acidente: parar atividade e comunicar SST imediatamente.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Aula em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=jPQy_-fD1Do",
+          "durationMinutes": 20
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-fssc-22000",
+      "thumbnailUrl": "/bg-benefits.png",
+      "description": "Visão geral da certificação FSSC 22000 e sua relevância para sistemas de gestão de segurança de alimentos na LioTécnica.",
+      "durationMinutes": 40,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "FSSC 22000 — Visão Geral",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>O que é FSSC 22000?</h2><p>FSSC 22000 é esquema de certificação reconhecido pela GFSI, baseado em ISO 22000 e requisitos setoriais (PRPs). Para a LioTécnica, reforça integração entre BPF, APPCC, gestão de alérgenos e rastreabilidade.</p><p>Benefícios: acesso a mercados exigentes, linguagem comum com auditores, melhoria sistêmica de processos.</p><ul><li>Alinhamento com APPCC e planos de pré-requisitos.</li><li>Auditorias internas e externas periódicas.</li><li>Envolvimento de todas as áreas — não é \"só qualidade\".</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Aula em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=SesQp3j4G7A",
+          "durationMinutes": 25
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-custo-nao-qualidade",
+      "thumbnailUrl": "/bg-news.png",
+      "description": "Impacto financeiro de falhas de qualidade, retrabalho e recall na indústria de alimentos — lições para a operação LioTécnica.",
+      "durationMinutes": 60,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Custo da Não Qualidade",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Qualidade custa — a falta dela custa mais</h2><p>Na indústria alimentícia, um lote fora de especificação pode significar destruição de produto, recall, multa e perda de contrato. O custo da não qualidade inclui refugo, horas extras de retrabalho, inspeção adicional e dano à marca.</p><p>Na LioTécnica, indicadores de PPM, taxa de retrabalho pós-liofilização e tempo de parada por NC alimentam melhoria contínua.</p><ul><li>Prevenção via APPCC e manutenção preventiva é mais barata que correção.</li><li>Rastreabilidade reduz escopo de recall quando há incidente.</li><li>Treinamento UniLio reduz erros humanos recorrentes.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Aula em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=eafwD2I8iSo",
+          "durationMinutes": 45
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-stp-alimenticia",
+      "thumbnailUrl": "/bg-news-innovation.png",
+      "description": "Aplicação do Sistema Toyota de Produção e princípios Lean em linhas de produção de alimentos.",
+      "durationMinutes": 45,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "STP na Indústria Alimentícia",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Sistema Toyota de Produção (STP) em alimentos</h2><p>STP enfatiza fluxo puxado pelo cliente (just-in-time), jidoka (parar a linha ao detectar defeito) e respeito às pessoas. Em plantas de liofilização, parar cedo um lote suspeito evita desperdício massivo downstream.</p><ul><li>Heijunka: nivelamento de produção reduz picos de estoque de insumos perecíveis.</li><li>TPM integrado reduz paradas não planejadas de câmaras e compressores.</li><li>Visual management: andons e quadros de status na linha.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Aula em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=KyN3l_fVb5Q",
+          "durationMinutes": 30
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-instrumentacao",
+      "thumbnailUrl": "/bg-news.png",
+      "description": "Conceitos de instrumentação industrial, sensores e controle de processos em plantas de liofilização e secagem.",
+      "durationMinutes": 65,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Instrumentação na Planta",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Instrumentação e controle de processo</h2><p>Liofilizadores dependem de sensores de temperatura de placa, vácuo, pressão e umidade com calibração rastreável. Erro de instrumento pode invalidar lote inteiro e gerar não conformidade em auditoria.</p><ul><li>Calibração periódica conforme plano de metrologia.</li><li>PLCs e SCADA registram curvas de ciclo para rastreabilidade.</li><li>Falha de sensor: procedimento de contingência e segregação de lote.</li><li>Manutenção e qualidade validam após intervenção em instrumento crítico.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Aula em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=J2QaNIZaMIA",
+          "durationMinutes": 50
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-tpm-manutencao",
+      "thumbnailUrl": "/bg-news-innovation.png",
+      "description": "Pilares da TPM (Manutenção Produtiva Total) para confiabilidade de equipamentos na indústria.",
+      "durationMinutes": 65,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "TPM — Manutenção Produtiva Total",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>TPM na LioTécnica</h2><p>TPM envolve operadores na manutenção autônoma (limpeza, inspeção, lubrificação) e manutenção planejada para reduzir paradas em liofilizadores, túneis de congelamento e embaladoras.</p><ul><li>Os 8 pilares incluem melhoria focada, manutenção autônoma e planejada, educação e segurança.</li><li>MTBF e MTTR são indicadores-chave para equipes de manutenção.</li><li>Integração com Lean evita \"apagar incêndio\" reativo.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Aula em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=AdmTPlMBlnA",
+          "durationMinutes": 50
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-lean-six-sigma",
+      "thumbnailUrl": "/bg-news-innovation.png",
+      "description": "Comparativo entre Lean e Six Sigma e aplicação integrada para redução de variação e desperdícios.",
+      "durationMinutes": 40,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Lean e Six Sigma",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Duas origens, um objetivo</h2><p>Lean foca fluxo e eliminação de desperdício; Six Sigma foca redução de variação e defeitos (DMAIC). Na LioTécnica, projetos combinados podem atacar refugo por umidade fora de spec (variação) e espera entre etapas (desperdício).</p><ul><li>Lean: valor, fluxo, puxar, perfeição.</li><li>Six Sigma: definir, medir, analisar, melhorar, controlar.</li><li>Green Belt e Kaizen podem coexistir na mesma linha de embalagem.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Aula em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=vrpyezyOHDE",
+          "durationMinutes": 25
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-lideranca-negociar",
+      "thumbnailUrl": "/bg-celebration.png",
+      "description": "Negociação, influência e desafios de liderança para novos gestores na indústria.",
+      "durationMinutes": 40,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Liderar é Negociar",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Liderança e negociação</h2><p>Novos gestores na LioTécnica negociam diariamente: prioridade entre produção e manutenção, recursos de equipe, prazos com qualidade e conflitos entre turnos.</p><ul><li>Separar pessoas de problemas; focar interesses, não posições.</li><li>Preparar BATNA (melhor alternativa) antes de reuniões críticas.</li><li>Transparência com dados (OEE, NC) fortalece credibilidade.</li><li>Escuta ativa reduz resistência a mudanças de procedimento.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Aula em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=Vu0gYy4TOmE",
+          "durationMinutes": 25
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-power-bi-iniciantes",
+      "thumbnailUrl": "/bg-poll.png",
+      "description": "Guia introdutório ao Power BI: conceitos, interface e primeiros passos para análise de dados.",
+      "durationMinutes": 35,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Power BI para Iniciantes",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Primeiros passos em Power BI</h2><p>Power BI combina Power Query (ETL), modelo de dados (relacionamentos) e visualizações interativas. Ideal para substituir relatórios estáticos de produção semanal.</p><ul><li>Importe dados de Excel ou SQL com permissão.</li><li>Use medidas DAX simples (soma, média) antes de fórmulas complexas.</li><li>Publique no workspace corporativo — não em conta pessoal.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Aula em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=IJc4nb3jnr8",
+          "durationMinutes": 20
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-excel-tabela-dinamica",
+      "thumbnailUrl": "/bg-poll.png",
+      "description": "Tutorial prático de tabelas dinâmicas no Excel para análise de dados de produção, estoque e RH.",
+      "durationMinutes": 40,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Tabelas Dinâmicas no Excel",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Tabela dinâmica na rotina LioTécnica</h2><p>Tabelas dinâmicas permitem cruzar lotes, linhas, turnos e causas de refugo sem fórmulas complexas — útil para supervisores e analistas de qualidade.</p><ul><li>Organize dados em tabela (cabeçalho único, sem linhas mescladas).</li><li>Arraste campos para linhas, colunas e valores.</li><li>Filtros de slicer para período e produto.</li><li>Atualize fonte ao receber novo export do ERP.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Aula em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=x9xttoO0r0M",
+          "durationMinutes": 25
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-excel-entrevista",
+      "thumbnailUrl": "/bg-poll.png",
+      "description": "Exercícios práticos de Excel frequentemente cobrados em processos seletivos — útil para carreira interna.",
+      "durationMinutes": 35,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Excel em Processos Seletivos",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Excel cobrado em entrevistas</h2><p>Processos seletivos para analista, supervisor e administrativo frequentemente testam PROCV, tabelas dinâmicas, gráficos e formatação condicional.</p><ul><li>PROCV/XLOOKUP para cruzar cadastro e resultados.</li><li>SE e SOMASES para indicadores condicionais.</li><li>Remover duplicatas e validar dados antes de analisar.</li><li>Documentar premissas ao apresentar resultado.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Aula em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=FEaXIzWsXIQ",
+          "durationMinutes": 20
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-lgpd-pme",
+      "thumbnailUrl": "/bg-comunicado-security.png",
+      "description": "Impactos práticos da LGPD em pequenas e médias empresas do setor alimentício e medidas de adequação.",
+      "durationMinutes": 40,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "LGPD para PMEs",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>LGPD na realidade de PMEs industriais</h2><p>Mesmo empresas de porte médio como a LioTécnica devem mapear dados pessoais, definir bases legais, contratos com operadores (folha, benefícios) e resposta a titulares.</p><ul><li>Inventário de dados: RH, visitantes, câmeras, fornecedores.</li><li>Política de privacidade e termo de consentimento quando necessário.</li><li>Treinamento anual de colaboradores (este curso complementa o básico).</li><li>Multas ANPD podem afetar PMEs — adequação é investimento, não luxo.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Aula em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=8q-TmQx_ihE",
+          "durationMinutes": 25
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-eng-alimentos-podcast",
+      "thumbnailUrl": "/bg-benefits.png",
+      "description": "Papel do engenheiro de alimentos na cadeia produtiva industrial e carreiras no setor.",
+      "durationMinutes": 45,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "Engenharia de Alimentos",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Engenheiro de alimentos na indústria</h2><p>O profissional de alimentos atua em P&D, qualidade, produção e regulatório — essencial em empresas como a LioTécnica que processam frutas liofilizadas, cafés e ingredientes.</p><ul><li>Conhecimento de microbiologia, termodinâmica e BPF.</li><li>Interface com ANVISA, exportação e certificações.</li><li>Melhoria de processo e redução de perdas.</li><li>Carreira pode evoluir para gestão de planta ou especialista técnico.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Aula em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://www.youtube.com/watch?v=bvFDOVaj_Z4",
+          "durationMinutes": 30
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-bpf-usp",
+      "thumbnailUrl": "/bg-benefits.png",
+      "description": "Boas Práticas de Fabricação na indústria de alimentos — conteúdo preparatório e aula acadêmica USP.",
+      "durationMinutes": 60,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "BPF na Indústria de Alimentos",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>Boas Práticas de Fabricação (BPF)</h2><p>BPF são procedimentos sanitários obrigatórios que garantem condições higiênico-sanitárias em todas as etapas — da matéria-prima ao produto final. Base legal para APPCC e exportação.</p><ul><li>Higiene pessoal, uniformes, lavagem de mãos e controle de visitantes.</li><li>Layout que previne contaminação cruzada (fluxo unidirecional).</li><li>Controle de pragas, água, resíduos e manutenção de instalações.</li><li>Registros e treinamento documentado — auditores verificam evidências.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Aula em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://eaulas.usp.br/portal/video.action?idItem=10195",
+          "durationMinutes": 45
+        }
+      ]
+    },
+    {
+      "seedKey": "ext-appcc-usp",
+      "thumbnailUrl": "/bg-benefits.png",
+      "description": "Análise de Perigos e Pontos Críticos de Controle — conteúdo avançado com aula acadêmica USP.",
+      "durationMinutes": 75,
+      "modules": [
+        {
+          "sortOrder": 1,
+          "title": "APPCC Avançado",
+          "contentType": "article",
+          "contentUrl": null,
+          "durationMinutes": 15,
+          "articleHtml": "<h2>APPCC em profundidade</h2><p>Após introdução ao APPCC, este módulo aprofunda árvore de decisão para PCC, planos de monitoramento, verificação e validação de controles em processos térmicos e liofilização.</p><ul><li>Reavaliação do plano APPCC quando muda processo, equipamento ou fornecedor.</li><li>Equipe multidisciplinar: qualidade, produção, P&D, manutenção.</li><li>Evidências para FSSC e clientes internacionais.</li><li>Simulações de recall testam rastreabilidade do plano.</li></ul>"
+        },
+        {
+          "sortOrder": 2,
+          "title": "Aula em Vídeo",
+          "contentType": "external",
+          "contentUrl": "https://eaulas.usp.br/portal/video.action/video?idItem=9775",
+          "durationMinutes": 60
+        }
+      ]
+    }
+  ]
+}

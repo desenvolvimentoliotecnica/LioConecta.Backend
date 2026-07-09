@@ -250,6 +250,7 @@ public static class AppSettingCatalog
         ..SystemsSettingCatalog.ToAppSettingDefinitions(),
         ..LoopSettingCatalog.ToAppSettingDefinitions(),
         ..CompassSettingCatalog.ToAppSettingDefinitions(),
+        ..UniLioSettingCatalog.ToAppSettingDefinitions(),
         ..PortalUiSettingCatalog.ToAppSettingDefinitions(),
     ];
 }

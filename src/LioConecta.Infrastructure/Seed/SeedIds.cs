@@ -38,4 +38,6 @@ internal static class SeedIds
     public static readonly Guid FacilitiesMenu20260712 = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffff07");
 
     public static readonly Guid CompassIbpSnapshotJul2026 = Guid.Parse("11111111-1111-1111-1111-111111111101");
+
+    public static readonly Guid UniLioCourseLiofilizacao = Guid.Parse("22222222-2222-2222-2222-222222220001");
 }

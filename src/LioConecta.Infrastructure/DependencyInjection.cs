@@ -165,6 +165,7 @@ public static class DependencyInjection
         services.AddScoped<IBenefitManagementService, BenefitManagementService>();
         services.AddScoped<ISystemCatalogService, SystemCatalogService>();
         services.AddScoped<ICompassService, CompassService>();
+        services.AddScoped<IUniLioService, UniLioService>();
         services.AddScoped<IEmailQueueService, EmailQueueService>();
         services.AddScoped<IEmailDispatchService, EmailDispatchService>();
         services.AddScoped<IEmailAdminService, EmailAdminService>();

@@ -9,7 +9,8 @@ namespace LioConecta.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/admin/email")]
-[Authorize(Policy = AuthPolicies.RequireAdmin)]
+[Authorize]
+[RequirePermission("admin.email.manage")]
 public sealed class AdminEmailController(
     IEmailConfigurationService configurationService,
     IEmailAdminService emailAdminService,

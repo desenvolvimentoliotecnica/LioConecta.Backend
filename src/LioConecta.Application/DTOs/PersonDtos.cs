@@ -10,7 +10,10 @@ public sealed record MeDto(
     string? Title,
     string? PhotoUrl,
     string? DepartmentName,
-    IReadOnlyList<UserRole> Roles);
+    IReadOnlyList<UserRole> Roles,
+    IReadOnlyList<EffectivePermissionDto> Permissions = null!,
+    string? SubjectType = null,
+    bool IsTestUser = false);
 
 public sealed record PersonSummaryDto(
     Guid Id,

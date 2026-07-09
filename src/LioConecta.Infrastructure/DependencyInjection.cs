@@ -189,6 +189,12 @@ public static class DependencyInjection
         services.AddScoped<ILdapAuthService, LdapAuthService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IPortalJwtService, PortalJwtService>();
+        services.AddScoped<IPermissionService, PermissionService>();
+        services.AddScoped<IDataScopeResolver, DataScopeResolver>();
+        services.AddScoped<IRbacAdminService, RbacAdminService>();
+        services.AddScoped<RbacTokenResolver>();
+        services.AddScoped<RbacPermissionSeeder>();
+        services.AddScoped<RbacMigrationSeeder>();
         services.AddScoped<LdapConnectionTester>();
         services.AddScoped<IPersonPhotoStorageService, PersonPhotoStorageService>();
         services.AddScoped<GraphConnectionTester>();

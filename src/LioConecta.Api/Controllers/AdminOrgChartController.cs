@@ -8,7 +8,8 @@ namespace LioConecta.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/admin/org-chart")]
-[Authorize(Policy = AuthPolicies.RequireAdmin)]
+[Authorize]
+[RequirePermission("org_chart.govern")]
 public sealed class AdminOrgChartController(
     IOrgChartGovernanceService governanceService,
     ICurrentUserService currentUserService) : ControllerBase

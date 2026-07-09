@@ -18,6 +18,7 @@ namespace LioConecta.Infrastructure.Services;
 public sealed class UniLioAuthoringService(
     AppDbContext db,
     ICurrentUserService currentUserService,
+    IPermissionService permissionService,
     INotificationService notificationService,
     UniLioApprovalRecipientResolver approvalRecipientResolver,
     IUniLioEmailNotifier uniLioEmailNotifier,
@@ -30,7 +31,7 @@ public sealed class UniLioAuthoringService(
         var viewer = await GetViewerAsync(cancellationToken);
         var query = db.UniLioCourses.AsNoTracking().Include(c => c.Modules).AsQueryable();
 
-        if (!IsAdminOrHr(viewer.Roles))
+        if (!await UniLioAuthorization.CanApproveCoursesAsync(permissionService, cancellationToken))
         {
             query = query.Where(c =>
                 c.InstructorPersonId == viewer.PersonId
@@ -43,8 +44,7 @@ public sealed class UniLioAuthoringService(
 
     public async Task<UniLioAuthoringCourseListDto> ListPendingCoursesAsync(CancellationToken cancellationToken = default)
     {
-        var viewer = await GetViewerAsync(cancellationToken);
-        EnsureAdminOrHr(viewer);
+        await UniLioAuthorization.EnsureCanApproveCoursesAsync(permissionService, cancellationToken);
 
         var courses = await db.UniLioCourses.AsNoTracking()
             .Include(c => c.Modules)
@@ -59,14 +59,13 @@ public sealed class UniLioAuthoringService(
     {
         var course = await LoadCourseAsync(id, cancellationToken);
         var viewer = await GetViewerAsync(cancellationToken);
-        EnsureCanView(course, viewer);
+        await EnsureCanViewAsync(course, viewer, cancellationToken);
         return MapAuthoringCourse(course);
     }
 
     public async Task<UniLioApprovalReviewDto> GetApprovalReviewAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var viewer = await GetViewerAsync(cancellationToken);
-        EnsureAdminOrHr(viewer);
+        await UniLioAuthorization.EnsureCanApproveCoursesAsync(permissionService, cancellationToken);
 
         var course = await db.UniLioCourses.AsNoTracking()
             .Include(c => c.Modules)
@@ -121,7 +120,7 @@ public sealed class UniLioAuthoringService(
         CancellationToken cancellationToken = default)
     {
         var viewer = await GetViewerAsync(cancellationToken);
-        EnsureCanAuthor(viewer);
+        await UniLioAuthorization.EnsureCanAuthorAsync(permissionService, cancellationToken);
 
         var now = DateTimeOffset.UtcNow;
         var seedKey = await GenerateUniqueSeedKeyAsync(request.Title, cancellationToken);
@@ -164,7 +163,7 @@ public sealed class UniLioAuthoringService(
     {
         var course = await LoadCourseAsync(id, cancellationToken);
         var viewer = await GetViewerAsync(cancellationToken);
-        EnsureCanEdit(course, viewer);
+        await EnsureCanEditAsync(course, viewer, cancellationToken);
 
         course.Title = request.Title.Trim();
         course.Description = request.Description.Trim();
@@ -189,7 +188,7 @@ public sealed class UniLioAuthoringService(
     {
         var course = await LoadCourseAsync(id, cancellationToken);
         var viewer = await GetViewerAsync(cancellationToken);
-        EnsureCanEdit(course, viewer);
+        await EnsureCanEditAsync(course, viewer, cancellationToken);
 
         if (!UniLioCourseStatuses.EditableByInstructor.Contains(course.Status))
         {
@@ -231,7 +230,7 @@ public sealed class UniLioAuthoringService(
     {
         var course = await LoadCourseAsync(id, cancellationToken);
         var viewer = await GetViewerAsync(cancellationToken);
-        EnsureAdminOrHr(viewer);
+        await UniLioAuthorization.EnsureCanApproveCoursesAsync(permissionService, cancellationToken);
 
         if (!string.Equals(course.Status, UniLioCourseStatuses.PendingApproval, StringComparison.OrdinalIgnoreCase))
         {
@@ -289,7 +288,7 @@ public sealed class UniLioAuthoringService(
     {
         var course = await LoadCourseAsync(id, cancellationToken);
         var viewer = await GetViewerAsync(cancellationToken);
-        EnsureAdminOrHr(viewer);
+        await UniLioAuthorization.EnsureCanApproveCoursesAsync(permissionService, cancellationToken);
 
         if (!string.Equals(course.Status, UniLioCourseStatuses.PendingApproval, StringComparison.OrdinalIgnoreCase))
         {
@@ -330,7 +329,7 @@ public sealed class UniLioAuthoringService(
     {
         var course = await LoadCourseAsync(id, cancellationToken);
         var viewer = await GetViewerAsync(cancellationToken);
-        EnsureAdminOrHr(viewer);
+        await UniLioAuthorization.EnsureCanPublishCoursesAsync(permissionService, cancellationToken);
 
         var now = DateTimeOffset.UtcNow;
         var isFirstPublish = course.PublishedAt is null;
@@ -369,7 +368,7 @@ public sealed class UniLioAuthoringService(
     {
         var course = await LoadCourseAsync(courseId, cancellationToken);
         var viewer = await GetViewerAsync(cancellationToken);
-        EnsureCanEdit(course, viewer);
+        await EnsureCanEditAsync(course, viewer, cancellationToken);
 
         var now = DateTimeOffset.UtcNow;
         var module = new UniLioCourseModule
@@ -402,7 +401,7 @@ public sealed class UniLioAuthoringService(
     {
         var course = await LoadCourseAsync(courseId, cancellationToken);
         var viewer = await GetViewerAsync(cancellationToken);
-        EnsureCanEdit(course, viewer);
+        await EnsureCanEditAsync(course, viewer, cancellationToken);
 
         var module = course.Modules.FirstOrDefault(m => m.Id == moduleId)
             ?? throw new KeyNotFoundException($"Módulo {moduleId} não encontrado.");
@@ -425,7 +424,7 @@ public sealed class UniLioAuthoringService(
     {
         var course = await LoadCourseAsync(courseId, cancellationToken);
         var viewer = await GetViewerAsync(cancellationToken);
-        EnsureCanEdit(course, viewer);
+        await EnsureCanEditAsync(course, viewer, cancellationToken);
 
         var module = course.Modules.FirstOrDefault(m => m.Id == moduleId)
             ?? throw new KeyNotFoundException($"Módulo {moduleId} não encontrado.");
@@ -451,7 +450,7 @@ public sealed class UniLioAuthoringService(
     {
         var course = await LoadCourseAsync(courseId, cancellationToken);
         var viewer = await GetViewerAsync(cancellationToken);
-        EnsureCanEdit(course, viewer);
+        await EnsureCanEditAsync(course, viewer, cancellationToken);
 
         var module = course.Modules.FirstOrDefault(m => m.Id == moduleId)
             ?? throw new KeyNotFoundException($"Módulo {moduleId} não encontrado.");
@@ -496,7 +495,7 @@ public sealed class UniLioAuthoringService(
     {
         var course = await LoadCourseAsync(courseId, cancellationToken);
         var viewer = await GetViewerAsync(cancellationToken);
-        EnsureCanEdit(course, viewer);
+        await EnsureCanEditAsync(course, viewer, cancellationToken);
 
         var module = course.Modules.FirstOrDefault(m => m.Id == moduleId)
             ?? throw new KeyNotFoundException($"Módulo {moduleId} não encontrado.");
@@ -518,7 +517,7 @@ public sealed class UniLioAuthoringService(
     {
         var course = await LoadCourseAsync(courseId, cancellationToken);
         var viewer = await GetViewerAsync(cancellationToken);
-        EnsureCanEdit(course, viewer);
+        await EnsureCanEditAsync(course, viewer, cancellationToken);
 
         var assessment = course.Assessments.FirstOrDefault();
         var now = DateTimeOffset.UtcNow;
@@ -557,7 +556,7 @@ public sealed class UniLioAuthoringService(
     {
         var course = await LoadCourseAsync(courseId, cancellationToken);
         var viewer = await GetViewerAsync(cancellationToken);
-        EnsureCanEdit(course, viewer);
+        await EnsureCanEditAsync(course, viewer, cancellationToken);
 
         var assessment = course.Assessments.FirstOrDefault()
             ?? throw new KeyNotFoundException("Avaliação final não configurada para este curso.");
@@ -587,31 +586,21 @@ public sealed class UniLioAuthoringService(
         return new ViewerContext(person.Id, person.Name, person.Email, roles);
     }
 
-    private static bool IsAdminOrHr(IReadOnlyList<UserRole> roles) =>
-        roles.Contains(UserRole.Admin) || roles.Contains(UserRole.HR);
+    private static bool IsCourseInstructor(UniLioCourse course, ViewerContext viewer) =>
+        course.InstructorPersonId == viewer.PersonId
+        || course.InstructorName.Contains(viewer.Name, StringComparison.OrdinalIgnoreCase);
 
-    private static void EnsureAdminOrHr(ViewerContext viewer)
+    private async Task EnsureCanViewAsync(
+        UniLioCourse course,
+        ViewerContext viewer,
+        CancellationToken cancellationToken)
     {
-        if (!IsAdminOrHr(viewer.Roles))
-        {
-            throw new UnauthorizedAccessException("Apenas Admin/RH podem executar esta ação.");
-        }
-    }
-
-    private static void EnsureCanAuthor(ViewerContext viewer)
-    {
-        _ = viewer;
-    }
-
-    private void EnsureCanView(UniLioCourse course, ViewerContext viewer)
-    {
-        if (IsAdminOrHr(viewer.Roles))
+        if (await UniLioAuthorization.CanApproveCoursesAsync(permissionService, cancellationToken))
         {
             return;
         }
 
-        if (course.InstructorPersonId == viewer.PersonId
-            || course.InstructorName.Contains(viewer.Name, StringComparison.OrdinalIgnoreCase))
+        if (IsCourseInstructor(course, viewer))
         {
             return;
         }
@@ -619,17 +608,24 @@ public sealed class UniLioAuthoringService(
         throw new UnauthorizedAccessException("Sem permissão para visualizar este curso.");
     }
 
-    private void EnsureCanEdit(UniLioCourse course, ViewerContext viewer)
+    private async Task EnsureCanEditAsync(
+        UniLioCourse course,
+        ViewerContext viewer,
+        CancellationToken cancellationToken)
     {
-        if (IsAdminOrHr(viewer.Roles))
+        if (await UniLioAuthorization.CanApproveCoursesAsync(permissionService, cancellationToken))
         {
             return;
         }
 
-        if (course.InstructorPersonId != viewer.PersonId
-            && !course.InstructorName.Contains(viewer.Name, StringComparison.OrdinalIgnoreCase))
+        if (!IsCourseInstructor(course, viewer))
         {
             throw new UnauthorizedAccessException("Sem permissão para editar este curso.");
+        }
+
+        if (!await permissionService.HasPermissionAsync("unilio.courses.edit.own", cancellationToken: cancellationToken))
+        {
+            throw new UnauthorizedAccessException("Sem permissão para editar cursos próprios.");
         }
 
         if (!UniLioCourseStatuses.EditableByInstructor.Contains(course.Status))

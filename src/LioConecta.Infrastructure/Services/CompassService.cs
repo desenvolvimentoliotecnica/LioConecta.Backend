@@ -10,7 +10,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LioConecta.Infrastructure.Services;
 
-public sealed class CompassService(AppDbContext db, IAppSettingsProvider settingsProvider) : ICompassService
+public sealed class CompassService(
+    AppDbContext db,
+    IAppSettingsProvider settingsProvider,
+    IPermissionService permissionService) : ICompassService
 {
     private const string FaturamentoTipo = "Faturamento";
     private const string ContribuicaoLiquidaTipo = "Contribuição Líquida";
@@ -21,22 +24,26 @@ public sealed class CompassService(AppDbContext db, IAppSettingsProvider setting
         PropertyNameCaseInsensitive = true,
     };
 
-    public Task<CompassBootstrapDto> GetBootstrapAsync(CancellationToken cancellationToken = default)
+    public async Task<CompassBootstrapDto> GetBootstrapAsync(CancellationToken cancellationToken = default)
     {
         var enabled = settingsProvider.GetBool(AppSettingKeys.CompassEnabled, true);
         var rolesJson = settingsProvider.GetString(
             AppSettingKeys.CompassAllowedRoles,
             "[\"Manager\",\"Admin\",\"AnalyticsViewer\"]");
         var emailsJson = settingsProvider.GetString(AppSettingKeys.CompassAllowedEmails, "[]");
+        var canAccess = enabled
+            && await permissionService.HasPermissionAsync("compass.access", DataScope.Global, cancellationToken);
 
-        return Task.FromResult(new CompassBootstrapDto(
+        return new CompassBootstrapDto(
             enabled,
+            canAccess,
             DeserializeRoles(rolesJson),
-            DeserializeEmails(emailsJson)));
+            DeserializeEmails(emailsJson));
     }
 
     public async Task<CompassMetaDto> GetMetaAsync(CancellationToken cancellationToken = default)
     {
+        await EnsureCanReadAsync(cancellationToken);
         var snapshot = await GetActiveSnapshotAsync(cancellationToken)
             ?? throw new InvalidOperationException("Nenhum snapshot Compass IBP ativo.");
 
@@ -54,6 +61,8 @@ public sealed class CompassService(AppDbContext db, IAppSettingsProvider setting
         CompassYtdQuery query,
         CancellationToken cancellationToken = default)
     {
+        await EnsureCanReadAsync(cancellationToken);
+
         var snapshot = await GetActiveSnapshotAsync(cancellationToken)
             ?? throw new InvalidOperationException("Nenhum snapshot Compass IBP ativo.");
 
@@ -125,6 +134,8 @@ public sealed class CompassService(AppDbContext db, IAppSettingsProvider setting
         CompassYtdQuery query,
         CancellationToken cancellationToken = default)
     {
+        await EnsureCanReadAsync(cancellationToken);
+
         var snapshot = await GetActiveSnapshotAsync(cancellationToken)
             ?? throw new InvalidOperationException("Nenhum snapshot Compass IBP ativo.");
 
@@ -164,6 +175,8 @@ public sealed class CompassService(AppDbContext db, IAppSettingsProvider setting
         CompassAggregatesQuery query,
         CancellationToken cancellationToken = default)
     {
+        await EnsureCanReadAsync(cancellationToken);
+
         var snapshot = await GetActiveSnapshotAsync(cancellationToken)
             ?? throw new InvalidOperationException("Nenhum snapshot Compass IBP ativo.");
 
@@ -205,6 +218,17 @@ public sealed class CompassService(AppDbContext db, IAppSettingsProvider setting
             .ToListAsync(cancellationToken))
             .OrderByDescending(r => Math.Abs(r.Variacao))
             .ToList();
+    }
+
+    private async Task EnsureCanReadAsync(CancellationToken cancellationToken)
+    {
+        if (await permissionService.HasPermissionAsync("compass.access", DataScope.Global, cancellationToken)
+            || await permissionService.HasPermissionAsync("compass.read", DataScope.Global, cancellationToken))
+        {
+            return;
+        }
+
+        await permissionService.EnsurePermissionAsync("compass.access", DataScope.Global, cancellationToken);
     }
 
     private async Task<CompassIbpSnapshot?> GetActiveSnapshotAsync(CancellationToken cancellationToken)

@@ -190,9 +190,7 @@ try
             policy.RequireRole(UserRole.HR.ToString()));
 
         options.AddPolicy(AuthPolicies.RequireAdmin, policy =>
-            policy.RequireRole(
-                UserRole.Admin.ToString(),
-                UserRole.AnalyticsViewer.ToString()));
+            policy.RequireRole(UserRole.Admin.ToString()));
 
         options.AddPolicy(AuthPolicies.RequireTI, policy =>
             policy.RequireRole(UserRole.TI.ToString()));
@@ -248,6 +246,8 @@ try
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
     builder.Services.AddProblemDetails();
     builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, ObservabilityAuthorizationResultHandler>();
+    builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+    builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
     builder.Services.AddLioConectaObservability(settingsProvider, builder.Environment);
 
     var postgresConnection = settingsProvider.GetConnectionString();

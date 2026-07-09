@@ -8,7 +8,8 @@ namespace LioConecta.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/analytics")]
-[Authorize(Policy = AuthPolicies.RequireAdmin)]
+[Authorize]
+[RequirePermission("analytics.view")]
 public sealed class AnalyticsController(IAnalyticsService analyticsService) : ControllerBase
 {
     [HttpGet("dashboard")]

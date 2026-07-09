@@ -173,11 +173,7 @@ public sealed partial class UniLioService
         CancellationToken cancellationToken = default)
     {
         var viewer = await GetViewerAsync(cancellationToken);
-        var persona = await ResolvePersonaAsync(viewer, cancellationToken);
-        if (persona is not ("admin" or "instructor"))
-        {
-            throw new UnauthorizedAccessException("Sem permissão para consultar dúvidas de instrutor.");
-        }
+        await UniLioAuthorization.EnsureInstructorPanelAsync(permissionService, cancellationToken);
 
         var courseIds = await GetInstructorCourseIdsAsync(viewer, cancellationToken);
         if (courseIds.Count == 0)
@@ -239,11 +235,7 @@ public sealed partial class UniLioService
         CancellationToken cancellationToken = default)
     {
         var viewer = await GetViewerAsync(cancellationToken);
-        var persona = await ResolvePersonaAsync(viewer, cancellationToken);
-        if (persona is not ("admin" or "instructor"))
-        {
-            throw new UnauthorizedAccessException("Sem permissão para consultar esta dúvida.");
-        }
+        await UniLioAuthorization.EnsureInstructorPanelAsync(permissionService, cancellationToken);
 
         return await MapQuestionDetailAsync(questionId, viewer, forInstructor: true, cancellationToken);
     }
@@ -254,11 +246,7 @@ public sealed partial class UniLioService
         CancellationToken cancellationToken = default)
     {
         var viewer = await GetViewerAsync(cancellationToken);
-        var persona = await ResolvePersonaAsync(viewer, cancellationToken);
-        if (persona is not ("admin" or "instructor"))
-        {
-            throw new UnauthorizedAccessException("Sem permissão para responder dúvidas.");
-        }
+        await UniLioAuthorization.EnsureInstructorPanelAsync(permissionService, cancellationToken);
 
         var question = await db.UniLioModuleQuestions
             .Include(q => q.Course)
@@ -316,11 +304,7 @@ public sealed partial class UniLioService
     public async Task MarkInstructorQuestionReadAsync(Guid questionId, CancellationToken cancellationToken = default)
     {
         var viewer = await GetViewerAsync(cancellationToken);
-        var persona = await ResolvePersonaAsync(viewer, cancellationToken);
-        if (persona is not ("admin" or "instructor"))
-        {
-            throw new UnauthorizedAccessException("Sem permissão.");
-        }
+        await UniLioAuthorization.EnsureInstructorPanelAsync(permissionService, cancellationToken);
 
         var question = await db.UniLioModuleQuestions
             .Include(q => q.Course)
@@ -384,26 +368,26 @@ public sealed partial class UniLioService
             .ToListAsync(cancellationToken);
     }
 
-    private Task<bool> IsInstructorOfCourseAsync(
+    private async Task<bool> IsInstructorOfCourseAsync(
         UniLioCourse course,
         ViewerContext viewer,
         CancellationToken cancellationToken)
     {
-        if (viewer.Roles.Contains(UserRole.Admin) || viewer.Roles.Contains(UserRole.HR))
+        if (await UniLioAuthorization.CanApproveCoursesAsync(permissionService, cancellationToken))
         {
-            return Task.FromResult(true);
+            return true;
         }
 
         if (course.InstructorPersonId.HasValue && course.InstructorPersonId == viewer.PersonId)
         {
-            return Task.FromResult(true);
+            return true;
         }
 
         var instructorName = course.InstructorName ?? string.Empty;
         var matchesName = instructorName.Contains(viewer.Name, StringComparison.OrdinalIgnoreCase);
         var matchesEmail = !string.IsNullOrWhiteSpace(viewer.Email)
             && instructorName.Contains(viewer.Email, StringComparison.OrdinalIgnoreCase);
-        return Task.FromResult(matchesName || matchesEmail);
+        return matchesName || matchesEmail;
     }
 
     private static string NormalizeVisibility(string? visibility)

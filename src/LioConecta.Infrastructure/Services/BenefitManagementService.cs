@@ -14,13 +14,11 @@ public sealed class BenefitManagementService(
     IBenefitCatalogRepository catalogRepository,
     IPersonRepository personRepository,
     IPersonService personService,
-    ICurrentUserService currentUserService,
-    IAppSettingsProvider settingsProvider) : IBenefitManagementService
+    IPermissionService permissionService) : IBenefitManagementService
 {
     public async Task<BenefitsBootstrapDto> GetBootstrapAsync(CancellationToken cancellationToken = default)
     {
-        var canManage = await BenefitManageAuthorization.CanManageAsync(
-            db, currentUserService, settingsProvider, cancellationToken);
+        var canManage = await BenefitManageAuthorization.CanManageAsync(permissionService, cancellationToken);
         var directory = await personService.GetDirectoryAsync(null, null, cancellationToken);
         var departments = directory.Departments
             .Select(dept => new BenefitDepartmentOptionDto(dept.Id, dept.Name, dept.Count))
@@ -36,8 +34,7 @@ public sealed class BenefitManagementService(
     }
 
     public async Task<BenefitManagePolicyDto> GetManagePolicyAsync(CancellationToken cancellationToken = default) =>
-        new(await BenefitManageAuthorization.CanManageAsync(
-            db, currentUserService, settingsProvider, cancellationToken));
+        new(await BenefitManageAuthorization.CanManageAsync(permissionService, cancellationToken));
 
     public async Task<IReadOnlyList<BenefitManagementListItemDto>> ListManagementAsync(
         Guid? personId,
@@ -48,8 +45,7 @@ public sealed class BenefitManagementService(
         bool includeInactive,
         CancellationToken cancellationToken = default)
     {
-        await BenefitManageAuthorization.EnsureCanManageAsync(
-            db, currentUserService, settingsProvider, cancellationToken);
+        await BenefitManageAuthorization.EnsureCanManageAsync(permissionService, cancellationToken);
 
         var items = await benefitRepository.ListForManagementAsync(
             personId, departmentId, catalogKey, q, category, includeInactive, cancellationToken);
@@ -61,8 +57,7 @@ public sealed class BenefitManagementService(
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        await BenefitManageAuthorization.EnsureCanManageAsync(
-            db, currentUserService, settingsProvider, cancellationToken);
+        await BenefitManageAuthorization.EnsureCanManageAsync(permissionService, cancellationToken);
 
         var entity = await benefitRepository.GetByIdAsync(id, cancellationToken);
         return entity is null ? null : MapDetail(entity);
@@ -72,8 +67,7 @@ public sealed class BenefitManagementService(
         UpsertEmployeeBenefitRequest request,
         CancellationToken cancellationToken = default)
     {
-        await BenefitManageAuthorization.EnsureCanManageAsync(
-            db, currentUserService, settingsProvider, cancellationToken);
+        await BenefitManageAuthorization.EnsureCanManageAsync(permissionService, cancellationToken);
         ValidateEmployeeBenefitRequest(request);
         await EnsurePersonExistsAsync(request.PersonId, cancellationToken);
 
@@ -96,8 +90,7 @@ public sealed class BenefitManagementService(
         UpsertEmployeeBenefitRequest request,
         CancellationToken cancellationToken = default)
     {
-        await BenefitManageAuthorization.EnsureCanManageAsync(
-            db, currentUserService, settingsProvider, cancellationToken);
+        await BenefitManageAuthorization.EnsureCanManageAsync(permissionService, cancellationToken);
         ValidateEmployeeBenefitRequest(request);
 
         var entity = await benefitRepository.GetByIdAsync(id, cancellationToken)
@@ -112,8 +105,7 @@ public sealed class BenefitManagementService(
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        await BenefitManageAuthorization.EnsureCanManageAsync(
-            db, currentUserService, settingsProvider, cancellationToken);
+        await BenefitManageAuthorization.EnsureCanManageAsync(permissionService, cancellationToken);
 
         var entity = await benefitRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new KeyNotFoundException($"Benefício {id} não encontrado.");
@@ -127,8 +119,7 @@ public sealed class BenefitManagementService(
         AssignBenefitFromCatalogRequest request,
         CancellationToken cancellationToken = default)
     {
-        await BenefitManageAuthorization.EnsureCanManageAsync(
-            db, currentUserService, settingsProvider, cancellationToken);
+        await BenefitManageAuthorization.EnsureCanManageAsync(permissionService, cancellationToken);
 
         var catalog = await catalogRepository.GetByKeyAsync(NormalizeKey(request.CatalogKey), cancellationToken)
             ?? throw new ArgumentException("Item de catálogo não encontrado.");
@@ -158,8 +149,7 @@ public sealed class BenefitManagementService(
         BulkAssignBenefitsRequest request,
         CancellationToken cancellationToken = default)
     {
-        await BenefitManageAuthorization.EnsureCanManageAsync(
-            db, currentUserService, settingsProvider, cancellationToken);
+        await BenefitManageAuthorization.EnsureCanManageAsync(permissionService, cancellationToken);
 
         var catalog = await catalogRepository.GetByKeyAsync(NormalizeKey(request.CatalogKey), cancellationToken)
             ?? throw new ArgumentException("Item de catálogo não encontrado.");
@@ -218,8 +208,7 @@ public sealed class BenefitManagementService(
         BulkSetActiveBenefitsRequest request,
         CancellationToken cancellationToken = default)
     {
-        await BenefitManageAuthorization.EnsureCanManageAsync(
-            db, currentUserService, settingsProvider, cancellationToken);
+        await BenefitManageAuthorization.EnsureCanManageAsync(permissionService, cancellationToken);
 
         var people = await ResolveTargetsAsync(request.Target, cancellationToken);
         if (people.Count == 0)
@@ -296,8 +285,7 @@ public sealed class BenefitManagementService(
         string? onDuplicate,
         CancellationToken cancellationToken = default)
     {
-        await BenefitManageAuthorization.EnsureCanManageAsync(
-            db, currentUserService, settingsProvider, cancellationToken);
+        await BenefitManageAuthorization.EnsureCanManageAsync(permissionService, cancellationToken);
 
         var people = await ResolveTargetsAsync(target, cancellationToken);
         if (people.Count == 0)

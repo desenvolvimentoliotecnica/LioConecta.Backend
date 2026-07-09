@@ -16,10 +16,10 @@ public sealed partial class UniLioService(
     AppDbContext db,
     IAppSettingsProvider settingsProvider,
     ICurrentUserService currentUserService,
+    IPermissionService permissionService,
     UniLioCompletionService completionService,
     INotificationService notificationService) : IUniLioService
 {
-    private const string SeedInstructorName = "Maria Silva";
     private const int SkillGapTargetLevel = 3;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -27,23 +27,26 @@ public sealed partial class UniLioService(
         PropertyNameCaseInsensitive = true,
     };
 
-    public Task<UniLioBootstrapDto> GetBootstrapAsync(CancellationToken cancellationToken = default)
+    public async Task<UniLioBootstrapDto> GetBootstrapAsync(CancellationToken cancellationToken = default)
     {
         var enabled = settingsProvider.GetBool(AppSettingKeys.UniLioEnabled, true);
         var rolesJson = settingsProvider.GetString(
             AppSettingKeys.UniLioAllowedRoles,
             "[\"Employee\",\"Manager\",\"HR\",\"Admin\"]");
         var emailsJson = settingsProvider.GetString(AppSettingKeys.UniLioAllowedEmails, "[]");
+        var canAccess = enabled
+            && await UniLioAuthorization.CanAccessAsync(permissionService, cancellationToken);
 
-        return Task.FromResult(new UniLioBootstrapDto(
+        return new UniLioBootstrapDto(
             enabled,
+            canAccess,
             DeserializeRoles(rolesJson),
-            DeserializeEmails(emailsJson)));
+            DeserializeEmails(emailsJson));
     }
 
     public async Task<UniLioMetaDto> GetMetaAsync(CancellationToken cancellationToken = default)
     {
-        var viewer = await GetViewerAsync(cancellationToken);
+        await UniLioAuthorization.EnsureCanAccessAsync(permissionService, cancellationToken);
 
         var areas = await db.UniLioCourses.AsNoTracking()
             .Select(c => c.Area)
@@ -69,7 +72,7 @@ public sealed partial class UniLioService(
             .OrderBy(v => v)
             .ToListAsync(cancellationToken);
 
-        var persona = await ResolvePersonaAsync(viewer, cancellationToken);
+        var persona = await UniLioAuthorization.ResolvePersonaAsync(permissionService, cancellationToken);
 
         return new UniLioMetaDto(persona, areas, departments, contentTypes, skills);
     }
@@ -300,7 +303,6 @@ public sealed partial class UniLioService(
         CancellationToken cancellationToken = default)
     {
         var viewer = await GetViewerAsync(cancellationToken);
-        var persona = await ResolvePersonaAsync(viewer, cancellationToken);
 
         var visibleIds = await GetVisibleCourseIdsAsync(viewer, cancellationToken);
         if (!visibleIds.Contains(courseId))
@@ -308,7 +310,7 @@ public sealed partial class UniLioService(
             throw new KeyNotFoundException($"Curso {courseId} não encontrado.");
         }
 
-        if (persona is not ("admin" or "manager" or "instructor"))
+        if (!await CanViewCourseEnrollmentsAsync(cancellationToken))
         {
             throw new UnauthorizedAccessException("Sem permissão para consultar matrículas deste curso.");
         }
@@ -804,12 +806,16 @@ public sealed partial class UniLioService(
 
     public async Task<UniLioManagerTeamDto> GetManagerTeamAsync(CancellationToken cancellationToken = default)
     {
+        await UniLioAuthorization.EnsureTeamViewAsync(permissionService, cancellationToken);
         var viewer = await GetViewerAsync(cancellationToken);
-        var roles = await currentUserService.GetRolesAsync(cancellationToken);
-        var isAdmin = roles.Contains(UserRole.Admin) || roles.Contains(UserRole.HR);
+        var hasGlobalTeamScope = await UniLioAuthorization.HasGlobalDataScopeAsync(
+            permissionService,
+            "unilio.team.view",
+            cancellationToken)
+            || await UniLioAuthorization.CanApproveCoursesAsync(permissionService, cancellationToken);
 
         IQueryable<Person> teamQuery = db.People.AsNoTracking().Where(p => p.IsActive);
-        if (!isAdmin)
+        if (!hasGlobalTeamScope)
         {
             teamQuery = teamQuery.Where(p => p.ManagerId == viewer.PersonId);
         }
@@ -861,6 +867,7 @@ public sealed partial class UniLioService(
 
     public async Task<UniLioInstructorCoursesDto> GetInstructorCoursesAsync(CancellationToken cancellationToken = default)
     {
+        await UniLioAuthorization.EnsureInstructorPanelAsync(permissionService, cancellationToken);
         var viewer = await GetViewerAsync(cancellationToken);
         var namePattern = $"%{viewer.Name}%";
 
@@ -896,15 +903,19 @@ public sealed partial class UniLioService(
         UniLioQuery query,
         CancellationToken cancellationToken = default)
     {
+        await UniLioAuthorization.EnsureReportsViewAsync(permissionService, cancellationToken);
         var viewer = await GetViewerAsync(cancellationToken);
-        var roles = await currentUserService.GetRolesAsync(cancellationToken);
-        var isAdmin = roles.Contains(UserRole.Admin) || roles.Contains(UserRole.HR);
+        var hasGlobalReportsScope = await UniLioAuthorization.HasGlobalDataScopeAsync(
+            permissionService,
+            "unilio.reports.view",
+            cancellationToken)
+            || await UniLioAuthorization.CanApproveCoursesAsync(permissionService, cancellationToken);
 
         IQueryable<UniLioEnrollment> enrollmentsQuery = db.UniLioEnrollments.AsNoTracking()
             .Include(e => e.Course)
             .Include(e => e.Person);
 
-        if (!isAdmin)
+        if (!hasGlobalReportsScope)
         {
             var directReportIds = await db.People.AsNoTracking()
                 .Where(p => p.ManagerId == viewer.PersonId && p.IsActive)
@@ -990,33 +1001,10 @@ public sealed partial class UniLioService(
             roles);
     }
 
-    private async Task<string> ResolvePersonaAsync(ViewerContext viewer, CancellationToken cancellationToken)
-    {
-        if (viewer.Roles.Contains(UserRole.Admin) || viewer.Roles.Contains(UserRole.HR))
-        {
-            return "admin";
-        }
-
-        var isSeedInstructor = string.Equals(viewer.Name, SeedInstructorName, StringComparison.OrdinalIgnoreCase);
-        var isNamedInstructor = await db.UniLioCourses.AsNoTracking()
-            .AnyAsync(c =>
-                EF.Functions.ILike(c.InstructorName, $"%{viewer.Name}%")
-                || (!string.IsNullOrWhiteSpace(viewer.Email)
-                    && EF.Functions.ILike(c.InstructorName, $"%{viewer.Email}%")),
-                cancellationToken);
-
-        if (isSeedInstructor || isNamedInstructor)
-        {
-            return "instructor";
-        }
-
-        if (viewer.Roles.Contains(UserRole.Manager))
-        {
-            return "manager";
-        }
-
-        return "learner";
-    }
+    private async Task<bool> CanViewCourseEnrollmentsAsync(CancellationToken cancellationToken) =>
+        await UniLioAuthorization.CanUseInstructorPanelAsync(permissionService, cancellationToken)
+        || await permissionService.HasPermissionAsync("unilio.team.view", cancellationToken: cancellationToken)
+        || await UniLioAuthorization.CanApproveCoursesAsync(permissionService, cancellationToken);
 
     private async Task<List<Guid>> GetVisibleCourseIdsAsync(
         ViewerContext viewer,

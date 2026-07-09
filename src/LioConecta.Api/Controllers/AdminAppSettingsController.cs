@@ -8,7 +8,8 @@ namespace LioConecta.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/admin/app-settings")]
-[Authorize(Policy = AuthPolicies.RequireAdmin)]
+[Authorize]
+[RequirePermission("admin.settings.manage")]
 public sealed class AdminAppSettingsController(IAppSettingService appSettingService) : ControllerBase
 {
     [HttpGet]

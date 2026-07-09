@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text;
-using System.Text.Json;
 using LioConecta.Application.Common;
 using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Repositories;
@@ -9,8 +8,6 @@ using LioConecta.Application.Mapping;
 using LioConecta.Application.Services;
 using LioConecta.Domain.Entities;
 using LioConecta.Domain.Enums;
-using LioConecta.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 
 namespace LioConecta.Infrastructure.Services;
@@ -19,15 +16,10 @@ public sealed class FacilitiesMenuService(
     IFacilitiesMenuRepository menuRepository,
     IAppSettingsProvider settingsProvider,
     ICurrentUserService currentUserService,
+    IPermissionService permissionService,
     IEmailSendService emailSendService,
-    IHostEnvironment hostEnvironment,
-    AppDbContext db) : IFacilitiesMenuService
+    IHostEnvironment hostEnvironment) : IFacilitiesMenuService
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-    };
-
     public async Task<MenuEditorBootstrapDto> GetBootstrapAsync(CancellationToken cancellationToken = default)
     {
         var policy = await GetEditorPolicyAsync(cancellationToken);
@@ -239,47 +231,12 @@ public sealed class FacilitiesMenuService(
         return new EmailAttachmentRecord(fileName, "application/pdf", absolutePath, pdfBytes.LongLength);
     }
 
-    private async Task<bool> CanEditAsync(CancellationToken cancellationToken)
-    {
-        var roles = await currentUserService.GetRolesAsync(cancellationToken);
-        if (roles.Contains(UserRole.Admin))
-        {
-            return true;
-        }
-
-        var allowedRoles = DeserializeRoles(settingsProvider.GetString(AppSettingKeys.FacilitiesMenuAllowedRoles));
-        if (roles.Any(role => allowedRoles.Contains(role)))
-        {
-            return true;
-        }
-
-        var allowedEmails = settingsProvider
-            .GetStringArray(AppSettingKeys.FacilitiesMenuAllowedEmails)
-            .Select(email => email.Trim().ToLowerInvariant())
-            .Where(email => email.Length > 0)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        if (allowedEmails.Count == 0)
-        {
-            return false;
-        }
-
-        var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
-        var email = await db.People
-            .AsNoTracking()
-            .Where(person => person.Id == personId)
-            .Select(person => person.Email)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        return email is not null && allowedEmails.Contains(email.Trim().ToLowerInvariant());
-    }
+    private Task<bool> CanEditAsync(CancellationToken cancellationToken) =>
+        permissionService.HasPermissionAsync("facilities.menu.edit", DataScope.Global, cancellationToken);
 
     private async Task EnsureCanEditAsync(CancellationToken cancellationToken)
     {
-        if (!await CanEditAsync(cancellationToken))
-        {
-            throw new UnauthorizedAccessException("Sem permissão para editar o cardápio.");
-        }
+        await permissionService.EnsurePermissionAsync("facilities.menu.edit", DataScope.Global, cancellationToken);
     }
 
     private IReadOnlyList<string> ResolveRecipients(IReadOnlyList<string>? requested)
@@ -301,33 +258,6 @@ public sealed class FacilitiesMenuService(
             .Where(email => email.Length > 0)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
-    }
-
-    private static IReadOnlyList<UserRole> DeserializeRoles(string raw)
-    {
-        if (string.IsNullOrWhiteSpace(raw))
-        {
-            return [UserRole.Facilities, UserRole.Admin];
-        }
-
-        try
-        {
-            var values = JsonSerializer.Deserialize<string[]>(raw, JsonOptions) ?? [];
-            var roles = new List<UserRole>();
-            foreach (var value in values)
-            {
-                if (Enum.TryParse<UserRole>(value, true, out var role))
-                {
-                    roles.Add(role);
-                }
-            }
-
-            return roles;
-        }
-        catch (JsonException)
-        {
-            return [UserRole.Facilities, UserRole.Admin];
-        }
     }
 
     private static void EnsureMonday(DateOnly weekStart)

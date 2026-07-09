@@ -1,0 +1,46 @@
+---
+description: Manter RBAC sincronizado com APIs, serviços e seed do backend
+alwaysApply: true
+---
+
+# RBAC — revisão obrigatória (Backend)
+
+O controle de acesso do LioConecta é centralizado em **RBAC** (`/api/v1/admin/rbac`). **Sempre revise permissões quando alterar controllers, serviços ou políticas de autorização.**
+
+## Quando revisar
+
+Revise `PermissionCatalog`, `RoleTemplateCatalog`, handlers e serviços afetados se a mudança incluir:
+
+- Novo endpoint ou ação administrativa em qualquer controller
+- Novo serviço com `CanManageAsync`, `allowed_roles`, `allowed_emails` ou `RequireAdmin`
+- Nova feature de módulo (benefícios, facilities, UniLio, etc.) com gate de acesso
+- Alteração em `app_settings` que controla quem acessa um recurso
+- Novo menu/rota exposta ao frontend — registrar permissão com `MenuPath` no catálogo
+
+**Não** adicionar novos `*.allowed_roles` / `*.allowed_emails` para controle de acesso — use RBAC e `SubjectRoleAssignment`.
+
+## Onde editar
+
+| Arquivo | Responsabilidade |
+|---------|------------------|
+| `LioConecta.Application/Common/PermissionCatalog.cs` | Catálogo de chaves `recurso.acao` |
+| `LioConecta.Application/Common/RoleTemplateCatalog.cs` | Roles sistema e templates KeyUser |
+| `LioConecta.Infrastructure/Services/PermissionService.cs` | Resolução de permissões efetivas |
+| `LioConecta.Api/Authorization/` | `RequirePermission`, handler, policy provider |
+| Controllers | `[RequirePermission("chave")]` em vez de `RequireAdmin` genérico |
+
+## Checklist antes de concluir a tarefa
+
+1. Permissão registrada em `PermissionCatalog` com `AllowedDataScopes` corretos
+2. Endpoint protegido com `[RequirePermission]` ou `EnsurePermissionAsync` no serviço
+3. Escopo de dados aplicado via `IDataScopeResolver` quando a query filtra por Self/Team/Department
+4. Frontend alinhado — mesma chave em `src/config/rbac/permissions.ts`
+5. Migration/seed não necessários para permissões (seed automático via `RbacPermissionSeeder`)
+6. `dotnet build` passa sem erros
+
+## Perguntas obrigatórias (responder antes de concluir)
+
+1. Qual **chave** `recurso.acao` protege esta feature?
+2. Qual **DataScope** padrão (Self, Team, Department, Global)?
+3. Quais **roles template** recebem a permissão no seed?
+4. O **menu** correspondente no frontend usa a mesma chave?

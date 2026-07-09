@@ -8,7 +8,8 @@ namespace LioConecta.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/admin/glpi")]
-[Authorize(Policy = AuthPolicies.RequireAdmin)]
+[Authorize]
+[RequirePermission("admin.integrations.test")]
 public sealed class AdminGlpiController(IGlpiConfigurationService glpiConfigurationService) : ControllerBase
 {
     [HttpPost("test")]

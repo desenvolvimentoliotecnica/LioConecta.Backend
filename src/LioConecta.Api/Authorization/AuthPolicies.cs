@@ -2,6 +2,8 @@ namespace LioConecta.Api.Authorization;
 
 public static class AuthPolicies
 {
+    public const string PermissionPrefix = "perm:";
+
     public const string RequireHR = nameof(RequireHR);
 
     public const string RequireAdmin = nameof(RequireAdmin);

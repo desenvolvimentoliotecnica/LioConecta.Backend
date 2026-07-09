@@ -17,4 +17,6 @@ public class PortalUser : BaseEntity
     public bool IsSuperAdmin { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    public string SecurityStamp { get; set; } = Guid.NewGuid().ToString("N");
 }

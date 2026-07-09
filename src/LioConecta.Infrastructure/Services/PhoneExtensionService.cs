@@ -1,5 +1,3 @@
-using System.Text.Json;
-using LioConecta.Application.Common;
 using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Domain.Entities;
@@ -11,11 +9,8 @@ namespace LioConecta.Infrastructure.Services;
 
 public sealed class PhoneExtensionService(
     AppDbContext db,
-    ICurrentUserService currentUserService,
-    IAppSettingsProvider settingsProvider) : IPhoneExtensionService
+    IPermissionService permissionService) : IPhoneExtensionService
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
     public async Task<PhoneExtensionsBootstrapDto> GetBootstrapAsync(CancellationToken cancellationToken = default)
     {
         var canManage = await CanManageAsync(cancellationToken);
@@ -94,22 +89,12 @@ public sealed class PhoneExtensionService(
         return await db.People.AsNoTracking().Where(p => p.Email.ToLower() == normalized).Select(p => (Guid?)p.Id).FirstOrDefaultAsync(cancellationToken);
     }
 
-    private async Task<bool> CanManageAsync(CancellationToken cancellationToken)
-    {
-        var roles = await currentUserService.GetRolesAsync(cancellationToken);
-        if (roles.Contains(UserRole.Admin)) return true;
-        var allowedRoles = DeserializeRoles(settingsProvider.GetString(AppSettingKeys.RamaisAllowedRoles));
-        if (roles.Any(role => allowedRoles.Contains(role))) return true;
-        var allowedEmails = settingsProvider.GetStringArray(AppSettingKeys.RamaisAllowedEmails).Select(email => email.Trim().ToLowerInvariant()).Where(email => email.Length > 0).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        if (allowedEmails.Count == 0) return false;
-        var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
-        var email = await db.People.AsNoTracking().Where(person => person.Id == personId).Select(person => person.Email).FirstOrDefaultAsync(cancellationToken);
-        return email is not null && allowedEmails.Contains(email.Trim().ToLowerInvariant());
-    }
+    private Task<bool> CanManageAsync(CancellationToken cancellationToken) =>
+        permissionService.HasPermissionAsync("ramais.manage", DataScope.Global, cancellationToken);
 
     private async Task EnsureCanManageAsync(CancellationToken cancellationToken)
     {
-        if (!await CanManageAsync(cancellationToken)) throw new UnauthorizedAccessException("Sem permissao para gerir a lista de ramais.");
+        await permissionService.EnsurePermissionAsync("ramais.manage", DataScope.Global, cancellationToken);
     }
 
     private static void ValidateRequest(UpsertPhoneExtensionRequest request)
@@ -121,19 +106,6 @@ public sealed class PhoneExtensionService(
 
     private static string? NormalizeOptional(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     private static string? NormalizeOptionalEmail(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToLowerInvariant();
-
-    private static IReadOnlyList<UserRole> DeserializeRoles(string raw)
-    {
-        if (string.IsNullOrWhiteSpace(raw)) return [UserRole.HR];
-        try
-        {
-            var values = JsonSerializer.Deserialize<string[]>(raw, JsonOptions) ?? [];
-            var roles = new List<UserRole>();
-            foreach (var value in values) if (Enum.TryParse<UserRole>(value, true, out var role)) roles.Add(role);
-            return roles.Count > 0 ? roles : [UserRole.HR];
-        }
-        catch (JsonException) { return [UserRole.HR]; }
-    }
 
     private static PhoneExtensionDto Map(PhoneExtension entity) =>
         new(entity.Id, entity.Name, entity.Extension, entity.Mobile, entity.Department, entity.Title, entity.Email, entity.ManagerName, entity.PersonId, entity.Person?.Slug, entity.Person?.Name, entity.IsActive, entity.CreatedAt, entity.UpdatedAt);

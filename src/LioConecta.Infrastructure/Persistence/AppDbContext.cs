@@ -39,6 +39,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Payslip> Payslips => Set<Payslip>();
     public DbSet<IncomeStatement> IncomeStatements => Set<IncomeStatement>();
     public DbSet<EmployeeBenefit> EmployeeBenefits => Set<EmployeeBenefit>();
+    public DbSet<BenefitCatalog> BenefitCatalogs => Set<BenefitCatalog>();
     public DbSet<EmployeeLeaveBalance> EmployeeLeaveBalances => Set<EmployeeLeaveBalance>();
     public DbSet<LeaveRecord> LeaveRecords => Set<LeaveRecord>();
     public DbSet<TotvsRmConfiguration> TotvsRmConfigurations => Set<TotvsRmConfiguration>();
@@ -81,6 +82,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureComunicadoHeroImages(modelBuilder);
         ConfigurePayslips(modelBuilder);
         ConfigureEmployeeBenefits(modelBuilder);
+        ConfigureBenefitCatalog(modelBuilder);
         ConfigureEmployeeLeave(modelBuilder);
         ConfigureTotvsRmConfiguration(modelBuilder);
         ConfigureWorkerRuns(modelBuilder);
@@ -611,6 +613,17 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany()
                 .HasForeignKey(b => b.PersonId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureBenefitCatalog(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<BenefitCatalog>(entity =>
+        {
+            entity.ToTable("benefit_catalog");
+            entity.HasIndex(b => b.CatalogKey).IsUnique();
+            entity.HasIndex(b => b.Category);
+            entity.HasIndex(b => b.IsActive);
         });
     }
 

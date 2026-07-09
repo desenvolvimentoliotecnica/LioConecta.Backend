@@ -407,6 +407,23 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
 
     private async Task EnsureBenefitsCatalogAsync(CancellationToken cancellationToken)
     {
+        var seedTime = DateTimeOffset.UtcNow.AddDays(-30);
+
+        if (!await db.BenefitCatalogs.AnyAsync(cancellationToken))
+        {
+            foreach (var entry in BenefitCatalogSeed.BuildCatalogEntries(seedTime))
+            {
+                db.BenefitCatalogs.Add(entry);
+            }
+
+            await db.SaveChangesAsync(cancellationToken);
+            logger.LogInformation("Seeded global benefit catalog ({Count} items).", await db.BenefitCatalogs.CountAsync(cancellationToken));
+        }
+        else
+        {
+            await BackfillBenefitCatalogDefaultDetailsAsync(cancellationToken);
+        }
+
         var mariaId = SeedIds.MariaSilva;
         var hasBenefits = await db.EmployeeBenefits.AnyAsync(b => b.PersonId == mariaId, cancellationToken);
         if (hasBenefits)
@@ -414,7 +431,6 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
             return;
         }
 
-        var seedTime = DateTimeOffset.UtcNow.AddDays(-30);
         foreach (var benefit in BenefitCatalogSeed.BuildForPerson(mariaId, seedTime))
         {
             db.EmployeeBenefits.Add(benefit);
@@ -422,6 +438,36 @@ public sealed class SeedDataService(AppDbContext db, ILogger<SeedDataService> lo
 
         await db.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Seeded benefits catalog for Maria Silva.");
+    }
+
+    private async Task BackfillBenefitCatalogDefaultDetailsAsync(CancellationToken cancellationToken)
+    {
+        var entries = await db.BenefitCatalogs.ToListAsync(cancellationToken);
+        var updated = false;
+
+        foreach (var entry in entries)
+        {
+            if (!string.IsNullOrWhiteSpace(entry.DefaultDetailsJson) && entry.DefaultDetailsJson != "{}")
+            {
+                continue;
+            }
+
+            var json = BenefitCatalogSeed.TryGetDefaultDetailsJson(entry.CatalogKey);
+            if (json is null)
+            {
+                continue;
+            }
+
+            entry.DefaultDetailsJson = json;
+            entry.UpdatedAt = DateTimeOffset.UtcNow;
+            updated = true;
+        }
+
+        if (updated)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            logger.LogInformation("Backfilled default benefit details for catalog entries.");
+        }
     }
 
     private async Task EnsureLeaveCatalogAsync(CancellationToken cancellationToken)

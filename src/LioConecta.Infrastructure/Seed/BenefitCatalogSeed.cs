@@ -12,7 +12,7 @@ internal sealed record BenefitDetailsSeed(
     IReadOnlyList<BenefitDependentSeed> Dependents,
     IReadOnlyList<string> Notes);
 
-internal sealed record BenefitCatalogItem(
+internal sealed record BenefitCatalogSeedItem(
     string Key,
     string Title,
     string Desc,
@@ -28,6 +28,35 @@ internal sealed record BenefitCatalogItem(
 public static class BenefitCatalogSeed
 {
     private static readonly JsonSerializerOptions JsonOptions = new();
+
+    public static IReadOnlyList<BenefitCatalog> BuildCatalogEntries(DateTimeOffset seedTime)
+    {
+        var sort = 0;
+        return Catalog.Select(item => new BenefitCatalog
+        {
+            Id = Guid.NewGuid(),
+            CatalogKey = item.Key,
+            Title = item.Title,
+            Desc = item.Desc,
+            Category = item.Category,
+            Provider = item.Provider,
+            Status = item.Status,
+            Featured = item.Featured,
+            IsActive = true,
+            PortalUrl = item.PortalUrl,
+            HelpText = item.HelpText,
+            DefaultMonthlyValue = item.MonthlyValue,
+            DefaultDetailsJson = SerializeDetails(item.Details),
+            SortOrder = sort++,
+            CreatedAt = seedTime,
+            UpdatedAt = seedTime,
+        }).ToList();
+    }
+
+    public static string? TryGetDefaultDetailsJson(string catalogKey) =>
+        Catalog.FirstOrDefault(item => item.Key == catalogKey) is { } match
+            ? SerializeDetails(match.Details)
+            : null;
 
     public static IReadOnlyList<EmployeeBenefit> BuildForPerson(Guid personId, DateTimeOffset seedTime)
     {
@@ -65,7 +94,7 @@ public static class BenefitCatalogSeed
             notes = details.Notes,
         }, JsonOptions);
 
-    private static readonly IReadOnlyList<BenefitCatalogItem> Catalog =
+    private static readonly IReadOnlyList<BenefitCatalogSeedItem> Catalog =
     [
         new(
             "plano-saude",

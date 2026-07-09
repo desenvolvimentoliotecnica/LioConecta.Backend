@@ -72,6 +72,7 @@ public static class DependencyInjection
         services.AddScoped<IComunicadoHeroImageRepository, ComunicadoHeroImageRepository>();
         services.AddScoped<IPayslipRepository, PayslipRepository>();
         services.AddScoped<IBenefitRepository, BenefitRepository>();
+        services.AddScoped<IBenefitCatalogRepository, BenefitCatalogRepository>();
         services.AddScoped<ILeaveRepository, LeaveRepository>();
         services.AddScoped<ILeaveNotifyDirectory, LeaveNotifyDirectory>();
         services.AddScoped<IAuditRepository, AuditRepository>();
@@ -160,6 +161,8 @@ public static class DependencyInjection
         services.AddScoped<IOrgChartGovernanceService, OrgChartGovernanceService>();
         services.AddScoped<IFacilitiesMenuService, FacilitiesMenuService>();
         services.AddScoped<IPhoneExtensionService, PhoneExtensionService>();
+        services.AddScoped<IBenefitCatalogService, BenefitCatalogService>();
+        services.AddScoped<IBenefitManagementService, BenefitManagementService>();
         services.AddScoped<ISystemCatalogService, SystemCatalogService>();
         services.AddScoped<ICompassService, CompassService>();
         services.AddScoped<IEmailQueueService, EmailQueueService>();

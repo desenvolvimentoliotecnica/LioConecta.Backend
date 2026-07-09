@@ -14,7 +14,8 @@ namespace LioConecta.Infrastructure.Services;
 public sealed class UniLioService(
     AppDbContext db,
     IAppSettingsProvider settingsProvider,
-    ICurrentUserService currentUserService) : IUniLioService
+    ICurrentUserService currentUserService,
+    UniLioCompletionService completionService) : IUniLioService
 {
     private const string SeedInstructorName = "Maria Silva";
     private const int SkillGapTargetLevel = 3;
@@ -160,7 +161,11 @@ public sealed class UniLioService(
         var totalPages = totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)pageSize);
 
         var courses = await filtered
-            .OrderBy(c => c.Title)
+            .OrderByDescending(c =>
+                c.IsMandatory
+                && !c.Enrollments.Any(e =>
+                    e.PersonId == viewer.PersonId && e.Status == "completed"))
+            .ThenByDescending(c => c.PublishedAt ?? c.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
@@ -209,6 +214,8 @@ public sealed class UniLioService(
 
         var progressPct = enrollment?.ProgressPct ?? 0;
         var enrollmentStatus = enrollment?.Status ?? "not_enrolled";
+        var stats = await GetCourseEnrollmentStatsAsync([courseId], cancellationToken);
+        stats.TryGetValue(courseId, out var courseStats);
 
         return new UniLioCourseDetailDto(
             course.Id,
@@ -228,9 +235,101 @@ public sealed class UniLioService(
             course.Status,
             progressPct,
             enrollmentStatus,
+            courseStats.Enrolled,
+            courseStats.Completed,
             modules,
             course.CourseSkills.Select(cs => cs.Skill.Name).OrderBy(n => n).ToList(),
             MapIntegrationLinks(course.IntegrationLinks));
+    }
+
+    public async Task<UniLioCourseStartDto> StartCourseAsync(
+        Guid courseId,
+        CancellationToken cancellationToken = default)
+    {
+        var viewer = await GetViewerAsync(cancellationToken);
+
+        var visibleIds = await GetVisibleCourseIdsAsync(viewer, cancellationToken);
+        if (!visibleIds.Contains(courseId))
+        {
+            throw new KeyNotFoundException($"Curso {courseId} não encontrado.");
+        }
+
+        var enrollment = await db.UniLioEnrollments
+            .FirstOrDefaultAsync(e => e.PersonId == viewer.PersonId && e.CourseId == courseId, cancellationToken);
+
+        var now = DateTimeOffset.UtcNow;
+        if (enrollment is null)
+        {
+            enrollment = new UniLioEnrollment
+            {
+                Id = Guid.NewGuid(),
+                PersonId = viewer.PersonId,
+                CourseId = courseId,
+                Status = "in_progress",
+                ProgressPct = 0,
+                StartedAt = now,
+                CreatedAt = now,
+                UpdatedAt = now,
+            };
+            db.UniLioEnrollments.Add(enrollment);
+        }
+        else
+        {
+            enrollment.StartedAt ??= now;
+            if (enrollment.Status is "not_enrolled" or "not_started")
+            {
+                enrollment.Status = "in_progress";
+            }
+
+            enrollment.UpdatedAt = now;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return new UniLioCourseStartDto(
+            courseId,
+            enrollment.Status,
+            enrollment.StartedAt ?? now);
+    }
+
+    public async Task<UniLioCourseEnrollmentsDto> GetCourseEnrollmentsAsync(
+        Guid courseId,
+        CancellationToken cancellationToken = default)
+    {
+        var viewer = await GetViewerAsync(cancellationToken);
+        var persona = await ResolvePersonaAsync(viewer, cancellationToken);
+
+        var visibleIds = await GetVisibleCourseIdsAsync(viewer, cancellationToken);
+        if (!visibleIds.Contains(courseId))
+        {
+            throw new KeyNotFoundException($"Curso {courseId} não encontrado.");
+        }
+
+        if (persona is not ("admin" or "manager" or "instructor"))
+        {
+            throw new UnauthorizedAccessException("Sem permissão para consultar matrículas deste curso.");
+        }
+
+        var stats = await GetCourseEnrollmentStatsAsync([courseId], cancellationToken);
+        stats.TryGetValue(courseId, out var courseStats);
+
+        var items = await db.UniLioEnrollments.AsNoTracking()
+            .Include(e => e.Person)
+            .Where(e => e.CourseId == courseId)
+            .OrderByDescending(e => e.StartedAt ?? e.CreatedAt)
+            .Select(e => new UniLioCourseEnrollmentRecordDto(
+                e.PersonId,
+                e.Person.Name,
+                e.Status,
+                e.StartedAt,
+                e.CompletedAt))
+            .ToListAsync(cancellationToken);
+
+        return new UniLioCourseEnrollmentsDto(
+            courseId,
+            courseStats.Enrolled,
+            courseStats.Completed,
+            items);
     }
 
     public async Task<UniLioPathsDto> GetPathsAsync(CancellationToken cancellationToken = default)
@@ -294,8 +393,22 @@ public sealed class UniLioService(
     public async Task<UniLioProgressDto> CompleteModuleAsync(
         Guid courseId,
         Guid moduleId,
+        UniLioCompleteModuleRequest? request,
         CancellationToken cancellationToken = default)
     {
+        request ??= new UniLioCompleteModuleRequest();
+
+        if (request.ContentRating is < 1 or > 5)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(request),
+                "A avaliação do curso deve ser entre 1 e 5 estrelas.");
+        }
+
+        var feedbackComment = string.IsNullOrWhiteSpace(request.FeedbackComment)
+            ? null
+            : request.FeedbackComment.Trim();
+
         var viewer = await GetViewerAsync(cancellationToken);
 
         var course = await db.UniLioCourses
@@ -357,6 +470,14 @@ public sealed class UniLioService(
         var courseCompleted = totalModules > 0 && completedModules >= totalModules;
         if (courseCompleted)
         {
+            if (request.ContentRating is not (>= 1 and <= 5))
+            {
+                throw new ArgumentException(
+                    "A avaliação do curso é obrigatória ao concluir todos os módulos.");
+            }
+
+            enrollment.CourseContentRating = request.ContentRating;
+            enrollment.CourseFeedbackComment = feedbackComment;
             enrollment.Status = "completed";
             enrollment.CompletedAt = now;
         }
@@ -372,6 +493,7 @@ public sealed class UniLioService(
         if (courseCompleted)
         {
             certificateIssued = await TryIssueCertificateAsync(viewer.PersonId, courseId, cancellationToken);
+            await completionService.TryNotifyCourseCompletedAsync(viewer.PersonId, courseId, cancellationToken);
         }
 
         return new UniLioProgressDto(
@@ -484,6 +606,11 @@ public sealed class UniLioService(
                     .Select(c => c.CertificateCode)
                     .FirstOrDefaultAsync(cancellationToken);
             }
+
+            await completionService.TryNotifyCourseCompletedAsync(
+                viewer.PersonId,
+                assessment.CourseId,
+                cancellationToken);
         }
 
         return new UniLioAssessmentResultDto(
@@ -585,6 +712,21 @@ public sealed class UniLioService(
     {
         var viewer = await GetViewerAsync(cancellationToken);
         var items = await BuildRecommendationsAsync(viewer, cancellationToken);
+        return new UniLioRecommendationsDto(items);
+    }
+
+    public async Task<UniLioRecommendationsDto> GetCourseRecommendationsAsync(
+        Guid courseId,
+        CancellationToken cancellationToken = default)
+    {
+        var viewer = await GetViewerAsync(cancellationToken);
+        var visibleIds = await GetVisibleCourseIdsAsync(viewer, cancellationToken);
+        if (!visibleIds.Contains(courseId))
+        {
+            throw new KeyNotFoundException($"Curso {courseId} não encontrado.");
+        }
+
+        var items = await BuildCourseRecommendationsAsync(viewer, courseId, cancellationToken);
         return new UniLioRecommendationsDto(items);
     }
 
@@ -992,10 +1134,12 @@ public sealed class UniLioService(
         var enrollments = await db.UniLioEnrollments.AsNoTracking()
             .Where(e => e.PersonId == viewer.PersonId && courseIds.Contains(e.CourseId))
             .ToDictionaryAsync(e => e.CourseId, cancellationToken);
+        var stats = await GetCourseEnrollmentStatsAsync(courseIds, cancellationToken);
 
         return courses.Select(course =>
         {
             enrollments.TryGetValue(course.Id, out var enrollment);
+            stats.TryGetValue(course.Id, out var courseStats);
             return new UniLioCourseSummaryDto(
                 course.Id,
                 course.SeedKey,
@@ -1015,8 +1159,33 @@ public sealed class UniLioService(
                 enrollment?.ProgressPct,
                 enrollment?.Status ?? "not_enrolled",
                 course.CourseSkills.Select(cs => cs.Skill.Name).OrderBy(n => n).ToList(),
-                MapIntegrationLinks(course.IntegrationLinks));
+                MapIntegrationLinks(course.IntegrationLinks),
+                courseStats.Enrolled,
+                courseStats.Completed);
         }).ToList();
+    }
+
+    private async Task<Dictionary<Guid, (int Enrolled, int Completed)>> GetCourseEnrollmentStatsAsync(
+        IReadOnlyCollection<Guid> courseIds,
+        CancellationToken cancellationToken)
+    {
+        if (courseIds.Count == 0)
+        {
+            return [];
+        }
+
+        var rows = await db.UniLioEnrollments.AsNoTracking()
+            .Where(e => courseIds.Contains(e.CourseId))
+            .GroupBy(e => e.CourseId)
+            .Select(g => new
+            {
+                CourseId = g.Key,
+                Enrolled = g.Count(),
+                Completed = g.Count(e => e.Status == "completed"),
+            })
+            .ToListAsync(cancellationToken);
+
+        return rows.ToDictionary(r => r.CourseId, r => (r.Enrolled, r.Completed));
     }
 
     private async Task<UniLioPathSummaryDto?> GetActivePathSummaryAsync(
@@ -1122,7 +1291,63 @@ public sealed class UniLioService(
                 $"Recomendado para desenvolver {cs.Skill.Name}.",
                 cs.Course.Area,
                 cs.Course.DurationMinutes,
-                cs.Course.ContentType))
+                cs.Course.ContentType,
+                cs.Course.ThumbnailUrl))
+            .ToList();
+    }
+
+    private async Task<IReadOnlyList<UniLioRecommendationDto>> BuildCourseRecommendationsAsync(
+        ViewerContext viewer,
+        Guid completedCourseId,
+        CancellationToken cancellationToken)
+    {
+        var completedCourse = await db.UniLioCourses.AsNoTracking()
+            .Include(c => c.CourseSkills).ThenInclude(cs => cs.Skill)
+            .FirstOrDefaultAsync(c => c.Id == completedCourseId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Curso {completedCourseId} não encontrado.");
+
+        var skillIds = completedCourse.CourseSkills.Select(cs => cs.SkillId).ToHashSet();
+        var area = completedCourse.Area;
+
+        var completedCourseIds = await db.UniLioEnrollments.AsNoTracking()
+            .Where(e => e.PersonId == viewer.PersonId && e.Status == "completed")
+            .Select(e => e.CourseId)
+            .ToListAsync(cancellationToken);
+
+        var excludeIds = completedCourseIds.Append(completedCourseId).ToHashSet();
+
+        var candidates = await db.UniLioCourses.AsNoTracking()
+            .Include(c => c.CourseSkills).ThenInclude(cs => cs.Skill)
+            .Where(c => !excludeIds.Contains(c.Id))
+            .Where(c => c.Status == "published" || c.Status == "active")
+            .Where(c => c.Area == area || c.CourseSkills.Any(cs => skillIds.Contains(cs.SkillId)))
+            .ToListAsync(cancellationToken);
+
+        return candidates
+            .Where(c => IsCourseVisible(c.VisibilityJson, viewer))
+            .OrderByDescending(c => c.CourseSkills.Count(cs => skillIds.Contains(cs.SkillId)))
+            .ThenByDescending(c => c.Area == area)
+            .ThenByDescending(c => c.Rating)
+            .Take(3)
+            .Select(c =>
+            {
+                var sharedSkill = c.CourseSkills
+                    .FirstOrDefault(cs => skillIds.Contains(cs.SkillId))
+                    ?.Skill.Name;
+
+                var reason = sharedSkill is not null
+                    ? $"Complementa o tema de {sharedSkill}."
+                    : $"Relacionado à área de {c.Area}.";
+
+                return new UniLioRecommendationDto(
+                    c.Id,
+                    c.Title,
+                    reason,
+                    c.Area,
+                    c.DurationMinutes,
+                    c.ContentType,
+                    c.ThumbnailUrl);
+            })
             .ToList();
     }
 

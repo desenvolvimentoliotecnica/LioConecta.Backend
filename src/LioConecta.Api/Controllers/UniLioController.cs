@@ -41,6 +41,27 @@ public sealed class UniLioController(IUniLioService uniLioService) : ControllerB
         CancellationToken cancellationToken)
         => Ok(await uniLioService.GetCourseDetailAsync(id, cancellationToken));
 
+    [HttpGet("courses/{id:guid}/recommendations")]
+    [ProducesResponseType(typeof(UniLioRecommendationsDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UniLioRecommendationsDto>> GetCourseRecommendations(
+        Guid id,
+        CancellationToken cancellationToken)
+        => Ok(await uniLioService.GetCourseRecommendationsAsync(id, cancellationToken));
+
+    [HttpPost("courses/{id:guid}/start")]
+    [ProducesResponseType(typeof(UniLioCourseStartDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UniLioCourseStartDto>> StartCourse(
+        Guid id,
+        CancellationToken cancellationToken)
+        => Ok(await uniLioService.StartCourseAsync(id, cancellationToken));
+
+    [HttpGet("courses/{id:guid}/enrollments")]
+    [ProducesResponseType(typeof(UniLioCourseEnrollmentsDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UniLioCourseEnrollmentsDto>> GetCourseEnrollments(
+        Guid id,
+        CancellationToken cancellationToken)
+        => Ok(await uniLioService.GetCourseEnrollmentsAsync(id, cancellationToken));
+
     [HttpGet("paths")]
     [ProducesResponseType(typeof(UniLioPathsDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<UniLioPathsDto>> GetPaths(CancellationToken cancellationToken)
@@ -58,8 +79,9 @@ public sealed class UniLioController(IUniLioService uniLioService) : ControllerB
     public async Task<ActionResult<UniLioProgressDto>> CompleteModule(
         Guid courseId,
         Guid moduleId,
+        [FromBody] UniLioCompleteModuleRequest? request,
         CancellationToken cancellationToken)
-        => Ok(await uniLioService.CompleteModuleAsync(courseId, moduleId, cancellationToken));
+        => Ok(await uniLioService.CompleteModuleAsync(courseId, moduleId, request, cancellationToken));
 
     [HttpGet("assessments")]
     [ProducesResponseType(typeof(UniLioAssessmentsDto), StatusCodes.Status200OK)]

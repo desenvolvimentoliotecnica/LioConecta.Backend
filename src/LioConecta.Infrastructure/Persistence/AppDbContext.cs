@@ -922,6 +922,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(c => c.InstructorName).HasMaxLength(256);
             entity.Property(c => c.Status).HasMaxLength(32);
             entity.Property(c => c.Provider).HasMaxLength(256);
+            entity.Property(c => c.RejectionReason).HasMaxLength(2000);
+            entity.HasOne(c => c.InstructorPerson)
+                .WithMany()
+                .HasForeignKey(c => c.InstructorPersonId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<UniLioCourseModule>(entity =>
@@ -983,6 +988,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasIndex(e => new { e.PersonId, e.CourseId }).IsUnique();
             entity.HasIndex(e => e.Status);
             entity.Property(e => e.Status).HasMaxLength(32);
+            entity.Property(e => e.CourseFeedbackComment).HasMaxLength(2000);
             entity.HasOne(e => e.Person)
                 .WithMany()
                 .HasForeignKey(e => e.PersonId)

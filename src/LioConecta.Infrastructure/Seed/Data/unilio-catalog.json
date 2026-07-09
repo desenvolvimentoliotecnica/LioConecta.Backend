@@ -772,6 +772,36 @@
         { "sortOrder": 10, "title": "Reflexão guiada", "contentType": "article", "durationMinutes": 5 },
         { "sortOrder": 11, "title": "Avaliação final", "contentType": "quiz", "durationMinutes": 8 }
       ]
+    },
+    {
+      "seedKey": "curso-lavagem-maos-alimenticia",
+      "title": "A importância da lavagem das mãos na indústria alimentícia",
+      "description": "Higiene das mãos para manipuladores de alimentos — com base em WHO, ANVISA (RDC 216), CDC e Codex Alimentarius. Leitura guiada, vídeo de referência, quiz e avaliação final.",
+      "contentType": "article",
+      "durationMinutes": 30,
+      "isMandatory": false,
+      "area": "Qualidade",
+      "department": "Qualidade",
+      "rating": 4.9,
+      "instructorName": "UniLio · Segurança Alimentar",
+      "externalUrl": "https://www.youtube.com/watch?v=eZw4Ga3jg3E",
+      "provider": "WHO · ANVISA · CDC",
+      "status": "published",
+      "skillSeedKeys": ["qualidade-alimentar"],
+      "tags": ["higiene", "lavagem das mãos", "BPF", "segurança alimentar", "manipuladores"],
+      "modules": [
+        { "sortOrder": 1, "title": "Introdução", "contentType": "article", "durationMinutes": 3 },
+        { "sortOrder": 2, "title": "Objetivos de aprendizagem", "contentType": "article", "durationMinutes": 3 },
+        { "sortOrder": 3, "title": "Por que a lavagem das mãos importa", "contentType": "article", "durationMinutes": 4 },
+        { "sortOrder": 4, "title": "Quando lavar as mãos", "contentType": "article", "durationMinutes": 4 },
+        { "sortOrder": 5, "title": "Técnica correta de lavagem", "contentType": "article", "durationMinutes": 5 },
+        { "sortOrder": 6, "title": "Infraestrutura e requisitos legais", "contentType": "article", "durationMinutes": 4 },
+        { "sortOrder": 7, "title": "Na prática na planta", "contentType": "article", "durationMinutes": 4 },
+        { "sortOrder": 8, "title": "Vídeo de referência", "contentType": "external", "contentUrl": "https://www.youtube.com/watch?v=eZw4Ga3jg3E", "durationMinutes": 3 },
+        { "sortOrder": 9, "title": "Quiz de verificação", "contentType": "quiz", "durationMinutes": 5 },
+        { "sortOrder": 10, "title": "Reflexão guiada", "contentType": "article", "durationMinutes": 5 },
+        { "sortOrder": 11, "title": "Avaliação final", "contentType": "quiz", "durationMinutes": 8 }
+      ]
     }
   ],
   "paths": [
@@ -805,6 +835,7 @@
         "ext-appcc-crq",
         "ext-fssc-22000",
         "ext-bpf-usp",
+        "curso-lavagem-maos-alimenticia",
         "ext-custo-nao-qualidade",
         "ext-appcc-usp"
       ]
@@ -1144,6 +1175,60 @@
           "correctAnswer": "Para validar o código antes do merge e bloquear PRs com falhas"
         }
       ]
+    },
+    {
+      "courseSeedKey": "curso-lavagem-maos-alimenticia",
+      "title": "Avaliação — Lavagem das Mãos na Indústria Alimentícia",
+      "passingScore": 80,
+      "questions": [
+        {
+          "id": "q1",
+          "text": "De acordo com a WHO, quando se deve lavar as mãos em relação ao preparo de alimentos?",
+          "options": [
+            "Apenas no início do turno",
+            "Antes, durante e após preparar alimentos",
+            "Somente após manipular alimentos crus"
+          ],
+          "correctAnswer": "Antes, durante e após preparar alimentos"
+        },
+        {
+          "id": "q2",
+          "text": "A RDC 216/2004 exige lavatórios exclusivos para higiene das mãos na área de manipulação?",
+          "options": [
+            "Sim",
+            "Não — pode ser o mesmo lavatório dos utensílios"
+          ],
+          "correctAnswer": "Sim"
+        },
+        {
+          "id": "q3",
+          "text": "Qual sequência o CDC recomenda para lavagem eficaz das mãos?",
+          "options": [
+            "Molhar, ensaboar, esfregar, enxaguar e secar",
+            "Aplicar álcool gel, enxaguar e secar",
+            "Molhar, secar e aplicar sabonete"
+          ],
+          "correctAnswer": "Molhar, ensaboar, esfregar, enxaguar e secar"
+        },
+        {
+          "id": "q4",
+          "text": "Manipuladores de alimentos crus devem lavar e fazer antissepsia das mãos antes de manusear alimentos preparados?",
+          "options": [
+            "Sim (RDC 216)",
+            "Não — basta usar luvas"
+          ],
+          "correctAnswer": "Sim (RDC 216)"
+        },
+        {
+          "id": "q5",
+          "text": "Segundo o Codex Alimentarius, o uso de luvas:",
+          "options": [
+            "Dispensa a lavagem das mãos durante todo o turno",
+            "Exige cuidados para que as luvas não se tornem fonte de contaminação, mantendo higiene regular das mãos"
+          ],
+          "correctAnswer": "Exige cuidados para que as luvas não se tornem fonte de contaminação, mantendo higiene regular das mãos"
+        }
+      ]
     }
   ],
   "events": [
@@ -1296,6 +1381,70 @@
       "status": "in_progress",
       "progressPct": 60,
       "startedAt": "2026-07-05T14:00:00-03:00"
+    },
+    {
+      "seedKey": "enrollment-julio-codigo",
+      "personSeedKey": "julio",
+      "courseSeedKey": "codigo-conduta",
+      "status": "in_progress",
+      "progressPct": 10,
+      "startedAt": "2026-07-08T09:15:00-03:00"
+    },
+    {
+      "seedKey": "enrollment-carlos-lgpd",
+      "personSeedKey": "carlos",
+      "courseSeedKey": "ext-lgpd-basico",
+      "status": "completed",
+      "progressPct": 100,
+      "startedAt": "2026-06-01T10:00:00-03:00",
+      "completedAt": "2026-06-12T17:45:00-03:00",
+      "issueCertificate": true,
+      "certificateCode": "UNILIO-LGPD-2026-CARLOS"
+    },
+    {
+      "seedKey": "enrollment-maria-seginfo",
+      "personSeedKey": "maria",
+      "courseSeedKey": "seguranca-informacao",
+      "status": "completed",
+      "progressPct": 100,
+      "startedAt": "2026-05-10T08:30:00-03:00",
+      "completedAt": "2026-05-18T11:20:00-03:00",
+      "issueCertificate": true,
+      "certificateCode": "UNILIO-SEGINFO-2026-MARIA"
+    },
+    {
+      "seedKey": "enrollment-ricardo-lean",
+      "personSeedKey": "ricardo",
+      "courseSeedKey": "ext-lean-manufacturing",
+      "status": "completed",
+      "progressPct": 100,
+      "startedAt": "2026-04-15T13:00:00-03:00",
+      "completedAt": "2026-05-02T16:00:00-03:00"
+    },
+    {
+      "seedKey": "enrollment-julia-onboarding",
+      "personSeedKey": "julia",
+      "courseSeedKey": "onboarding-liotecnica",
+      "status": "completed",
+      "progressPct": 100,
+      "startedAt": "2026-03-20T09:00:00-03:00",
+      "completedAt": "2026-04-05T15:30:00-03:00"
+    },
+    {
+      "seedKey": "enrollment-carlos-onboarding",
+      "personSeedKey": "carlos",
+      "courseSeedKey": "onboarding-liotecnica",
+      "status": "in_progress",
+      "progressPct": 40,
+      "startedAt": "2026-07-02T11:00:00-03:00"
+    },
+    {
+      "seedKey": "enrollment-maria-lean",
+      "personSeedKey": "maria",
+      "courseSeedKey": "ext-lean-manufacturing",
+      "status": "in_progress",
+      "progressPct": 20,
+      "startedAt": "2026-07-07T08:45:00-03:00"
     }
   ],
   "personSkills": [

@@ -18,6 +18,12 @@ public class UniLioEnrollment : BaseEntity
 
     public DateTimeOffset? DueDate { get; set; }
 
+    public DateTimeOffset? CompletionNotifiedAt { get; set; }
+
+    public int? CourseContentRating { get; set; }
+
+    public string? CourseFeedbackComment { get; set; }
+
     public Person Person { get; set; } = null!;
 
     public UniLioCourse Course { get; set; } = null!;

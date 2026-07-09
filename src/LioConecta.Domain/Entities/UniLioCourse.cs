@@ -24,6 +24,26 @@ public class UniLioCourse : BaseEntity
 
     public string InstructorName { get; set; } = string.Empty;
 
+    public Guid? InstructorPersonId { get; set; }
+
+    public Person? InstructorPerson { get; set; }
+
+    public DateTimeOffset? PublishedAt { get; set; }
+
+    public DateTimeOffset? SubmittedAt { get; set; }
+
+    public Guid? SubmittedByPersonId { get; set; }
+
+    public Guid? ReviewedById { get; set; }
+
+    public DateTimeOffset? ReviewedAt { get; set; }
+
+    public string? RejectionReason { get; set; }
+
+    public string? TagsJson { get; set; }
+
+    public Guid? FeedPostId { get; set; }
+
     public string? ThumbnailUrl { get; set; }
 
     public string? ExternalUrl { get; set; }

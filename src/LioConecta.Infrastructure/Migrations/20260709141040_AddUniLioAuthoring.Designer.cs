@@ -3,6 +3,7 @@ using System;
 using LioConecta.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace LioConecta.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260709141040_AddUniLioAuthoring")]
+    partial class AddUniLioAuthoring
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2960,13 +2963,6 @@ namespace LioConecta.Infrastructure.Migrations
 
                     b.Property<DateTimeOffset?>("CompletionNotifiedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("CourseContentRating")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("CourseFeedbackComment")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
 
                     b.Property<Guid>("CourseId")
                         .HasColumnType("uuid");

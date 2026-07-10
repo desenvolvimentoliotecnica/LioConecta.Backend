@@ -86,6 +86,8 @@ public static class AppSettingKeys
     public const string LeaveEmailEnabled = "leave.email.enabled";
     public const string LeaveEmailDevOverrideEnabled = "leave.email.dev_override_enabled";
     public const string LeaveEmailDevOverrideTo = "leave.email.dev_override_to";
+    public const string PontoNotifyEmails = "ponto.notify_emails";
+    public const string PontoNotifyRoles = "ponto.notify_roles";
     public const string WorkersPollClosureIntervalMinutes = "workers.poll_closure_interval_minutes";
 
     public const string SerilogDefaultLevel = "serilog.default_level";

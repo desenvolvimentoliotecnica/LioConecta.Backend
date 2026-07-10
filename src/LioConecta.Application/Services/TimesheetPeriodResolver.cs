@@ -46,7 +46,8 @@ public static class TimesheetPeriodResolver
         int count,
         int periodStartDay,
         int periodEndDay,
-        DateTime? referenceToday = null)
+        DateTime? referenceToday = null,
+        DateTime? admissionDate = null)
     {
         var startDay = NormalizeDay(periodStartDay, DefaultStartDay);
         var endDay = NormalizeDay(periodEndDay, DefaultEndDay);
@@ -62,7 +63,11 @@ public static class TimesheetPeriodResolver
         {
             var dataAte = BuildPeriodEnd(cursorYear, cursorMonth, endDay);
             var dataDe = BuildPeriodStart(dataAte, startDay);
-            options.Add(new TimesheetPeriodOption(cursorMonth, cursorYear, FormatPeriodLabel(dataDe, dataAte)));
+
+            if (IsPeriodEligible(dataAte, admissionDate))
+            {
+                options.Add(new TimesheetPeriodOption(cursorMonth, cursorYear, FormatPeriodLabel(dataDe, dataAte)));
+            }
 
             if (cursorMonth == 1)
             {
@@ -76,6 +81,35 @@ public static class TimesheetPeriodResolver
         }
 
         return options;
+    }
+
+    /// <summary>
+    /// Período elegível se termina na data de admissão ou depois (há sobreposição com o vínculo).
+    /// </summary>
+    public static bool IsPeriodEligible(DateTime periodEnd, DateTime? admissionDate)
+    {
+        if (admissionDate is null)
+        {
+            return true;
+        }
+
+        return periodEnd.Date >= admissionDate.Value.Date;
+    }
+
+    public static bool IsPeriodEligible(
+        int endMonth,
+        int endYear,
+        int periodStartDay,
+        int periodEndDay,
+        DateTime? admissionDate)
+    {
+        if (admissionDate is null)
+        {
+            return true;
+        }
+
+        var (_, dataAte, _, _) = Resolve(endMonth, endYear, periodStartDay, periodEndDay);
+        return IsPeriodEligible(dataAte, admissionDate);
     }
 
     public static string FormatPeriodLabel(DateTime dataDe, DateTime dataAte) =>

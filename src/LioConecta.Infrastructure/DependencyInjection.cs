@@ -75,6 +75,7 @@ public static class DependencyInjection
         services.AddScoped<IBenefitRepository, BenefitRepository>();
         services.AddScoped<IBenefitCatalogRepository, BenefitCatalogRepository>();
         services.AddScoped<ILeaveRepository, LeaveRepository>();
+        services.AddScoped<IPontoAdjustmentRepository, PontoAdjustmentRepository>();
         services.AddScoped<ILeaveNotifyDirectory, LeaveNotifyDirectory>();
         services.AddScoped<IAuditRepository, AuditRepository>();
         services.AddScoped<IObservabilityRepository, ObservabilityRepository>();
@@ -179,6 +180,7 @@ public static class DependencyInjection
         services.AddScoped<IEmailAdminService, EmailAdminService>();
         services.AddScoped<IEmailAttachmentService, EmailAttachmentService>();
         services.AddScoped<ILeaveAttachmentStore, LeaveAttachmentStore>();
+        services.AddScoped<IPontoAttachmentStore, PontoAttachmentStore>();
         services.AddScoped<IEmailSendService, EmailSendService>();
         services.AddScoped<ISmtpEmailSender, SmtpEmailSender>();
         services.AddScoped<ITotvsEmployeeSyncService, TotvsEmployeeSyncService>();

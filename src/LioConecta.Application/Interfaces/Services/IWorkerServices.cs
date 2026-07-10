@@ -109,3 +109,8 @@ public interface IWorkerTriggerService
 
     Task<WorkerTriggerResultDto> TriggerAsync(string workerKey, CancellationToken cancellationToken);
 }
+
+public interface IWorkersConnectivityService
+{
+    Task<WorkerConnectivityDto> CheckAsync(CancellationToken cancellationToken);
+}

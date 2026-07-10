@@ -42,6 +42,9 @@ try
     builder.Services.AddHostedService<GraphDirectorySyncWorker>();
     builder.Services.AddHostedService<PollClosureWorker>();
     builder.Services.AddHostedService<TotvsTimesheetSyncWorker>();
+    builder.Services.AddHostedService<TotvsPayslipSyncWorker>();
+    builder.Services.AddHostedService<TotvsLeaveSyncWorker>();
+    builder.Services.AddHostedService<LeaveWriteBackWorker>();
     builder.Services.AddHostedService<EmailDispatchWorker>();
 
     var host = builder.Build();

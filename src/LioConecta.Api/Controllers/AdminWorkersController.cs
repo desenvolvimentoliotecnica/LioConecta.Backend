@@ -10,7 +10,9 @@ namespace LioConecta.Api.Controllers;
 [Route("api/v1/admin/workers")]
 [Authorize]
 [RequirePermission("admin.workers.manage")]
-public sealed class AdminWorkersController(IWorkerTriggerService workerTriggerService) : ControllerBase
+public sealed class AdminWorkersController(
+    IWorkerTriggerService workerTriggerService,
+    IWorkersConnectivityService workersConnectivityService) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<WorkerDefinitionDto>), StatusCodes.Status200OK)]
@@ -18,6 +20,14 @@ public sealed class AdminWorkersController(IWorkerTriggerService workerTriggerSe
     {
         var workers = await workerTriggerService.ListWorkersAsync(cancellationToken);
         return Ok(workers);
+    }
+
+    [HttpGet("connectivity")]
+    [ProducesResponseType(typeof(WorkerConnectivityDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<WorkerConnectivityDto>> Connectivity(CancellationToken cancellationToken)
+    {
+        var status = await workersConnectivityService.CheckAsync(cancellationToken);
+        return Ok(status);
     }
 
     [HttpGet("{workerKey}/runs")]

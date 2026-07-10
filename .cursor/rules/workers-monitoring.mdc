@@ -1,0 +1,35 @@
+---
+description: Ao criar ou alterar workers, registrar monitoramento na hub /admin/workers
+alwaysApply: true
+---
+
+# Workers — monitoramento obrigatório
+
+Quando criar ou alterar um **background worker** (`BackgroundService` em `LioConecta.Workers`):
+
+## Checklist
+
+1. **Key** em `Application/Common/WorkerKeys.cs`
+2. **Entrada** em `Application/Services/WorkerRegistry.cs` — label, descrição, intervalo, `HostedInWorkersProcess`, `DependsOn` (`api` | `postgres` | `redis` | `totvs-rm` via `WorkerConnectivityIds`)
+3. **Setting** em `AppSettingKeys` + `AppSettingCatalog` (categoria `workers`) se o intervalo for configurável
+4. **Job** em `LioConecta.Workers/Jobs/` com `IWorkerRunRecorder.ExecuteAsync` e logs no contexto
+5. **`AddHostedService<>`** em `LioConecta.Workers/Program.cs` **e** no bloco Development de `LioConecta.Api/Program.cs` — atualizar `HostedInWorkersProcess` juntos
+6. **Case** em `Infrastructure/Services/WorkerTriggerService.TriggerAsync`
+7. Conectividade já exposta em `GET /api/v1/admin/workers/connectivity` (`IWorkersConnectivityService`) — mapear `DependsOn` corretamente; não criar health paralelo nem colocar RM em `/health/ready`
+8. Validar na hub frontend `/admin/workers`: listagem, badges, gate de Executar, disparo manual, logs
+
+## Arquivos-chave
+
+| Peça | Caminho |
+|------|---------|
+| Registry | `Application/Services/WorkerRegistry.cs` |
+| Trigger | `Infrastructure/Services/WorkerTriggerService.cs` |
+| Connectivity | `Infrastructure/Services/WorkersConnectivityService.cs` |
+| API | `Api/Controllers/AdminWorkersController.cs` |
+| Host | `LioConecta.Workers/Program.cs` |
+
+## Não fazer
+
+- Hangfire / Quartz
+- Teste RM completo (contagem de tabelas) no poll de connectivity — manter `SELECT 1`
+- Expor connectivity sob StrictAdmin / `admin.totvs.manage` — use `admin.workers.manage`

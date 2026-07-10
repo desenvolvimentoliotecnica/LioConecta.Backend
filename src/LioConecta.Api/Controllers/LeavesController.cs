@@ -113,6 +113,24 @@ public sealed class LeavesController(ILeaveService leaveService) : ControllerBas
             : File(bytes, "application/pdf", $"comprovante-ferias-gestao-{id:N}.pdf");
     }
 
+    [HttpGet("management/{id:guid}/attachments/{storageFileName}")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetManagementAttachment(
+        Guid id,
+        string storageFileName,
+        CancellationToken cancellationToken)
+    {
+        var file = await leaveService.GetManagementAttachmentAsync(id, storageFileName, cancellationToken);
+        if (file is null)
+        {
+            return NotFound();
+        }
+
+        return File(file.Content, file.ContentType, file.FileName);
+    }
+
     [HttpGet("banco-horas")]
     [ProducesResponseType(typeof(LeaveBancoHorasDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<LeaveBancoHorasDto>> GetBancoHoras(CancellationToken cancellationToken)

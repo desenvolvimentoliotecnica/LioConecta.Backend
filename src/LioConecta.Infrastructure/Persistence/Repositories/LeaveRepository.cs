@@ -17,14 +17,6 @@ public sealed class LeaveRepository(AppDbContext db) : ILeaveRepository
     private const string VacationServiceKey = "solicitar-ferias";
     private const string MedicalCertificateServiceKey = "atestado";
 
-    private static readonly string[] ManagementServiceKeys =
-    [
-        VacationServiceKey,
-        MedicalCertificateServiceKey,
-    ];
-
-
-
     public Task<EmployeeLeaveBalance?> GetBalanceAsync(
 
         Guid personId,
@@ -210,12 +202,11 @@ public sealed class LeaveRepository(AppDbContext db) : ILeaveRepository
     {
 
         var queryable = db.LeaveRecords
-
             .AsNoTracking()
-
             .Include(r => r.Person)
-
-            .Where(r => ManagementServiceKeys.Contains(r.ServiceKey));
+            .Where(r =>
+                r.ServiceKey == VacationServiceKey
+                || r.ServiceKey == MedicalCertificateServiceKey);
 
 
 

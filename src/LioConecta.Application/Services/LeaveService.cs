@@ -114,7 +114,10 @@ public sealed class LeaveService(
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
         var record = await leaveRepository.GetRecordByIdAsync(recordId, cancellationToken);
 
-        if (record is null || record.PersonId != personId || record.ServiceKey != VacationServiceKey)
+        if (record is null
+            || record.PersonId != personId
+            || (record.ServiceKey != VacationServiceKey
+                && record.ServiceKey != MedicalCertificateServiceKey))
         {
             return null;
         }
@@ -143,7 +146,8 @@ public sealed class LeaveService(
             notes,
             record.DataSource,
             record.CreatedAt,
-            timeline);
+            timeline,
+            MapAttachmentsForRecord(record.Id, record.DetailsJson, management: false));
     }
 
     public async Task<LeaveBancoHorasDto> GetBancoHorasAsync(CancellationToken cancellationToken = default)
@@ -399,6 +403,35 @@ public sealed class LeaveService(
         return await ToManagementDetailAsync(record, cancellationToken);
     }
 
+    public async Task<LeaveAttachmentFileDto?> GetManagementAttachmentAsync(
+        Guid recordId,
+        string storageFileName,
+        CancellationToken cancellationToken = default)
+    {
+        var detail = await GetManagementDetailAsync(recordId, cancellationToken);
+        if (detail is null)
+        {
+            return null;
+        }
+
+        var safeName = Path.GetFileName(storageFileName);
+        var meta = detail.Attachments.FirstOrDefault(a =>
+            string.Equals(a.StorageFileName, safeName, StringComparison.OrdinalIgnoreCase));
+        if (meta is null)
+        {
+            return null;
+        }
+
+        var absolutePath = leaveAttachmentStore.ResolveAbsolutePath(meta.StorageFileName);
+        if (absolutePath is null)
+        {
+            return null;
+        }
+
+        var bytes = await File.ReadAllBytesAsync(absolutePath, cancellationToken);
+        return new LeaveAttachmentFileDto(bytes, meta.ContentType, meta.FileName);
+    }
+
     public async Task<byte[]?> GetRequestPdfAsync(Guid recordId, CancellationToken cancellationToken = default)
     {
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
@@ -523,7 +556,8 @@ public sealed class LeaveService(
             record.DataSource,
             record.CreatedAt,
             timeline,
-            ApprovalNote);
+            ApprovalNote,
+            MapAttachmentsForRecord(record.Id, record.DetailsJson, management: true));
     }
 
     private static LeaveManagementItemDto ToManagementItem(LeaveRecord record) =>
@@ -728,6 +762,97 @@ public sealed class LeaveService(
         }
 
         return null;
+    }
+
+    private static IReadOnlyList<LeaveAttachmentMetaDto> MapAttachmentsForRecord(
+        Guid recordId,
+        string? detailsJson,
+        bool management)
+    {
+        var attachments = ExtractAttachments(detailsJson);
+        if (attachments.Count == 0)
+        {
+            return attachments;
+        }
+
+        return attachments
+            .Select(a =>
+            {
+                var url = management
+                    ? $"/rh/leave/management/{recordId:D}/attachments/{a.StorageFileName}"
+                    : a.Url;
+                return new LeaveAttachmentMetaDto(
+                    a.FileName,
+                    a.StorageFileName,
+                    a.ContentType,
+                    a.SizeBytes,
+                    url);
+            })
+            .ToList();
+    }
+
+    private static IReadOnlyList<LeaveAttachmentMetaDto> ExtractAttachments(string? detailsJson)
+    {
+        if (string.IsNullOrWhiteSpace(detailsJson) || detailsJson == "{}")
+        {
+            return [];
+        }
+
+        try
+        {
+            var raw = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(detailsJson, JsonOptions);
+            if (raw?.TryGetValue("attachments", out var attachmentsEl) != true
+                || attachmentsEl.ValueKind != JsonValueKind.Array)
+            {
+                return [];
+            }
+
+            var list = new List<LeaveAttachmentMetaDto>();
+            foreach (var item in attachmentsEl.EnumerateArray())
+            {
+                var fileName = item.TryGetProperty("fileName", out var fnEl)
+                    ? fnEl.GetString()
+                    : item.TryGetProperty("FileName", out var fnEl2) ? fnEl2.GetString() : null;
+                var storageFileName = item.TryGetProperty("storageFileName", out var snEl)
+                    ? snEl.GetString()
+                    : item.TryGetProperty("StorageFileName", out var snEl2) ? snEl2.GetString() : null;
+                var contentType = item.TryGetProperty("contentType", out var ctEl)
+                    ? ctEl.GetString()
+                    : item.TryGetProperty("ContentType", out var ctEl2) ? ctEl2.GetString() : null;
+                var url = item.TryGetProperty("url", out var urlEl)
+                    ? urlEl.GetString()
+                    : item.TryGetProperty("Url", out var urlEl2) ? urlEl2.GetString() : null;
+                long sizeBytes = 0;
+                if (item.TryGetProperty("sizeBytes", out var szEl) && szEl.TryGetInt64(out var sz))
+                {
+                    sizeBytes = sz;
+                }
+                else if (item.TryGetProperty("SizeBytes", out var szEl2) && szEl2.TryGetInt64(out var sz2))
+                {
+                    sizeBytes = sz2;
+                }
+
+                if (string.IsNullOrWhiteSpace(fileName) || string.IsNullOrWhiteSpace(storageFileName))
+                {
+                    continue;
+                }
+
+                list.Add(new LeaveAttachmentMetaDto(
+                    fileName.Trim(),
+                    Path.GetFileName(storageFileName.Trim()),
+                    string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType.Trim(),
+                    sizeBytes,
+                    string.IsNullOrWhiteSpace(url)
+                        ? $"/leave/attachments/{Path.GetFileName(storageFileName.Trim())}"
+                        : url.Trim()));
+            }
+
+            return list;
+        }
+        catch
+        {
+            return [];
+        }
     }
 
     private static (IReadOnlyList<LeavePeriodDto> Periods, IReadOnlyList<string> Notes) DeserializeBreakdown(string json)

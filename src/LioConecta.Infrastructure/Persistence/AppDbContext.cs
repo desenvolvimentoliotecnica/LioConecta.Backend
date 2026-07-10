@@ -44,6 +44,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<BenefitCatalog> BenefitCatalogs => Set<BenefitCatalog>();
     public DbSet<EmployeeLeaveBalance> EmployeeLeaveBalances => Set<EmployeeLeaveBalance>();
     public DbSet<LeaveRecord> LeaveRecords => Set<LeaveRecord>();
+    public DbSet<PontoAdjustmentRecord> PontoAdjustmentRecords => Set<PontoAdjustmentRecord>();
     public DbSet<TotvsRmConfiguration> TotvsRmConfigurations => Set<TotvsRmConfiguration>();
     public DbSet<WorkerRun> WorkerRuns => Set<WorkerRun>();
     public DbSet<WorkerRunLog> WorkerRunLogs => Set<WorkerRunLog>();
@@ -114,6 +115,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureEmployeeBenefits(modelBuilder);
         ConfigureBenefitCatalog(modelBuilder);
         ConfigureEmployeeLeave(modelBuilder);
+        ConfigurePontoAdjustments(modelBuilder);
         ConfigureTotvsRmConfiguration(modelBuilder);
         ConfigureWorkerRuns(modelBuilder);
         ConfigureTimesheetPeriodCache(modelBuilder);
@@ -719,6 +721,25 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasIndex(r => new { r.PersonId, r.StartDate });
             entity.HasIndex(r => r.Status);
             entity.HasIndex(r => new { r.PersonId, r.RmExternalId });
+
+            entity.HasOne(r => r.Person)
+                .WithMany()
+                .HasForeignKey(r => r.PersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigurePontoAdjustments(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PontoAdjustmentRecord>(entity =>
+        {
+            entity.ToTable("ponto_adjustment_records");
+            entity.Property(r => r.Title).HasMaxLength(256);
+            entity.Property(r => r.Status).HasMaxLength(64);
+            entity.Property(r => r.Reason).HasMaxLength(2000);
+            entity.Property(r => r.DataSource).HasMaxLength(64);
+            entity.HasIndex(r => new { r.PersonId, r.CreatedAt });
+            entity.HasIndex(r => r.Status);
 
             entity.HasOne(r => r.Person)
                 .WithMany()

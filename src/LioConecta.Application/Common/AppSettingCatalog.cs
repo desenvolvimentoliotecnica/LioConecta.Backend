@@ -178,6 +178,10 @@ public static class AppSettingCatalog
             "Quando true, todos os e-mails de férias vão apenas para leave.email.dev_override_to. Em produção, desligar.", "boolean", false, "true", 5),
         new(AppSettingKeys.LeaveEmailDevOverrideTo, "leave", "E-mail override (destinatário único)",
             "Destinatário único quando o override estiver ativo. Default seguro para local/homolog.", "email", false, "leonardo.mendes@liotecnica.com.br", 6),
+        new(AppSettingKeys.PontoNotifyRoles, "ponto", "Roles notificados em ajuste de ponto",
+            "JSON array de roles (ex.: [\"HR\"]) que recebem notificação no portal além do gestor direto.", "json", false, "[\"HR\"]", 1),
+        new(AppSettingKeys.PontoNotifyEmails, "ponto", "E-mails notificados em ajuste de ponto",
+            "JSON array de e-mails adicionais (além do gestor e das roles) para notificação.", "json", false, "[]", 2),
         new(AppSettingKeys.WorkersPollClosureIntervalMinutes, "workers", "Intervalo encerramento enquetes (minutos)",
             "Frequência do worker de notificação de enquetes encerradas.", "integer", false, "1", 10),
 

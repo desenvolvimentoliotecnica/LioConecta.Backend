@@ -29,6 +29,13 @@ public interface INotificationService
         CancellationToken cancellationToken = default,
         string? title = null);
 
+    Task NotifyPontoAdjustmentCreatedAsync(
+        IReadOnlyList<Guid> recipientPersonIds,
+        Guid adjustmentRecordId,
+        string summary,
+        CancellationToken cancellationToken = default,
+        string? title = null);
+
     Task NotifyBirthdayCongratsAsync(
         FeedPost post,
         Person celebrated,

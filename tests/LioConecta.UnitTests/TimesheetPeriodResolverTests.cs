@@ -49,4 +49,43 @@ public class TimesheetPeriodResolverTests
         Assert.Equal("16/05/2026 - 15/06/2026", options[1].Label);
         Assert.Equal("16/04/2026 - 15/05/2026", options[2].Label);
     }
+
+    [Fact]
+    public void BuildRecentPeriodOptions_FiltersPeriodsBeforeAdmission()
+    {
+        var options = TimesheetPeriodResolver.BuildRecentPeriodOptions(
+            12,
+            TimesheetPeriodResolver.DefaultStartDay,
+            TimesheetPeriodResolver.DefaultEndDay,
+            new DateTime(2026, 7, 10),
+            admissionDate: new DateTime(2026, 4, 1));
+
+        Assert.Equal(4, options.Count);
+        Assert.Equal("16/06/2026 - 15/07/2026", options[0].Label);
+        Assert.Equal("16/05/2026 - 15/06/2026", options[1].Label);
+        Assert.Equal("16/04/2026 - 15/05/2026", options[2].Label);
+        Assert.Equal("16/03/2026 - 15/04/2026", options[3].Label);
+        Assert.DoesNotContain(options, option => option.Label.Contains("2025"));
+        Assert.DoesNotContain(options, option => option.Label == "16/02/2026 - 15/03/2026");
+    }
+
+    [Fact]
+    public void IsPeriodEligible_IncludesOverlappingAdmissionPeriod()
+    {
+        Assert.True(
+            TimesheetPeriodResolver.IsPeriodEligible(
+                4,
+                2026,
+                TimesheetPeriodResolver.DefaultStartDay,
+                TimesheetPeriodResolver.DefaultEndDay,
+                new DateTime(2026, 4, 1)));
+
+        Assert.False(
+            TimesheetPeriodResolver.IsPeriodEligible(
+                3,
+                2026,
+                TimesheetPeriodResolver.DefaultStartDay,
+                TimesheetPeriodResolver.DefaultEndDay,
+                new DateTime(2026, 4, 1)));
+    }
 }

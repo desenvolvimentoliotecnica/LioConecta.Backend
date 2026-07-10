@@ -116,6 +116,29 @@ public sealed class NotificationService(
             cancellationToken);
     }
 
+    public async Task NotifyPontoAdjustmentCreatedAsync(
+        IReadOnlyList<Guid> recipientPersonIds,
+        Guid adjustmentRecordId,
+        string summary,
+        CancellationToken cancellationToken = default,
+        string? title = null)
+    {
+        var recipients = await personRepository.GetByIdsAsync(recipientPersonIds, cancellationToken);
+        if (recipients.Count == 0)
+        {
+            return;
+        }
+
+        var href = $"/servicos/ponto-eletronico/gestao?requestId={adjustmentRecordId}";
+        await BroadcastAsync(
+            () => Task.FromResult(recipients),
+            NotificationType.ServiceRequest,
+            string.IsNullOrWhiteSpace(title) ? "Nova solicitação de ajuste de ponto" : title.Trim(),
+            summary.Trim(),
+            href,
+            cancellationToken);
+    }
+
     public async Task NotifyBirthdayCongratsAsync(
         FeedPost post,
         Person celebrated,

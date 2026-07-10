@@ -5,7 +5,9 @@ public sealed record WorkerDefinitionDto(
     string Label,
     string Description,
     string? IntervalSettingKey,
-    int? DefaultIntervalMinutes);
+    int? DefaultIntervalMinutes,
+    bool HostedInWorkersProcess,
+    IReadOnlyList<string> DependsOn);
 
 public sealed record WorkerRunDto(
     Guid Id,
@@ -31,3 +33,14 @@ public sealed record WorkerTriggerResultDto(
     string WorkerKey,
     string Status,
     string? ErrorMessage);
+
+public sealed record WorkerConnectivityComponentDto(
+    string Id,
+    string Label,
+    bool Healthy,
+    long? LatencyMs,
+    string? Message);
+
+public sealed record WorkerConnectivityDto(
+    DateTimeOffset CheckedAtUtc,
+    IReadOnlyList<WorkerConnectivityComponentDto> Components);

@@ -211,6 +211,7 @@ public static class DependencyInjection
         services.AddScoped<GlpiConnectionTester>();
         services.AddScoped<IWorkerRunRecorder, WorkerRunRecorder>();
         services.AddScoped<IWorkerTriggerService, WorkerTriggerService>();
+        services.AddScoped<IWorkersConnectivityService, WorkersConnectivityService>();
         services.AddScoped<LeaveWriteBackService>();
         services.AddScoped<IDbExplorerService, DbExplorerService>();
 

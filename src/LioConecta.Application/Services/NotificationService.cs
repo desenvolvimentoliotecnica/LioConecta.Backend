@@ -97,7 +97,8 @@ public sealed class NotificationService(
         IReadOnlyList<Guid> recipientPersonIds,
         Guid leaveRecordId,
         string summary,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? title = null)
     {
         var recipients = await personRepository.GetByIdsAsync(recipientPersonIds, cancellationToken);
         if (recipients.Count == 0)
@@ -109,7 +110,7 @@ public sealed class NotificationService(
         await BroadcastAsync(
             () => Task.FromResult(recipients),
             NotificationType.ServiceRequest,
-            "Nova solicitação de férias",
+            string.IsNullOrWhiteSpace(title) ? "Nova solicitação de férias" : title.Trim(),
             summary.Trim(),
             href,
             cancellationToken);

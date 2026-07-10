@@ -69,11 +69,25 @@ public sealed record CreateLeaveRequestDto(
     int? Days,
     string? Notes);
 
+public sealed record LeaveAttachmentMetaDto(
+    string FileName,
+    string StorageFileName,
+    string ContentType,
+    long SizeBytes,
+    string Url);
+
+public sealed record LeaveAttachmentInput(
+    Stream Content,
+    string FileName,
+    string? ContentType,
+    long SizeBytes);
+
 public sealed record LeaveRequestResultDto(
     Guid RequestId,
     Guid RecordId,
     string Status,
-    string Message);
+    string Message,
+    string Protocol);
 
 public sealed record LeaveRequestItemDto(
     Guid Id,

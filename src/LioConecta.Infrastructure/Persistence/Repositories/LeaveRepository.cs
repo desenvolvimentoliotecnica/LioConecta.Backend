@@ -15,6 +15,13 @@ public sealed class LeaveRepository(AppDbContext db) : ILeaveRepository
 {
 
     private const string VacationServiceKey = "solicitar-ferias";
+    private const string MedicalCertificateServiceKey = "atestado";
+
+    private static readonly string[] ManagementServiceKeys =
+    [
+        VacationServiceKey,
+        MedicalCertificateServiceKey,
+    ];
 
 
 
@@ -208,7 +215,8 @@ public sealed class LeaveRepository(AppDbContext db) : ILeaveRepository
 
             .Include(r => r.Person)
 
-            .Where(r => r.ServiceKey == VacationServiceKey);
+            .Where(r => ManagementServiceKeys.Contains(r.ServiceKey));
+
 
 
 

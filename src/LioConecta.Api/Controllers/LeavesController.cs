@@ -1,5 +1,6 @@
 using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Services;
+using LioConecta.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -130,12 +131,83 @@ public sealed class LeavesController(ILeaveService leaveService) : ControllerBas
 
     [HttpPost("requests")]
     [ProducesResponseType(typeof(LeaveRequestResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<ActionResult<LeaveRequestResultDto>> CreateRequest(
         [FromBody] CreateLeaveRequestDto request,
         CancellationToken cancellationToken)
     {
-        var result = await leaveService.CreateRequestAsync(request, cancellationToken);
-        return Ok(result);
+        try
+        {
+            var result = await leaveService.CreateRequestAsync(request, null, cancellationToken);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { detail = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { detail = ex.Message });
+        }
+    }
+
+    [HttpPost("requests/multipart")]
+    [RequestSizeLimit(LeaveAttachmentStore.MaxFileSizeBytes * LeaveAttachmentStore.MaxFilesPerRequest + 1_048_576)]
+    [ProducesResponseType(typeof(LeaveRequestResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<LeaveRequestResultDto>> CreateRequestMultipart(
+        [FromForm] string serviceId,
+        [FromForm] DateOnly? startDate,
+        [FromForm] DateOnly? endDate,
+        [FromForm] int? days,
+        [FromForm] string? notes,
+        [FromForm] List<IFormFile>? files,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(serviceId))
+        {
+            return BadRequest(new { detail = "Informe o serviço." });
+        }
+
+        var request = new CreateLeaveRequestDto(serviceId.Trim(), startDate, endDate, days, notes);
+        var attachments = new List<LeaveAttachmentInput>();
+
+        try
+        {
+            foreach (var file in files ?? [])
+            {
+                if (file is null || file.Length <= 0)
+                {
+                    continue;
+                }
+
+                var stream = file.OpenReadStream();
+                attachments.Add(new LeaveAttachmentInput(
+                    stream,
+                    file.FileName,
+                    file.ContentType,
+                    file.Length));
+            }
+
+            var result = await leaveService.CreateRequestAsync(request, attachments, cancellationToken);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { detail = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { detail = ex.Message });
+        }
+        finally
+        {
+            foreach (var attachment in attachments)
+            {
+                await attachment.Content.DisposeAsync();
+            }
+        }
     }
 }

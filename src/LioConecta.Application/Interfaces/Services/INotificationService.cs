@@ -26,7 +26,8 @@ public interface INotificationService
         IReadOnlyList<Guid> recipientPersonIds,
         Guid leaveRecordId,
         string summary,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        string? title = null);
 
     Task NotifyBirthdayCongratsAsync(
         FeedPost post,

@@ -85,6 +85,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
     public DbSet<SubjectRoleAssignment> SubjectRoleAssignments => Set<SubjectRoleAssignment>();
     public DbSet<TestUser> TestUsers => Set<TestUser>();
+    public DbSet<DbExplorerQueryLog> DbExplorerQueryLogs => Set<DbExplorerQueryLog>();
+    public DbSet<DbExplorerSavedQuery> DbExplorerSavedQueries => Set<DbExplorerSavedQuery>();
+    public DbSet<DbExplorerDerLayout> DbExplorerDerLayouts => Set<DbExplorerDerLayout>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -121,6 +124,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigurePhoneExtensions(modelBuilder);
         ConfigurePortalSystems(modelBuilder);
         ConfigureRbac(modelBuilder);
+        ConfigureDbExplorer(modelBuilder);
     }
 
     private static void ApplySnakeCaseTableNames(ModelBuilder modelBuilder)
@@ -1302,6 +1306,42 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany()
                 .HasForeignKey(t => t.OptionalPersonId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+    }
+
+    private static void ConfigureDbExplorer(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<DbExplorerQueryLog>(entity =>
+        {
+            entity.HasIndex(x => x.ActorId);
+            entity.HasIndex(x => x.ExecutedAt);
+            entity.Property(x => x.ConnectionId).HasMaxLength(32);
+            entity.HasOne(x => x.Actor)
+                .WithMany()
+                .HasForeignKey(x => x.ActorId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DbExplorerSavedQuery>(entity =>
+        {
+            entity.HasIndex(x => new { x.ActorId, x.Name }).IsUnique();
+            entity.Property(x => x.Name).HasMaxLength(120);
+            entity.Property(x => x.ConnectionId).HasMaxLength(32);
+            entity.HasOne(x => x.Actor)
+                .WithMany()
+                .HasForeignKey(x => x.ActorId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DbExplorerDerLayout>(entity =>
+        {
+            entity.HasIndex(x => new { x.ActorId, x.ConnectionId }).IsUnique();
+            entity.Property(x => x.ConnectionId).HasMaxLength(32);
+            entity.Property(x => x.LayoutJson).HasColumnType("jsonb");
+            entity.HasOne(x => x.Actor)
+                .WithMany()
+                .HasForeignKey(x => x.ActorId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

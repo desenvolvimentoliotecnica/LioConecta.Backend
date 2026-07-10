@@ -8,6 +8,8 @@ public static class AuthPolicies
 
     public const string RequireAdmin = nameof(RequireAdmin);
 
+    public const string RequireStrictAdmin = nameof(RequireStrictAdmin);
+
     public const string RequireTI = nameof(RequireTI);
 
     public const string RequireKioskReader = nameof(RequireKioskReader);

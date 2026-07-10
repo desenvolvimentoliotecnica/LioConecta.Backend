@@ -192,6 +192,9 @@ try
         options.AddPolicy(AuthPolicies.RequireAdmin, policy =>
             policy.RequireRole(UserRole.Admin.ToString()));
 
+        options.AddPolicy(AuthPolicies.RequireStrictAdmin, policy =>
+            policy.RequireRole(UserRole.Admin.ToString()));
+
         options.AddPolicy(AuthPolicies.RequireTI, policy =>
             policy.RequireRole(UserRole.TI.ToString()));
 
@@ -325,6 +328,14 @@ try
     {
         FileProvider = new PhysicalFileProvider(uniLioModuleAttachmentsRoot),
         RequestPath = "/unilio/modules/attachments",
+    });
+
+    var leaveAttachmentsRoot = Path.Combine(app.Environment.ContentRootPath, "App_Data", "leave", "attachments");
+    Directory.CreateDirectory(leaveAttachmentsRoot);
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(leaveAttachmentsRoot),
+        RequestPath = "/leave/attachments",
     });
 
     app.UseAuthentication();

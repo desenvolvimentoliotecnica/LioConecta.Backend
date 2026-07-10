@@ -1,3 +1,4 @@
+using LioConecta.Api.Authorization;
 using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Infrastructure.Services;
@@ -129,6 +130,48 @@ public sealed class LeavesController(ILeaveService leaveService) : ControllerBas
         }
 
         return File(file.Content, file.ContentType, file.FileName);
+    }
+
+    [HttpPost("management/{id:guid}/approve")]
+    [RequirePermission("leave.approve")]
+    [ProducesResponseType(typeof(LeaveManagementDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<LeaveManagementDetailDto>> Approve(
+        Guid id,
+        [FromBody] ApproveLeaveRequestDto? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var detail = await leaveService.ApproveAsync(id, request ?? new ApproveLeaveRequestDto(null), cancellationToken);
+            return detail is null ? NotFound() : Ok(detail);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
+    [HttpPost("management/{id:guid}/reject")]
+    [RequirePermission("leave.approve")]
+    [ProducesResponseType(typeof(LeaveManagementDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<LeaveManagementDetailDto>> Reject(
+        Guid id,
+        [FromBody] RejectLeaveRequestDto? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var detail = await leaveService.RejectAsync(id, request ?? new RejectLeaveRequestDto(null), cancellationToken);
+            return detail is null ? NotFound() : Ok(detail);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
     }
 
     [HttpGet("banco-horas")]

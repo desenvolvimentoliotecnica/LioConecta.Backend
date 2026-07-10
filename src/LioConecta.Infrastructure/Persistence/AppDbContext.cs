@@ -50,6 +50,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<LeaveRecord> LeaveRecords => Set<LeaveRecord>();
     public DbSet<PontoAdjustmentRecord> PontoAdjustmentRecords => Set<PontoAdjustmentRecord>();
     public DbSet<TotvsRmConfiguration> TotvsRmConfigurations => Set<TotvsRmConfiguration>();
+    public DbSet<RmWriteBackJournal> RmWriteBackJournals => Set<RmWriteBackJournal>();
+    public DbSet<WorkflowDefinition> WorkflowDefinitions => Set<WorkflowDefinition>();
+    public DbSet<WorkflowInstance> WorkflowInstances => Set<WorkflowInstance>();
+    public DbSet<WorkflowStep> WorkflowSteps => Set<WorkflowStep>();
     public DbSet<WorkerRun> WorkerRuns => Set<WorkerRun>();
     public DbSet<WorkerRunLog> WorkerRunLogs => Set<WorkerRunLog>();
     public DbSet<TimesheetPeriodCache> TimesheetPeriodCaches => Set<TimesheetPeriodCache>();
@@ -121,6 +125,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureEmployeeLeave(modelBuilder);
         ConfigurePontoAdjustments(modelBuilder);
         ConfigureTotvsRmConfiguration(modelBuilder);
+        ConfigureRmWriteBackJournal(modelBuilder);
+        ConfigureWorkflow(modelBuilder);
         ConfigureWorkerRuns(modelBuilder);
         ConfigureTimesheetPeriodCache(modelBuilder);
         ConfigureEmail(modelBuilder);
@@ -841,6 +847,62 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(c => c.Server).HasMaxLength(256);
             entity.Property(c => c.Database).HasMaxLength(128);
             entity.Property(c => c.UserName).HasMaxLength(128);
+        });
+    }
+
+    private static void ConfigureRmWriteBackJournal(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<RmWriteBackJournal>(entity =>
+        {
+            entity.ToTable("rm_writeback_journals");
+            entity.Property(j => j.Domain).HasMaxLength(32);
+            entity.Property(j => j.Marker).HasMaxLength(128);
+            entity.Property(j => j.Status).HasMaxLength(32);
+            entity.HasIndex(j => j.SessionId);
+            entity.HasIndex(j => new { j.Domain, j.PortalRecordId });
+            entity.HasIndex(j => j.Marker);
+            entity.HasIndex(j => j.Status);
+        });
+    }
+
+    private static void ConfigureWorkflow(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<WorkflowDefinition>(entity =>
+        {
+            entity.ToTable("workflow_definitions");
+            entity.Property(d => d.Key).HasMaxLength(128);
+            entity.Property(d => d.Name).HasMaxLength(256);
+            entity.HasIndex(d => d.Key).IsUnique();
+        });
+
+        modelBuilder.Entity<WorkflowInstance>(entity =>
+        {
+            entity.ToTable("workflow_instances");
+            entity.Property(i => i.DefinitionKey).HasMaxLength(128);
+            entity.Property(i => i.SubjectType).HasMaxLength(64);
+            entity.Property(i => i.Status).HasMaxLength(32);
+            entity.HasIndex(i => i.DefinitionKey);
+            entity.HasIndex(i => new { i.SubjectType, i.SubjectId });
+            entity.HasIndex(i => i.Status);
+            entity.HasIndex(i => i.CreatedByPersonId);
+        });
+
+        modelBuilder.Entity<WorkflowStep>(entity =>
+        {
+            entity.ToTable("workflow_steps");
+            entity.Property(s => s.StepKey).HasMaxLength(64);
+            entity.Property(s => s.AssigneeRole).HasMaxLength(64);
+            entity.Property(s => s.Status).HasMaxLength(32);
+            entity.Property(s => s.Comment).HasMaxLength(2000);
+            entity.HasIndex(s => s.InstanceId);
+            entity.HasIndex(s => s.AssigneePersonId);
+            entity.HasIndex(s => s.AssigneeRole);
+            entity.HasIndex(s => s.Status);
+
+            entity.HasOne(s => s.Instance)
+                .WithMany(i => i.Steps)
+                .HasForeignKey(s => s.InstanceId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 

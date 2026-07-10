@@ -80,12 +80,17 @@ public static class AppSettingKeys
     public const string WorkersTotvsPayslipCacheTtlMinutes = "workers.totvs_payslip_cache_ttl_minutes";
     public const string WorkersTotvsLeaveSyncIntervalMinutes = "workers.totvs_leave_sync_interval_minutes";
     public const string WorkersTotvsLeaveCacheTtlMinutes = "workers.totvs_leave_cache_ttl_minutes";
+    /// <summary>Legacy: quando "leave.rm.writeback.mode" não estiver definido, true mapeia para "apply" e false para "off".</summary>
     public const string LeaveRmWriteBackEnabled = "leave.rm.writeback.enabled";
+    public const string LeaveRmWriteBackMode = "leave.rm.writeback.mode";
+    public const string LeaveRmWriteBackAllowProd = "leave.rm.writeback.allow_prod";
     public const string LeaveNotifyEmails = "leave.notify_emails";
     public const string LeaveNotifyRoles = "leave.notify_roles";
     public const string LeaveEmailEnabled = "leave.email.enabled";
     public const string LeaveEmailDevOverrideEnabled = "leave.email.dev_override_enabled";
     public const string LeaveEmailDevOverrideTo = "leave.email.dev_override_to";
+    public const string PontoRmWriteBackMode = "ponto.rm.writeback.mode";
+    public const string PontoRmWriteBackAllowProd = "ponto.rm.writeback.allow_prod";
     public const string PontoNotifyEmails = "ponto.notify_emails";
     public const string PontoNotifyRoles = "ponto.notify_roles";
     public const string WorkersPollClosureIntervalMinutes = "workers.poll_closure_interval_minutes";

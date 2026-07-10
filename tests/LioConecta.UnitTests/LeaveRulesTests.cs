@@ -43,3 +43,45 @@ public sealed class LeaveStatusNormalizerTests
         Assert.Equal("approved", LeaveStatusNormalizer.FromRm("A", start, end));
     }
 }
+
+public sealed class LeavePeriodClassifierTests
+{
+    private static readonly DateOnly Today = new(2026, 7, 10);
+
+    [Fact]
+    public void Classify_OpenAquisitive_IsEmAquisicao()
+    {
+        Assert.Equal(
+            LeavePeriodClassifier.StatusEmAquisicao,
+            LeavePeriodClassifier.Classify(new DateOnly(2027, 4, 12), new DateOnly(2028, 4, 12), Today));
+    }
+
+    [Fact]
+    public void Classify_ClosedNotExpired_IsLiberado()
+    {
+        Assert.Equal(
+            LeavePeriodClassifier.StatusLiberado,
+            LeavePeriodClassifier.Classify(new DateOnly(2025, 7, 10), new DateOnly(2026, 7, 10), Today));
+    }
+
+    [Fact]
+    public void Classify_Expired_IsVencido()
+    {
+        Assert.Equal(
+            LeavePeriodClassifier.StatusVencido,
+            LeavePeriodClassifier.Classify(new DateOnly(2019, 7, 10), new DateOnly(2020, 7, 10), Today));
+    }
+
+    [Fact]
+    public void BuildContextNote_EmAquisicao_IncludesLiberationDate()
+    {
+        var note = LeavePeriodClassifier.BuildContextNote(
+            LeavePeriodClassifier.StatusEmAquisicao,
+            30,
+            new DateOnly(2027, 4, 12),
+            new DateOnly(2028, 4, 12));
+
+        Assert.Contains("12/04/2027", note);
+        Assert.Contains("30", note);
+    }
+}

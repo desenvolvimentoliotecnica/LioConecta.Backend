@@ -21,4 +21,10 @@ public interface IPontoAdjustmentRepository
         string? query,
         int limit,
         CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(PontoAdjustmentRecord record, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PontoAdjustmentRecord>> ListPendingWriteBackAsync(
+        int limit,
+        CancellationToken cancellationToken = default);
 }

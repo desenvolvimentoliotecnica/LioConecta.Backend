@@ -5,8 +5,21 @@
 | Solicitante | LioTecnica / LioConecta |
 | Módulo | Férias e ausências (`US-RM-002` / `US-RM-003`) |
 | Destinatário | Analista / consultor TOTVS RM · Labore |
-| Status | **Pendente** — portal já lê o RM; escrita ainda não disponível |
-| Atualizado em | 08/07/2026 |
+| Status | **Superado pela Onda 1B** — portal passou a escrever via SQL direto (journal + rollback) enquanto o serviço oficial não existe; este documento permanece como referência para quando o fornecedor entregar a API |
+| Atualizado em | 10/07/2026 |
+
+---
+
+## ⚠️ Atualização Onda 1B (10/07/2026) — decisão de escrita SQL direta
+
+Após spike (`docs/spike-writeback-sql-rm.md`), decidiu-se **não aguardar** o serviço oficial descrito abaixo e implementar write-back via **SQL direto** no `corporerm`, com:
+
+- Modos configuráveis `leave.rm.writeback.mode` = `off` \| `dry_run` \| `apply_rollbackable` \| `apply` (gate de produção via `leave.rm.writeback.allow_prod`);
+- `INSERT` em `PFUFERIASPER` (status inicial `P`) + `UPDATE` do saldo em `PFUFERIAS.SALDO`;
+- Journal (`rm_writeback_journals`) com SQL reverso por sessão, permitindo rollback administrativo (`POST /api/v1/admin/rm-writeback/sessions/{sessionId}/rollback`) em UAT/homologação;
+- Aprovação no portal (`POST /api/v1/rh/leave/management/{id}/approve`) dispara o write-back imediatamente (best-effort) além do worker `leave-writeback`.
+
+O restante deste documento (contrato de serviço oficial via API/DataServer) **permanece válido como objetivo de médio prazo**: quando o fornecedor entregar o serviço, o adapter SQL pode ser substituído sem mudança de contrato interno (`ILeaveRmWriteBack`). Até lá, a escrita SQL direta é a fonte de verdade em `apply`/`apply_rollbackable`.
 
 ---
 
@@ -23,12 +36,12 @@ O portal **LioConecta** permite ao colaborador:
 | Direção | Como funciona hoje |
 |---------|--------------------|
 | **Leitura (já implementada)** | SQL read-only no banco `corporerm`: `PFUFERIAS` (períodos aquisitivos / saldo) e `PFUFERIASPER` (gozo / programação / situação) |
-| **Escrita (pendente deste requisito)** | Solicitação é gravada **somente** na base do portal (Postgres). Fica marcada `pending_rm_sync` até existir API oficial |
+| **Escrita (Onda 1B — implementada)** | SQL direto no `corporerm` (`TotvsRmSqlLeaveWriteBack`), com journal/rollback. Solicitação continua sendo gravada na base do portal (Postgres) e marcada `pending_rm_sync` até o write-back ser processado |
 
-**Escopo explícito**
+**Escopo explícito (revisado)**
 
-- O LioConecta **não** fará `INSERT`/`UPDATE` direto nas tabelas do RM.  
-- A criação/atualização no Labore deve ocorrer via **serviço oficial** (DataServer, WebService SOAP ou API REST / middleware homologado pela TOTVS).
+- Enquanto o serviço oficial do fornecedor não existir, o LioConecta **passa a fazer** `INSERT`/`UPDATE` direto nas tabelas do RM (Onda 1B), com journal reverso para rollback em UAT/homologação e gate `allow_prod` para produção.
+- Quando disponível, a criação/atualização no Labore poderá migrar para o **serviço oficial** (DataServer, WebService SOAP ou API REST / middleware homologado pela TOTVS) descrito nas seções abaixo, sem alterar o contrato `ILeaveRmWriteBack` consumido pelo restante do portal.
 
 ---
 
@@ -156,15 +169,19 @@ O write-back será considerado pronto para ativação quando:
 
 ## 8. Integração lado LioConecta (referência interna)
 
-Já preparado no backend:
+Já implementado no backend (Onda 1B):
 
-- Fila / status `pending_rm_sync` nas solicitações do portal  
-- Interface `ILeaveRmWriteBack`  
-- Implementação enfileirada (default) + esqueleto `TotvsRmApiLeaveWriteBack`  
-- Setting `leave.rm.writeback.enabled`  
-- Worker `leave-writeback`  
+- Fila / status `pending_rm_sync` nas solicitações do portal
+- Interface `ILeaveRmWriteBack`, roteada por `ChainedLeaveRmWriteBack` conforme `leave.rm.writeback.mode`:
+  - `off` → fila local (`QueuedLeaveRmWriteBack`, sem escrita no RM)
+  - `dry_run` / `apply_rollbackable` / `apply` → SQL direto (`TotvsRmSqlLeaveWriteBack`)
+- Setting legado `leave.rm.writeback.enabled` (mapeia para `apply`/`off` quando `leave.rm.writeback.mode` não estiver definido) + settings novos `leave.rm.writeback.mode` e `leave.rm.writeback.allow_prod`
+- Journal de write-back (`RmWriteBackJournal` / `IRmWriteBackJournalService`) com rollback administrativo
+- Worker `leave-writeback` (processa `RmSyncStatus=pending_rm_sync`) + disparo imediato best-effort na aprovação
 
-**Leitura atual (não substituir, só complementar):** ver `docs/integrations-totvs-rm-leave-sql.md` (branch `feat/spec-ferias-us-rm-002-003` ou documentação equivalente após merge).
+Esqueleto de API oficial (`TotvsRmApiLeaveWriteBack`) permanece no código para quando o fornecedor entregar o contrato descrito neste documento — hoje não é utilizado pelo roteador.
+
+**Leitura atual (não substituir, só complementar):** ver `docs/integrations-totvs-rm-leave-sql.md`.
 
 ---
 
@@ -186,3 +203,4 @@ Já preparado no backend:
 | Data | Evento |
 |------|--------|
 | 08/07/2026 | Requisitos redigidos a partir da implementação read-only + fila write-back da spec `spec-ferias` |
+| 10/07/2026 | Onda 1B: decisão de escrita SQL direta (`docs/spike-writeback-sql-rm.md`) implementada como solução interina; documento mantido como objetivo de médio prazo (serviço oficial do fornecedor) |

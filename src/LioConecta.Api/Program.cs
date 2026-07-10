@@ -67,6 +67,7 @@ try
         builder.Services.AddHostedService<TotvsPayslipSyncWorker>();
         builder.Services.AddHostedService<TotvsLeaveSyncWorker>();
         builder.Services.AddHostedService<LeaveWriteBackWorker>();
+        builder.Services.AddHostedService<PontoWriteBackWorker>();
         builder.Services.AddHostedService<EmailDispatchWorker>();
     }
 

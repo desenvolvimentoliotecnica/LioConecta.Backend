@@ -17,9 +17,16 @@ public static class LeaveStatusNormalizer
             return "completed";
         }
 
-        if (normalized is "A" or "G" or "APROV" or "APROVADO" or "PROGRAMADO")
+        // "D" (Programado/deferido) — SITUACAOFERIAS real do PFUFERIASPER (ver docs/spike-writeback-sql-rm.md).
+        if (normalized is "A" or "G" or "D" or "APROV" or "APROVADO" or "PROGRAMADO")
         {
             return startDate is not null && startDate.Value > today ? "approved" : "completed";
+        }
+
+        // "P" (Pendente/em programação) — write-back Onda 1B insere férias com esse código.
+        if (normalized is "P" or "PEND" or "PENDENTE")
+        {
+            return "pending";
         }
 
         if (startDate is not null && startDate.Value > today)

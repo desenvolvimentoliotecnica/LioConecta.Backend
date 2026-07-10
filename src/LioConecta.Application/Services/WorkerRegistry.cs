@@ -72,6 +72,14 @@ public static class WorkerRegistry
             HostedInWorkersProcess: true,
             DependsOn: [WorkerConnectivityIds.TotvsRm, WorkerConnectivityIds.Postgres]),
         new(
+            WorkerKeys.PontoWriteBack,
+            "Write-back ponto RM",
+            "Envia ajustes de ponto aprovados para o TOTVS RM (INSERT ABATFUN) quando habilitado.",
+            null,
+            15,
+            HostedInWorkersProcess: true,
+            DependsOn: [WorkerConnectivityIds.TotvsRm, WorkerConnectivityIds.Postgres]),
+        new(
             WorkerKeys.EmailDispatch,
             "Envio de e-mails",
             "Processa a fila de e-mails pendentes via SMTP configurado em banco.",

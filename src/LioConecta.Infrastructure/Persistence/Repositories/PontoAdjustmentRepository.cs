@@ -78,4 +78,21 @@ public sealed class PontoAdjustmentRepository(AppDbContext db) : IPontoAdjustmen
             .Take(Math.Clamp(limit, 1, 100))
             .ToListAsync(cancellationToken);
     }
+
+    public async Task UpdateAsync(PontoAdjustmentRecord record, CancellationToken cancellationToken = default)
+    {
+        db.PontoAdjustmentRecords.Update(record);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<PontoAdjustmentRecord>> ListPendingWriteBackAsync(
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        return await db.PontoAdjustmentRecords
+            .Where(r => r.RmSyncStatus == "pending_rm_sync")
+            .OrderBy(r => r.CreatedAt)
+            .Take(Math.Clamp(limit, 1, 50))
+            .ToListAsync(cancellationToken);
+    }
 }

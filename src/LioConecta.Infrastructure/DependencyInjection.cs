@@ -153,7 +153,12 @@ public static class DependencyInjection
         services.AddScoped<TotvsRmConnectionTester>();
         services.AddScoped<QueuedLeaveRmWriteBack>();
         services.AddScoped<TotvsRmApiLeaveWriteBack>();
+        services.AddScoped<TotvsRmSqlLeaveWriteBack>();
         services.AddScoped<ILeaveRmWriteBack, ChainedLeaveRmWriteBack>();
+        services.AddScoped<QueuedPontoRmWriteBack>();
+        services.AddScoped<TotvsRmSqlPontoWriteBack>();
+        services.AddScoped<IPontoRmWriteBack, ChainedPontoRmWriteBack>();
+        services.AddScoped<IRmWriteBackJournalService, RmWriteBackJournalService>();
     }
 
     private static void RegisterServices(IServiceCollection services, IAppSettingsProvider settings)
@@ -216,6 +221,8 @@ public static class DependencyInjection
         services.AddScoped<IWorkerTriggerService, WorkerTriggerService>();
         services.AddScoped<IWorkersConnectivityService, WorkersConnectivityService>();
         services.AddScoped<LeaveWriteBackService>();
+        services.AddScoped<PontoWriteBackService>();
+        services.AddScoped<IWorkflowService, WorkflowService>();
         services.AddScoped<IDbExplorerService, DbExplorerService>();
 
         var redisConnection = settings.GetRedisConnection();

@@ -43,4 +43,15 @@ public interface ILeaveService
     Task<byte[]?> GetRequestPdfAsync(Guid recordId, CancellationToken cancellationToken = default);
 
     Task<byte[]?> GetManagementPdfAsync(Guid recordId, CancellationToken cancellationToken = default);
+
+    /// <summary>Aprova a solicitação (Status=approved) e, por padrão, dispara o write-back RM imediatamente.</summary>
+    Task<LeaveManagementDetailDto?> ApproveAsync(
+        Guid recordId,
+        ApproveLeaveRequestDto request,
+        CancellationToken cancellationToken = default);
+
+    Task<LeaveManagementDetailDto?> RejectAsync(
+        Guid recordId,
+        RejectLeaveRequestDto request,
+        CancellationToken cancellationToken = default);
 }

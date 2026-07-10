@@ -10,5 +10,6 @@ public static class WorkerKeys
     public const string TotvsPayslipSync = "totvs-payslip-sync";
     public const string TotvsLeaveSync = "totvs-leave-sync";
     public const string LeaveWriteBack = "leave-writeback";
+    public const string PontoWriteBack = "ponto-writeback";
     public const string EmailDispatch = "email-dispatch";
 }

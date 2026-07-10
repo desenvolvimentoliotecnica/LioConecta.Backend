@@ -121,6 +121,10 @@ public sealed record PontoAdjustmentManagementItemDto(
     string Reason,
     DateTimeOffset CreatedAt);
 
+public sealed record ApprovePontoAdjustmentRequestDto(string? Comment);
+
+public sealed record RejectPontoAdjustmentRequestDto(string? Reason);
+
 public sealed record PontoAdjustmentManagementDetailDto(
     Guid Id,
     Guid? ServiceRequestId,

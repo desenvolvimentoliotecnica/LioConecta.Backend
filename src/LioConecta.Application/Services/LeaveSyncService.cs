@@ -130,21 +130,47 @@ public sealed class LeaveSyncService(
         DateTimeOffset syncedAt,
         CancellationToken cancellationToken)
     {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var periods = rmData.Periods
-            .Select(period => new
+            .Where(period => period.SaldoDias > 0)
+            .Select(period =>
             {
-                label = FormatPeriodLabel(period.InicioPeriodo, period.FimPeriodo),
-                acquiredDays = period.DiasAdquiridos,
-                usedDays = period.DiasUsados,
-                availableDays = period.SaldoDias,
-                expiresAt = period.DataVencimento?.ToString("O"),
+                var status = LeavePeriodClassifier.Classify(period.FimPeriodo, period.DataVencimento, today);
+                return new
+                {
+                    label = FormatPeriodLabel(period.InicioPeriodo, period.FimPeriodo),
+                    acquiredDays = period.DiasAdquiridos,
+                    usedDays = period.DiasUsados,
+                    availableDays = period.SaldoDias,
+                    expiresAt = period.DataVencimento?.ToString("O"),
+                    status,
+                    liberatesAt = period.FimPeriodo?.ToString("O"),
+                    contextNote = LeavePeriodClassifier.BuildContextNote(
+                        status,
+                        period.SaldoDias,
+                        period.FimPeriodo,
+                        period.DataVencimento),
+                };
             })
             .ToList();
 
         var notes = new List<string>();
         if (rmData.AvailableDays > 0)
         {
-            notes.Add($"Saldo consolidado RM: {rmData.AvailableDays} dia(s) disponível(is).");
+            notes.Add($"{rmData.AvailableDays} dia(s) liberados para solicitação agora.");
+        }
+
+        if (rmData.AcquiringDays > 0)
+        {
+            notes.Add(
+                rmData.NextLiberationAt is not null
+                    ? $"{rmData.AcquiringDays} dia(s) em aquisição — liberação a partir de {rmData.NextLiberationAt.Value:dd/MM/yyyy}."
+                    : $"{rmData.AcquiringDays} dia(s) em aquisição (ainda não podem ser solicitados).");
+        }
+
+        if (rmData.ExpiredDays > 0)
+        {
+            notes.Add($"{rmData.ExpiredDays} dia(s) vencidos — consulte o RH.");
         }
 
         if (rmData.NextScheduledStart is not null)
@@ -163,7 +189,15 @@ public sealed class LeaveSyncService(
             BancoHorasBalanceHours = bancoHorasBalanceHours,
             NextScheduledStart = rmData.NextScheduledStart,
             NextScheduledEnd = rmData.NextScheduledEnd,
-            BreakdownJson = JsonSerializer.Serialize(new { periods, notes }, JsonOptions),
+            BreakdownJson = JsonSerializer.Serialize(
+                new
+                {
+                    acquiringDays = rmData.AcquiringDays,
+                    nextLiberationAt = rmData.NextLiberationAt?.ToString("O"),
+                    periods,
+                    notes,
+                },
+                JsonOptions),
             DataSource = Source,
             SyncedAt = syncedAt,
             CreatedAt = syncedAt,

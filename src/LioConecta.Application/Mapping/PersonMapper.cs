@@ -375,7 +375,11 @@ public static class DocumentMapper
         => new(
             document.Id,
             document.Title,
+            document.Description,
             document.Category,
+            document.MediaType,
+            document.IsFeatured,
+            document.SeedKey,
             document.SharePointUrl,
             document.ModifiedAt);
 }

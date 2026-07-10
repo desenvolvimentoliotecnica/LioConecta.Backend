@@ -41,6 +41,7 @@ public sealed class DocumentRepository(AppDbContext db) : IDocumentRepository
             .AsNoTracking()
             .Where(d =>
                 EF.Functions.ILike(d.Title, pattern) ||
+                (d.Description != null && EF.Functions.ILike(d.Description, pattern)) ||
                 EF.Functions.ILike(d.Category, pattern))
             .OrderByDescending(d => d.ModifiedAt)
             .Take(Math.Clamp(limit, 1, 100))
@@ -59,7 +60,11 @@ public sealed class DocumentRepository(AppDbContext db) : IDocumentRepository
         else
         {
             existing.Title = document.Title;
+            existing.Description = document.Description;
             existing.Category = document.Category;
+            existing.MediaType = document.MediaType;
+            existing.IsFeatured = document.IsFeatured;
+            existing.SeedKey = document.SeedKey;
             existing.SharePointUrl = document.SharePointUrl;
             existing.ModifiedAt = document.ModifiedAt;
             existing.UpdatedAt = document.UpdatedAt;

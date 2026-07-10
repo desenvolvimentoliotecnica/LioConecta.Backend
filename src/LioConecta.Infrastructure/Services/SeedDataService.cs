@@ -28,6 +28,8 @@ public sealed class SeedDataService(
             await EnsureFacilitiesMenuCatalogAsync(cancellationToken);
             await EnsurePhoneExtensionsCatalogAsync(cancellationToken);
             await EnsurePortalSystemsCatalogAsync(cancellationToken);
+            await EnsureBookmarkCatalogAsync(cancellationToken);
+            await EnsureDocumentBibliotecaSeedAsync(cancellationToken);
             await EnsureCompassCatalogAsync(cancellationToken);
             await EnsureUniLioCatalogAsync(cancellationToken);
             await EnsurePollSeedAsync(cancellationToken);
@@ -281,6 +283,8 @@ public sealed class SeedDataService(
         await EnsureFacilitiesMenuCatalogAsync(cancellationToken);
         await EnsurePhoneExtensionsCatalogAsync(cancellationToken);
         await EnsurePortalSystemsCatalogAsync(cancellationToken);
+        await EnsureBookmarkCatalogAsync(cancellationToken);
+        await EnsureDocumentBibliotecaSeedAsync(cancellationToken);
         logger.LogInformation("Seed completed with {People} people.", people.Length);
     }
 
@@ -574,6 +578,65 @@ private async Task EnsurePhoneExtensionsCatalogAsync(CancellationToken cancellat
 
         await db.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Seeded {Count} portal system(s) in catalog.", added);
+    }
+
+    private async Task EnsureBookmarkCatalogAsync(CancellationToken cancellationToken)
+    {
+        var existingKeys = await db.BookmarkCatalogItems
+            .Select(x => x.SeedKey)
+            .ToListAsync(cancellationToken);
+        var existingSet = existingKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var seedTime = DateTimeOffset.UtcNow.AddDays(-1);
+        var added = 0;
+
+        foreach (var row in BookmarkCatalogSeed.Rows)
+        {
+            if (existingSet.Contains(row.SeedKey))
+            {
+                continue;
+            }
+
+            db.BookmarkCatalogItems.Add(BookmarkCatalogSeed.ToEntity(row, seedTime));
+            added++;
+        }
+
+        if (added == 0)
+        {
+            return;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Seeded {Count} bookmark catalog item(s).", added);
+    }
+
+    private async Task EnsureDocumentBibliotecaSeedAsync(CancellationToken cancellationToken)
+    {
+        var existingKeys = await db.Documents
+            .Where(x => x.SeedKey != null)
+            .Select(x => x.SeedKey!)
+            .ToListAsync(cancellationToken);
+        var existingSet = existingKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var seedTime = DateTimeOffset.UtcNow.AddDays(-1);
+        var added = 0;
+
+        foreach (var row in DocumentBibliotecaSeed.Rows)
+        {
+            if (existingSet.Contains(row.SeedKey))
+            {
+                continue;
+            }
+
+            db.Documents.Add(DocumentBibliotecaSeed.ToEntity(row, seedTime));
+            added++;
+        }
+
+        if (added == 0)
+        {
+            return;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Seeded {Count} biblioteca document(s).", added);
     }
 
 

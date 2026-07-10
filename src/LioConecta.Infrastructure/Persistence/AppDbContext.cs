@@ -21,6 +21,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<GroupMember> GroupMembers => Set<GroupMember>();
     public DbSet<GroupPost> GroupPosts => Set<GroupPost>();
     public DbSet<DocumentMetadata> Documents => Set<DocumentMetadata>();
+    public DbSet<BookmarkCatalogItem> BookmarkCatalogItems => Set<BookmarkCatalogItem>();
     public DbSet<ServiceRequest> ServiceRequests => Set<ServiceRequest>();
     public DbSet<ServiceRequestEvent> ServiceRequestEvents => Set<ServiceRequestEvent>();
     public DbSet<Notification> Notifications => Set<Notification>();
@@ -98,6 +99,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureComunicado(modelBuilder);
         ConfigureGroup(modelBuilder);
         ConfigureDocuments(modelBuilder);
+        ConfigureBookmarkCatalog(modelBuilder);
         ConfigureServiceRequests(modelBuilder);
         ConfigureNotifications(modelBuilder);
         ConfigureChat(modelBuilder);
@@ -394,6 +396,28 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasIndex(d => d.Category);
             entity.HasIndex(d => d.SharePointItemId).IsUnique();
             entity.HasIndex(d => d.ModifiedAt);
+            entity.HasIndex(d => d.SeedKey).IsUnique();
+            entity.Property(d => d.Description).HasMaxLength(2048);
+            entity.Property(d => d.MediaType).HasMaxLength(32);
+            entity.Property(d => d.SeedKey).HasMaxLength(128);
+        });
+    }
+
+    private static void ConfigureBookmarkCatalog(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<BookmarkCatalogItem>(entity =>
+        {
+            entity.Property(e => e.SeedKey).HasMaxLength(128);
+            entity.Property(e => e.Kind).HasMaxLength(32);
+            entity.Property(e => e.Title).HasMaxLength(512);
+            entity.Property(e => e.Excerpt).HasMaxLength(1024);
+            entity.Property(e => e.Href).HasMaxLength(2048);
+            entity.Property(e => e.Icon).HasMaxLength(128);
+            entity.Property(e => e.Source).HasMaxLength(256);
+            entity.HasIndex(e => e.SeedKey).IsUnique();
+            entity.HasIndex(e => e.Kind);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.SortOrder);
         });
     }
 

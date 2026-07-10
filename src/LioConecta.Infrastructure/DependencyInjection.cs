@@ -1,7 +1,6 @@
 using LioConecta.Application.Common;
 using LioConecta.Application.Interfaces.Integrations;
 using LioConecta.Application.Interfaces.Repositories;
-using LioConecta.Application.Interfaces.Integrations;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Infrastructure.Configuration;
 using LioConecta.Infrastructure.Integrations.Email;
@@ -167,6 +166,7 @@ public static class DependencyInjection
         services.AddScoped<IOrgChartGovernanceService, OrgChartGovernanceService>();
         services.AddScoped<IFacilitiesMenuService, FacilitiesMenuService>();
         services.AddScoped<IPhoneExtensionService, PhoneExtensionService>();
+        services.AddScoped<IBookmarkCatalogService, BookmarkCatalogService>();
         services.AddScoped<IBenefitCatalogService, BenefitCatalogService>();
         services.AddScoped<IBenefitManagementService, BenefitManagementService>();
         services.AddScoped<ISystemCatalogService, SystemCatalogService>();

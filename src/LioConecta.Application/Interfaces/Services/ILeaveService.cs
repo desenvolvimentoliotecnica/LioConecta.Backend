@@ -35,6 +35,11 @@ public interface ILeaveService
         Guid recordId,
         CancellationToken cancellationToken = default);
 
+    Task<LeaveAttachmentFileDto?> GetManagementAttachmentAsync(
+        Guid recordId,
+        string storageFileName,
+        CancellationToken cancellationToken = default);
+
     Task<byte[]?> GetRequestPdfAsync(Guid recordId, CancellationToken cancellationToken = default);
 
     Task<byte[]?> GetManagementPdfAsync(Guid recordId, CancellationToken cancellationToken = default);

@@ -119,7 +119,8 @@ public sealed record LeaveRequestDetailDto(
     string? Notes,
     string? DataSource,
     DateTimeOffset CreatedAt,
-    IReadOnlyList<LeaveTimelineEventDto> Timeline);
+    IReadOnlyList<LeaveTimelineEventDto> Timeline,
+    IReadOnlyList<LeaveAttachmentMetaDto> Attachments);
 
 public sealed record LeaveManagementItemDto(
     Guid Id,
@@ -153,4 +154,10 @@ public sealed record LeaveManagementDetailDto(
     string? DataSource,
     DateTimeOffset CreatedAt,
     IReadOnlyList<LeaveTimelineEventDto> Timeline,
-    string ApprovalNote);
+    string ApprovalNote,
+    IReadOnlyList<LeaveAttachmentMetaDto> Attachments);
+
+public sealed record LeaveAttachmentFileDto(
+    byte[] Content,
+    string ContentType,
+    string FileName);

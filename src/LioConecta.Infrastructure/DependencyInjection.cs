@@ -1,6 +1,7 @@
 using LioConecta.Application.Common;
 using LioConecta.Application.Interfaces.Integrations;
 using LioConecta.Application.Interfaces.Repositories;
+using LioConecta.Application.Interfaces.Integrations;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Infrastructure.Configuration;
 using LioConecta.Infrastructure.Integrations.Email;
@@ -9,6 +10,7 @@ using LioConecta.Infrastructure.Integrations.Graph;
 using LioConecta.Infrastructure.Integrations.Ldap;
 using LioConecta.Infrastructure.Integrations.Totvs;
 using LioConecta.Application.Common.Audit;
+using LioConecta.Infrastructure.Integrations.DbExplorer;
 using LioConecta.Infrastructure.Integrations.TotvsRm;
 using LioConecta.Infrastructure.Persistence;
 using LioConecta.Infrastructure.Persistence.Interceptors;
@@ -143,6 +145,10 @@ public static class DependencyInjection
         services.AddScoped<ITotvsRmPayslipRepository, TotvsRmPayslipRepository>();
         services.AddScoped<ITotvsRmLeaveRepository, TotvsRmLeaveRepository>();
         services.AddScoped<ITotvsRmEmployeeRepository, TotvsRmEmployeeRepository>();
+        services.AddScoped<PostgresDbExplorerProvider>();
+        services.AddScoped<SqlServerDbExplorerProvider>();
+        services.AddScoped<IDbExplorerProvider>(sp => sp.GetRequiredService<PostgresDbExplorerProvider>());
+        services.AddScoped<IDbExplorerProvider>(sp => sp.GetRequiredService<SqlServerDbExplorerProvider>());
         services.AddScoped<TotvsRmConnectionTester>();
         services.AddScoped<QueuedLeaveRmWriteBack>();
         services.AddScoped<TotvsRmApiLeaveWriteBack>();
@@ -172,6 +178,7 @@ public static class DependencyInjection
         services.AddScoped<IEmailDispatchService, EmailDispatchService>();
         services.AddScoped<IEmailAdminService, EmailAdminService>();
         services.AddScoped<IEmailAttachmentService, EmailAttachmentService>();
+        services.AddScoped<ILeaveAttachmentStore, LeaveAttachmentStore>();
         services.AddScoped<IEmailSendService, EmailSendService>();
         services.AddScoped<ISmtpEmailSender, SmtpEmailSender>();
         services.AddScoped<ITotvsEmployeeSyncService, TotvsEmployeeSyncService>();
@@ -205,6 +212,7 @@ public static class DependencyInjection
         services.AddScoped<IWorkerRunRecorder, WorkerRunRecorder>();
         services.AddScoped<IWorkerTriggerService, WorkerTriggerService>();
         services.AddScoped<LeaveWriteBackService>();
+        services.AddScoped<IDbExplorerService, DbExplorerService>();
 
         var redisConnection = settings.GetRedisConnection();
         if (!string.IsNullOrWhiteSpace(redisConnection))

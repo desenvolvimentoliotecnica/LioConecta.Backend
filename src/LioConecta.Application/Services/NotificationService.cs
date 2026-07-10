@@ -430,6 +430,220 @@ public sealed class NotificationService(
             cancellationToken);
     }
 
+    public async Task NotifyGroupCreationRequestedAsync(
+        Guid managerPersonId,
+        Guid groupId,
+        string groupName,
+        string requesterName,
+        CancellationToken cancellationToken = default)
+    {
+        var manager = await personRepository.GetByIdAsync(managerPersonId, cancellationToken);
+        if (manager is null)
+        {
+            return;
+        }
+
+        await BroadcastAsync(
+            () => Task.FromResult<IReadOnlyList<Person>>([manager]),
+            NotificationType.System,
+            "Aprovação de grupo pendente",
+            $"{requesterName.Trim()} solicitou a criação do grupo \"{groupName.Trim()}\".",
+            "/grupos/aprovacoes",
+            cancellationToken);
+    }
+
+    public async Task NotifyGroupCreationDecisionAsync(
+        Guid ownerPersonId,
+        Guid groupId,
+        string groupName,
+        bool approved,
+        string? reason,
+        CancellationToken cancellationToken = default)
+    {
+        var owner = await personRepository.GetByIdAsync(ownerPersonId, cancellationToken);
+        if (owner is null)
+        {
+            return;
+        }
+
+        var title = approved ? "Grupo aprovado" : "Grupo rejeitado";
+        var body = approved
+            ? $"Seu grupo \"{groupName.Trim()}\" foi aprovado."
+            : $"Seu grupo \"{groupName.Trim()}\" foi rejeitado."
+              + (string.IsNullOrWhiteSpace(reason) ? "" : $" Motivo: {reason.Trim()}");
+        var href = approved ? $"/grupos/{groupId}" : "/grupos/meus-grupos";
+        await BroadcastAsync(
+            () => Task.FromResult<IReadOnlyList<Person>>([owner]),
+            NotificationType.System,
+            title,
+            body,
+            href,
+            cancellationToken);
+    }
+
+    public async Task NotifyGroupCreationExpiredAsync(
+        Guid ownerPersonId,
+        Guid groupId,
+        string groupName,
+        CancellationToken cancellationToken = default)
+    {
+        var owner = await personRepository.GetByIdAsync(ownerPersonId, cancellationToken);
+        if (owner is null)
+        {
+            return;
+        }
+
+        await BroadcastAsync(
+            () => Task.FromResult<IReadOnlyList<Person>>([owner]),
+            NotificationType.System,
+            "Pedido de grupo expirado",
+            $"O pedido do grupo \"{groupName.Trim()}\" expirou. Você pode solicitar aprovação novamente.",
+            "/grupos/meus-grupos",
+            cancellationToken);
+    }
+
+    public async Task NotifyGroupWallPostAsync(
+        IReadOnlyList<Guid> recipientPersonIds,
+        Guid groupId,
+        string groupName,
+        string authorName,
+        CancellationToken cancellationToken = default)
+    {
+        if (recipientPersonIds.Count == 0)
+        {
+            return;
+        }
+
+        var recipients = await personRepository.GetByIdsAsync(recipientPersonIds, cancellationToken);
+        if (recipients.Count == 0)
+        {
+            return;
+        }
+
+        await BroadcastAsync(
+            () => Task.FromResult(recipients),
+            NotificationType.Feed,
+            "Novo post no mural",
+            $"{authorName.Trim()} publicou no grupo \"{groupName.Trim()}\".",
+            $"/grupos/{groupId}",
+            cancellationToken);
+    }
+
+    public async Task NotifyGroupTopicCreatedAsync(
+        IReadOnlyList<Guid> recipientPersonIds,
+        Guid groupId,
+        Guid topicId,
+        string groupName,
+        string topicTitle,
+        string authorName,
+        CancellationToken cancellationToken = default)
+    {
+        if (recipientPersonIds.Count == 0)
+        {
+            return;
+        }
+
+        var recipients = await personRepository.GetByIdsAsync(recipientPersonIds, cancellationToken);
+        if (recipients.Count == 0)
+        {
+            return;
+        }
+
+        await BroadcastAsync(
+            () => Task.FromResult(recipients),
+            NotificationType.Feed,
+            "Novo tópico no grupo",
+            $"{authorName.Trim()} criou \"{topicTitle.Trim()}\" em \"{groupName.Trim()}\".",
+            $"/grupos/{groupId}?tab=topicos&topic={topicId}",
+            cancellationToken);
+    }
+
+    public async Task NotifyGroupTopicReplyAsync(
+        IReadOnlyList<Guid> recipientPersonIds,
+        Guid groupId,
+        Guid topicId,
+        string groupName,
+        string topicTitle,
+        string authorName,
+        CancellationToken cancellationToken = default)
+    {
+        if (recipientPersonIds.Count == 0)
+        {
+            return;
+        }
+
+        var recipients = await personRepository.GetByIdsAsync(recipientPersonIds, cancellationToken);
+        if (recipients.Count == 0)
+        {
+            return;
+        }
+
+        await BroadcastAsync(
+            () => Task.FromResult(recipients),
+            NotificationType.Feed,
+            "Nova resposta em tópico",
+            $"{authorName.Trim()} respondeu em \"{topicTitle.Trim()}\" ({groupName.Trim()}).",
+            $"/grupos/{groupId}?tab=topicos&topic={topicId}",
+            cancellationToken);
+    }
+
+    public async Task NotifyGroupOwnershipTransferRequestedAsync(
+        Guid toPersonId,
+        Guid managerPersonId,
+        Guid groupId,
+        string groupName,
+        string fromOwnerName,
+        string toPersonName,
+        CancellationToken cancellationToken = default)
+    {
+        var recipients = await personRepository.GetByIdsAsync([toPersonId, managerPersonId], cancellationToken);
+        if (recipients.Count == 0)
+        {
+            return;
+        }
+
+        await BroadcastAsync(
+            () => Task.FromResult(recipients),
+            NotificationType.System,
+            "Transferência de dono de grupo",
+            $"{fromOwnerName.Trim()} quer transferir a direção de \"{groupName.Trim()}\" para {toPersonName.Trim()}.",
+            "/grupos/aprovacoes",
+            cancellationToken);
+    }
+
+    public async Task NotifyGroupOwnershipTransferDecisionAsync(
+        IReadOnlyList<Guid> recipientPersonIds,
+        Guid groupId,
+        string groupName,
+        bool approved,
+        string? reason,
+        CancellationToken cancellationToken = default)
+    {
+        if (recipientPersonIds.Count == 0)
+        {
+            return;
+        }
+
+        var recipients = await personRepository.GetByIdsAsync(recipientPersonIds, cancellationToken);
+        if (recipients.Count == 0)
+        {
+            return;
+        }
+
+        var title = approved ? "Transferência de dono aprovada" : "Transferência de dono rejeitada";
+        var body = approved
+            ? $"A direção do grupo \"{groupName.Trim()}\" foi transferida."
+            : $"A transferência do grupo \"{groupName.Trim()}\" foi rejeitada."
+              + (string.IsNullOrWhiteSpace(reason) ? "" : $" Motivo: {reason.Trim()}");
+        await BroadcastAsync(
+            () => Task.FromResult(recipients),
+            NotificationType.System,
+            title,
+            body,
+            $"/grupos/{groupId}",
+            cancellationToken);
+    }
+
     private Task BroadcastToAllActivePersonsAsync(
         NotificationType type,
         string title,

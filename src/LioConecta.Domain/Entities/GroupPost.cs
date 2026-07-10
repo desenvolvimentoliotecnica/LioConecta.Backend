@@ -13,4 +13,8 @@ public class GroupPost : BaseEntity
     public Person? Author { get; set; }
 
     public string Content { get; set; } = string.Empty;
+
+    public string? ImageUrl { get; set; }
+
+    public ICollection<GroupPostReaction> Reactions { get; set; } = [];
 }

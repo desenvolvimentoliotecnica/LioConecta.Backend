@@ -427,7 +427,7 @@ public static class NotificationMapper
 
 public static class GroupMapper
 {
-    public static GroupDto ToDto(Group group, bool isMember)
+    public static GroupDto ToDto(Group group, bool isMember, GroupMemberRole? myRole = null)
         => new(
             group.Id,
             group.Name,
@@ -438,10 +438,78 @@ public static class GroupMapper
             group.Status,
             group.IsPrivate,
             PersonMapper.ToSummary(group.Owner ?? new Person { Name = "Desconhecido" }),
-            group.Members.Count,
-            group.Posts.Count,
+            group.Members?.Count ?? 0,
+            group.Posts?.Count ?? 0,
+            group.Topics?.Count ?? 0,
             isMember,
+            myRole,
             group.CreatedAt,
+            group.SubmittedAt,
+            group.ExpiresAt,
             group.ReviewedAt,
-            group.RejectionReason);
+            group.RejectionReason,
+            group.Approver is null ? null : PersonMapper.ToSummary(group.Approver));
+
+    public static GroupMemberDto ToMemberDto(GroupMember member)
+        => new(
+            member.Id,
+            PersonMapper.ToSummary(member.Person ?? new Person { Name = "Desconhecido" }),
+            member.Role,
+            member.JoinedAt);
+
+    public static GroupWallPostDto ToWallPostDto(GroupPost post, Guid viewerId)
+        => new(
+            post.Id,
+            PersonMapper.ToSummary(post.Author ?? new Person { Name = "Desconhecido" }),
+            post.Content,
+            post.ImageUrl,
+            post.Reactions?.Count ?? 0,
+            post.Reactions?.Any(r => r.PersonId == viewerId) ?? false,
+            post.CreatedAt);
+
+    public static GroupTopicSummaryDto ToTopicSummaryDto(GroupTopic topic)
+        => new(
+            topic.Id,
+            topic.Title,
+            PersonMapper.ToSummary(topic.Author ?? new Person { Name = "Desconhecido" }),
+            topic.Replies?.Count ?? 0,
+            topic.CreatedAt,
+            topic.LastActivityAt);
+
+    public static GroupTopicDetailDto ToTopicDetailDto(GroupTopic topic)
+        => new(
+            topic.Id,
+            topic.Title,
+            topic.Body,
+            PersonMapper.ToSummary(topic.Author ?? new Person { Name = "Desconhecido" }),
+            topic.CreatedAt,
+            topic.LastActivityAt,
+            (topic.Replies ?? [])
+                .OrderBy(r => r.CreatedAt)
+                .Select(r => new GroupTopicReplyDto(
+                    r.Id,
+                    PersonMapper.ToSummary(r.Author ?? new Person { Name = "Desconhecido" }),
+                    r.Body,
+                    r.CreatedAt))
+                .ToList());
+
+    public static GroupTopicReplyDto ToTopicReplyDto(GroupTopicReply reply)
+        => new(
+            reply.Id,
+            PersonMapper.ToSummary(reply.Author ?? new Person { Name = "Desconhecido" }),
+            reply.Body,
+            reply.CreatedAt);
+
+    public static GroupOwnershipTransferDto ToOwnershipTransferDto(GroupOwnershipTransfer transfer)
+        => new(
+            transfer.Id,
+            transfer.GroupId,
+            transfer.Group?.Name ?? string.Empty,
+            PersonMapper.ToSummary(transfer.FromOwner ?? new Person { Name = "Desconhecido" }),
+            PersonMapper.ToSummary(transfer.ToPerson ?? new Person { Name = "Desconhecido" }),
+            transfer.Approver is null ? null : PersonMapper.ToSummary(transfer.Approver),
+            transfer.Status,
+            transfer.CreatedAt,
+            transfer.ReviewedAt,
+            transfer.RejectionReason);
 }

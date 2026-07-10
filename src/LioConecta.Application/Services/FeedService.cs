@@ -286,6 +286,19 @@ public sealed class FeedService(
 
         await TrackCommentEventAsync(authorId, post.Id, savedComment.Id, cancellationToken);
 
+        if (post.AuthorId != authorId)
+        {
+            var commenter = await personRepository.GetByIdAsync(authorId, cancellationToken);
+            if (commenter is not null)
+            {
+                await notificationService.NotifyFeedPostCommentedAsync(
+                    post,
+                    commenter,
+                    savedComment.Text,
+                    cancellationToken);
+            }
+        }
+
         return FeedMapper.ToCommentDto(savedComment);
     }
 
@@ -354,6 +367,19 @@ public sealed class FeedService(
             normalizedMediaUrl,
             cancellationToken);
         var savedComment = savedComments.FirstOrDefault(item => item.Id == comment.Id) ?? comment;
+
+        if (post.AuthorId != authorId)
+        {
+            var commenter = await personRepository.GetByIdAsync(authorId, cancellationToken);
+            if (commenter is not null)
+            {
+                await notificationService.NotifyFeedPostCommentedAsync(
+                    post,
+                    commenter,
+                    savedComment.Text,
+                    cancellationToken);
+            }
+        }
 
         return FeedMapper.ToCommentDto(savedComment);
     }

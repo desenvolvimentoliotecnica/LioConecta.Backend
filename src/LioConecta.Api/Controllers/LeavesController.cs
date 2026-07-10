@@ -176,6 +176,8 @@ public sealed class LeavesController(ILeaveService leaveService) : ControllerBas
 
         try
         {
+            // Buffer each multipart section immediately. Holding multiple IFormFile
+            // OpenReadStream() handles causes "inner stream position has changed unexpectedly".
             foreach (var file in files ?? [])
             {
                 if (file is null || file.Length <= 0)
@@ -183,12 +185,18 @@ public sealed class LeavesController(ILeaveService leaveService) : ControllerBas
                     continue;
                 }
 
-                var stream = file.OpenReadStream();
+                var buffered = new MemoryStream();
+                await using (var upload = file.OpenReadStream())
+                {
+                    await upload.CopyToAsync(buffered, cancellationToken);
+                }
+
+                buffered.Position = 0;
                 attachments.Add(new LeaveAttachmentInput(
-                    stream,
+                    buffered,
                     file.FileName,
                     file.ContentType,
-                    file.Length));
+                    buffered.Length));
             }
 
             var result = await leaveService.CreateRequestAsync(request, attachments, cancellationToken);

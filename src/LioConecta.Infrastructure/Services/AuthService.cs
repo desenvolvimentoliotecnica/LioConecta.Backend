@@ -238,6 +238,8 @@ public sealed class AuthService(
 
             ldapPerson = await ResolveOrCreatePersonAsync(ldapResult, cancellationToken);
 
+            await EnsureDefaultEmployeeAssignmentAsync(RbacSubjectType.Person, ldapPerson.Id, cancellationToken);
+
             roles = await ResolveLegacyRolesFromAssignmentsAsync(RbacSubjectType.Person, ldapPerson.Id, cancellationToken);
 
             if (roles.Count == 0)
@@ -286,6 +288,53 @@ public sealed class AuthService(
         await TestUserPersonProvisioning.ResolvePersonAsync(db, testUser, cancellationToken);
 
 
+
+    private async Task EnsureDefaultEmployeeAssignmentAsync(
+        RbacSubjectType subjectType,
+        Guid subjectId,
+        CancellationToken cancellationToken)
+    {
+        var hasAssignment = await db.SubjectRoleAssignments.AsNoTracking()
+            .AnyAsync(
+                a => a.SubjectType == subjectType && a.SubjectId == subjectId,
+                cancellationToken);
+        if (hasAssignment)
+        {
+            return;
+        }
+
+        var employeeRoleId = await db.Roles.AsNoTracking()
+            .Where(r => r.Slug == "Employee")
+            .Select(r => r.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (employeeRoleId == Guid.Empty)
+        {
+            logger.LogWarning(
+                "Regra Employee não encontrada; atribuição automática ignorada para {SubjectType} {SubjectId}.",
+                subjectType,
+                subjectId);
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        db.SubjectRoleAssignments.Add(new SubjectRoleAssignment
+        {
+            Id = Guid.NewGuid(),
+            SubjectType = subjectType,
+            SubjectId = subjectId,
+            RoleId = employeeRoleId,
+            AssignedByPersonId = null,
+            AssignedAt = now,
+            CreatedAt = now,
+            UpdatedAt = now,
+        });
+        await db.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation(
+            "Atribuição Employee criada automaticamente no primeiro login para {SubjectType} {SubjectId}.",
+            subjectType,
+            subjectId);
+    }
 
     private async Task<IReadOnlyList<UserRole>> ResolveLegacyRolesFromAssignmentsAsync(
 

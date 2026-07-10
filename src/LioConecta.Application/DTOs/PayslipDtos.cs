@@ -108,3 +108,26 @@ public sealed record PayslipRequestResultDto(
     Guid RequestId,
     string Status,
     string Message);
+
+public sealed record PayslipAccessLogItemDto(
+    Guid Id,
+    DateTimeOffset OccurredAt,
+    Guid? ActorPersonId,
+    string? ActorName,
+    string? ActorEmail,
+    Guid? TargetPersonId,
+    string? TargetName,
+    string? TargetEmployeeId,
+    int? Year,
+    int? Month,
+    string? Competence,
+    string Action,
+    string Result,
+    string? MetadataJson);
+
+public sealed record PagedPayslipAccessLogDto(
+    IReadOnlyList<PayslipAccessLogItemDto> Items,
+    int Page,
+    int PageSize,
+    int TotalCount,
+    int TotalPages);

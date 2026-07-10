@@ -194,6 +194,110 @@ public sealed class ObservabilityRepository(AppDbContext db) : IObservabilityRep
         return new PagedAccessEventsDto(items, page, pageSize, totalCount, totalPages);
     }
 
+    public async Task<PagedPayslipAccessLogDto> QueryPayslipAccessLogAsync(
+        DateTimeOffset? from,
+        DateTimeOffset? to,
+        Guid? targetPersonId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var filtered = db.AccessEvents.AsNoTracking()
+            .Where(e => e.Resource == "Payslip");
+
+        if (from is not null)
+        {
+            filtered = filtered.Where(e => e.OccurredAt >= from);
+        }
+
+        if (to is not null)
+        {
+            filtered = filtered.Where(e => e.OccurredAt <= to);
+        }
+
+        if (targetPersonId is not null)
+        {
+            var needle = targetPersonId.Value.ToString();
+            filtered = filtered.Where(e =>
+                e.MetadataJson != null && e.MetadataJson.Contains(needle));
+        }
+
+        var totalCount = await filtered.CountAsync(cancellationToken);
+        var totalPages = totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var rows = await filtered
+            .Include(e => e.User)
+            .OrderByDescending(e => e.OccurredAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        var items = rows.Select(e =>
+        {
+            var meta = ParsePayslipMetadata(e.MetadataJson);
+            return new PayslipAccessLogItemDto(
+                e.Id,
+                e.OccurredAt,
+                e.UserId,
+                e.User?.Name,
+                e.UsernameSnapshot,
+                meta.TargetPersonId,
+                meta.TargetName,
+                meta.TargetEmployeeId,
+                meta.Year,
+                meta.Month,
+                meta.Competence,
+                e.Action ?? meta.Action ?? "view",
+                e.Result,
+                e.MetadataJson);
+        }).ToList();
+
+        return new PagedPayslipAccessLogDto(items, page, pageSize, totalCount, totalPages);
+    }
+
+    private static (
+        Guid? TargetPersonId,
+        string? TargetName,
+        string? TargetEmployeeId,
+        int? Year,
+        int? Month,
+        string? Competence,
+        string? Action) ParsePayslipMetadata(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return (null, null, null, null, null, null, null);
+        }
+
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            Guid? targetId = null;
+            if (root.TryGetProperty("targetPersonId", out var tp) && tp.ValueKind == System.Text.Json.JsonValueKind.String
+                && Guid.TryParse(tp.GetString(), out var parsed))
+            {
+                targetId = parsed;
+            }
+
+            return (
+                targetId,
+                root.TryGetProperty("targetName", out var tn) ? tn.GetString() : null,
+                root.TryGetProperty("targetEmployeeId", out var te) ? te.GetString() : null,
+                root.TryGetProperty("year", out var y) && y.TryGetInt32(out var yi) ? yi : null,
+                root.TryGetProperty("month", out var m) && m.TryGetInt32(out var mi) ? mi : null,
+                root.TryGetProperty("competence", out var c) ? c.GetString() : null,
+                root.TryGetProperty("action", out var a) ? a.GetString() : null);
+        }
+        catch
+        {
+            return (null, null, null, null, null, null, null);
+        }
+    }
+
     public async Task<ObservabilitySummaryDto> GetSummaryAsync(
         DateTimeOffset from,
         DateTimeOffset to,

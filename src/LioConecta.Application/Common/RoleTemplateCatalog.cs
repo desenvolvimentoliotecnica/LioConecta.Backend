@@ -75,6 +75,7 @@ public static class RoleTemplateCatalog
                 ("ponto.approve", DataScope.Global),
                 ("ponto.admin", DataScope.Global),
                 ("people.salary.read", DataScope.Global),
+                ("payslips.audit", DataScope.Global),
             ]).ToArray()),
         Role("TI", "Tecnologia da Informação", "Operações de TI", BusinessArea.TI, true, false,
             EmployeeBase.Concat([
@@ -118,7 +119,8 @@ public static class RoleTemplateCatalog
         KeyUser("KeyUser-RH", "Key User RH", BusinessArea.RH,
             ("benefits.manage", DataScope.Global), ("leave.manage", DataScope.Global), ("leave.approve", DataScope.Global),
             ("rh_requests.manage", DataScope.Global), ("transport.manage", DataScope.Global), ("ponto.manage", DataScope.Global),
-            ("ponto.approve", DataScope.Global), ("ponto.admin", DataScope.Global), ("people.salary.read", DataScope.Global)),
+            ("ponto.approve", DataScope.Global), ("ponto.admin", DataScope.Global), ("people.salary.read", DataScope.Global),
+            ("payslips.audit", DataScope.Global)),
         KeyUser("KeyUser-Financeiro", "Key User Financeiro", BusinessArea.Financeiro,
             ("reimbursement.manage", DataScope.Global), ("travel_advance.manage", DataScope.Global)),
         KeyUser("KeyUser-Contabil", "Key User Contábil", BusinessArea.Contabil,

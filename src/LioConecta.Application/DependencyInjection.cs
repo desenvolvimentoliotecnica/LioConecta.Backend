@@ -27,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<IPayslipService, PayslipService>();
         services.AddScoped<IBenefitService, BenefitService>();
         services.AddScoped<ILeaveService, LeaveService>();
+        services.AddScoped<IHourBankService, HourBankService>();
         services.AddScoped<LeaveNotifyRecipientResolver>();
         services.AddScoped<ILeaveEmailNotifier, LeaveEmailNotifier>();
         services.AddScoped<IPontoAdjustmentService, PontoAdjustmentService>();

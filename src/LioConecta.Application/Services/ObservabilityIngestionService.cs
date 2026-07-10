@@ -146,9 +146,7 @@ public sealed class ObservabilityIngestionService(
             IpAddress = ipAddress,
             IpHash = ipHash,
             UserAgent = TelemetryRedactor.TruncateUserAgent(userAgent),
-            MetadataJson = entry.StatusCode is null
-                ? null
-                : $"{{\"statusCode\":{entry.StatusCode},\"httpMethod\":{(entry.HttpMethod is null ? "null" : $"\"{entry.HttpMethod}\"")}}}",
+            MetadataJson = BuildMetadataJson(entry),
             CreatedAt = now,
             UpdatedAt = now,
         };
@@ -159,6 +157,53 @@ public sealed class ObservabilityIngestionService(
             "Persisted access event {EventName} correlation={CorrelationId}",
             entry.EventName,
             entry.CorrelationId);
+    }
+
+    private static string? BuildMetadataJson(AccessAuditEntry entry)
+    {
+        if (!string.IsNullOrWhiteSpace(entry.MetadataJson))
+        {
+            if (entry.StatusCode is null)
+            {
+                return entry.MetadataJson;
+            }
+
+            // Merge status into provided metadata when possible.
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(entry.MetadataJson);
+                var root = doc.RootElement.Clone();
+                var dict = new Dictionary<string, object?>();
+                foreach (var prop in root.EnumerateObject())
+                {
+                    dict[prop.Name] = prop.Value.ValueKind switch
+                    {
+                        System.Text.Json.JsonValueKind.String => prop.Value.GetString(),
+                        System.Text.Json.JsonValueKind.Number => prop.Value.TryGetInt64(out var l) ? l : prop.Value.GetDouble(),
+                        System.Text.Json.JsonValueKind.True => true,
+                        System.Text.Json.JsonValueKind.False => false,
+                        System.Text.Json.JsonValueKind.Null => null,
+                        _ => prop.Value.GetRawText(),
+                    };
+                }
+
+                dict["statusCode"] = entry.StatusCode;
+                if (entry.HttpMethod is not null)
+                {
+                    dict["httpMethod"] = entry.HttpMethod;
+                }
+
+                return System.Text.Json.JsonSerializer.Serialize(dict);
+            }
+            catch
+            {
+                return entry.MetadataJson;
+            }
+        }
+
+        return entry.StatusCode is null
+            ? null
+            : $"{{\"statusCode\":{entry.StatusCode},\"httpMethod\":{(entry.HttpMethod is null ? "null" : $"\"{entry.HttpMethod}\"")}}}";
     }
 
     private bool TryMapEvent(

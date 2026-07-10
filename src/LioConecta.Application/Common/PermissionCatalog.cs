@@ -178,6 +178,10 @@ public static class PermissionCatalog
             "Contracheque",
             "Visualizar holerites e demonstrativos de pagamento.",
             SelfTeamGlobal, "/servicos/contracheque"),
+        P("payslips.audit", BusinessArea.RH,
+            "Auditoria de contracheque",
+            "Consultar log de acessos a holerites (view e download).",
+            GlobalOnly, "/servicos/contracheque/acessos"),
 
         // ── RH — Férias e ausências ──────────────────────────────────────────
         P("leave.read", BusinessArea.RH,

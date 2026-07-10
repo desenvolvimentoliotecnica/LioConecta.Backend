@@ -145,6 +145,7 @@ public static class DependencyInjection
         services.AddScoped<ITotvsRmPayslipRepository, TotvsRmPayslipRepository>();
         services.AddScoped<ITotvsRmLeaveRepository, TotvsRmLeaveRepository>();
         services.AddScoped<ITotvsRmEmployeeRepository, TotvsRmEmployeeRepository>();
+        services.AddScoped<ITotvsRmHourBankRepository, TotvsRmHourBankRepository>();
         services.AddScoped<PostgresDbExplorerProvider>();
         services.AddScoped<SqlServerDbExplorerProvider>();
         services.AddScoped<IDbExplorerProvider>(sp => sp.GetRequiredService<PostgresDbExplorerProvider>());

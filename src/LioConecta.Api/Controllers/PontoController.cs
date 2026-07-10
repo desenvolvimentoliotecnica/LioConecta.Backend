@@ -12,7 +12,8 @@ namespace LioConecta.Api.Controllers;
 [Authorize]
 public sealed class PontoController(
     IPontoService pontoService,
-    IPontoAdjustmentService pontoAdjustmentService) : ControllerBase
+    IPontoAdjustmentService pontoAdjustmentService,
+    IHourBankService hourBankService) : ControllerBase
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -36,6 +37,42 @@ public sealed class PontoController(
     {
         var response = await pontoService.GetTimesheetAsync(month, year, cancellationToken);
         return Ok(response);
+    }
+
+    [HttpGet("banco-horas")]
+    [ProducesResponseType(typeof(IReadOnlyList<HourBankTeamMemberDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<IReadOnlyList<HourBankTeamMemberDto>>> GetTeamBancoHoras(
+        [FromQuery] string? q,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var items = await hourBankService.GetTeamAsync(q, cancellationToken);
+            return Ok(items);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
+    [HttpGet("banco-horas/{personId:guid}")]
+    [ProducesResponseType(typeof(LeaveBancoHorasDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<LeaveBancoHorasDto>> GetPersonBancoHoras(
+        Guid personId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await hourBankService.GetForPersonAsync(personId, cancellationToken);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
     }
 
     [HttpGet("adjustments")]

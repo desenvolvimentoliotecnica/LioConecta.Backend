@@ -20,7 +20,8 @@ public sealed class LeaveService(
     LeaveNotifyRecipientResolver leaveNotifyRecipientResolver,
     INotificationService notificationService,
     ILeaveEmailNotifier leaveEmailNotifier,
-    ILeaveAttachmentStore leaveAttachmentStore) : ILeaveService
+    ILeaveAttachmentStore leaveAttachmentStore,
+    IHourBankService hourBankService) : ILeaveService
 {
     private const string VacationServiceKey = "solicitar-ferias";
     private const string MedicalCertificateServiceKey = "atestado";
@@ -150,23 +151,8 @@ public sealed class LeaveService(
             MapAttachmentsForRecord(record.Id, record.DetailsJson, management: false));
     }
 
-    public async Task<LeaveBancoHorasDto> GetBancoHorasAsync(CancellationToken cancellationToken = default)
-    {
-        var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
-        var balance = await leaveRepository.GetBalanceAsync(personId, cancellationToken)
-            ?? throw new InvalidOperationException("Saldo não encontrado.");
-
-        var entries = new List<LeaveBancoHorasEntryDto>
-        {
-            new("Jun/2026", "Horas extras — projeto Q3", 4.5m, "credito"),
-            new("Mai/2026", "Compensação saída antecipada", -8m, "debito"),
-            new("Abr/2026", "Plantão suporte", 6m, "credito"),
-            new("Mar/2026", "Treinamento externo", -2m, "debito"),
-            new("Fev/2026", "Horas extras — inventário", 12m, "credito"),
-        };
-
-        return new LeaveBancoHorasDto(balance.BancoHorasBalanceHours, entries);
-    }
+    public Task<LeaveBancoHorasDto> GetBancoHorasAsync(CancellationToken cancellationToken = default)
+        => hourBankService.GetMineAsync(cancellationToken);
 
     public Task<LeaveTeamCalendarDto> GetTeamCalendarAsync(CancellationToken cancellationToken = default)
     {

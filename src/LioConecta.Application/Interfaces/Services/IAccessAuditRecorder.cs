@@ -13,7 +13,8 @@ public sealed record AccessAuditEntry(
     string? ReasonCode,
     int? StatusCode,
     string? HttpMethod,
-    string? Path);
+    string? Path,
+    string? MetadataJson = null);
 
 public interface IAccessAuditRecorder
 {

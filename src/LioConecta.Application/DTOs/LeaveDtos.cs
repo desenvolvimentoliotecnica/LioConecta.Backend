@@ -50,7 +50,19 @@ public sealed record LeaveBancoHorasEntryDto(
 
 public sealed record LeaveBancoHorasDto(
     decimal BalanceHours,
-    IReadOnlyList<LeaveBancoHorasEntryDto> Entries);
+    IReadOnlyList<LeaveBancoHorasEntryDto> Entries,
+    string? PeriodLabel = null,
+    string? DataSource = null,
+    string? AvailabilityStatus = null,
+    string? UserMessage = null);
+
+public sealed record HourBankTeamMemberDto(
+    Guid PersonId,
+    string Name,
+    string? Role,
+    string? EmployeeId,
+    decimal BalanceHours,
+    string? PeriodLabel);
 
 public sealed record LeaveTeamMemberDto(
     string Name,

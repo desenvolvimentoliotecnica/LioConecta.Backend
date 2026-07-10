@@ -9,6 +9,8 @@ public static class TotvsRmConstants
     public const string PayrollFinanceTableName = "PFFINANC";
     public const string PayrollEventTableName = "PEVENTO";
     public const string PayrollPeriodTableName = "PFPERFF";
+    public const string HourBankBalanceTableName = "ASALDOBANCOHOR";
+    public const string HourBankDayTableName = "ABANCOHORFUN";
 
     /// <summary>Histórico de função (Corpore padrão). Algumas bases usam PFHSTFCO.</summary>
     public const string FunctionHistoryTableName = "PFHSTFUN";

@@ -35,6 +35,14 @@ public interface IObservabilityRepository
         AccessEventQuery query,
         CancellationToken cancellationToken = default);
 
+    Task<PagedPayslipAccessLogDto> QueryPayslipAccessLogAsync(
+        DateTimeOffset? from,
+        DateTimeOffset? to,
+        Guid? targetPersonId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default);
+
     Task<ObservabilitySummaryDto> GetSummaryAsync(
         DateTimeOffset from,
         DateTimeOffset to,

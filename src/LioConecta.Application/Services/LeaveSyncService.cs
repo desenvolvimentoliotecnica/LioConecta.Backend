@@ -13,6 +13,7 @@ namespace LioConecta.Application.Services;
 public sealed class LeaveSyncService(
     IPersonRepository personRepository,
     ITotvsRmLeaveRepository totvsRmLeaveRepository,
+    ITotvsRmHourBankRepository totvsRmHourBankRepository,
     ITotvsRmConfigurationService totvsRmConfigurationService,
     ILeaveRepository leaveRepository) : ILeaveSyncService
 {
@@ -51,7 +52,21 @@ public sealed class LeaveSyncService(
         }
 
         var syncedAt = DateTimeOffset.UtcNow;
-        await UpsertBalanceAsync(personId, rmData, syncedAt, cancellationToken);
+        decimal bancoHorasHours = 0m;
+        try
+        {
+            var hourBank = await totvsRmHourBankRepository.GetLatestBalanceAsync(chapa, cancellationToken);
+            if (hourBank is not null)
+            {
+                bancoHorasHours = Math.Round(hourBank.BalanceMinutes / 60m, 2, MidpointRounding.AwayFromZero);
+            }
+        }
+        catch (TotvsRmIntegrationException)
+        {
+            // Mantém 0 se banco de horas falhar; férias ainda sincronizam.
+        }
+
+        await UpsertBalanceAsync(personId, rmData, bancoHorasHours, syncedAt, cancellationToken);
 
         var syncedRecords = 0;
         foreach (var request in rmData.Requests)
@@ -111,6 +126,7 @@ public sealed class LeaveSyncService(
     private async Task UpsertBalanceAsync(
         Guid personId,
         RmLeaveBalanceData rmData,
+        decimal bancoHorasBalanceHours,
         DateTimeOffset syncedAt,
         CancellationToken cancellationToken)
     {
@@ -144,7 +160,7 @@ public sealed class LeaveSyncService(
             AcquiredDays = rmData.AcquiredDays,
             ScheduledDays = rmData.ScheduledDays,
             ExpiredDays = rmData.ExpiredDays,
-            BancoHorasBalanceHours = 0,
+            BancoHorasBalanceHours = bancoHorasBalanceHours,
             NextScheduledStart = rmData.NextScheduledStart,
             NextScheduledEnd = rmData.NextScheduledEnd,
             BreakdownJson = JsonSerializer.Serialize(new { periods, notes }, JsonOptions),

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using LioConecta.Application.Common;
+using LioConecta.Application.Common.Observability;
 using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Integrations;
 using LioConecta.Application.Interfaces.Repositories;
@@ -19,7 +20,10 @@ public sealed class PayslipService(
     ITotvsRmConfigurationService totvsRmConfigurationService,
     IPayslipSyncService payslipSyncService,
     IAppSettingsProvider settings,
-    PayslipPdfBuilder payslipPdfBuilder) : IPayslipService
+    PayslipPdfBuilder payslipPdfBuilder,
+    IAccessAuditRecorder accessAuditRecorder,
+    IPermissionService permissionService,
+    IObservabilityRepository observabilityRepository) : IPayslipService
 {
     private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
@@ -107,7 +111,13 @@ public sealed class PayslipService(
             month,
             paymentType,
             cancellationToken);
-        return payslip is null ? null : ToDetail(payslip);
+        if (payslip is null)
+        {
+            return null;
+        }
+
+        await RecordPayslipAccessAsync(personId, year, month, "view", 200, cancellationToken);
+        return ToDetail(payslip);
     }
 
     public async Task<byte[]> GetPdfAsync(
@@ -133,7 +143,9 @@ public sealed class PayslipService(
         var document = await payslipPdfBuilder.BuildAsync(personId, payslip, cancellationToken)
             ?? throw new InvalidOperationException("Não foi possível montar o PDF do holerite.");
 
-        return PayslipPdfGenerator.Generate(document);
+        var bytes = PayslipPdfGenerator.Generate(document);
+        await RecordPayslipAccessAsync(personId, year, month, "download", 200, cancellationToken);
+        return bytes;
     }
 
     public async Task<PayslipComparativoDto?> GetComparativoAsync(
@@ -521,6 +533,72 @@ public sealed class PayslipService(
         }
 
         return $"{label}/{year}";
+    }
+
+    public async Task<PagedPayslipAccessLogDto> GetAccessLogAsync(
+        DateTimeOffset? from,
+        DateTimeOffset? to,
+        Guid? targetPersonId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await permissionService.HasPermissionAsync("payslips.audit", DataScope.Global, cancellationToken))
+        {
+            throw new UnauthorizedAccessException("Sem permissão para auditar acessos a contracheques.");
+        }
+
+        return await observabilityRepository.QueryPayslipAccessLogAsync(
+            from,
+            to,
+            targetPersonId,
+            page,
+            pageSize,
+            cancellationToken);
+    }
+
+    private async Task RecordPayslipAccessAsync(
+        Guid targetPersonId,
+        int year,
+        int month,
+        string action,
+        int statusCode,
+        CancellationToken cancellationToken)
+    {
+        var actorId = await currentUserService.GetPersonIdAsync(cancellationToken);
+        var actor = await personRepository.GetByIdAsync(actorId, cancellationToken);
+        var target = await personRepository.GetByIdAsync(targetPersonId, cancellationToken);
+        var metadata = JsonSerializer.Serialize(new
+        {
+            year,
+            month,
+            competence = FormatCompetence(year, month),
+            targetPersonId,
+            targetEmployeeId = target?.EmployeeId,
+            targetName = target?.Name,
+            actorPersonId = actorId,
+            action,
+        });
+
+        await accessAuditRecorder.RecordAsync(
+            new AccessAuditEntry(
+                EventType: AccessEventTypes.ResourceAccess,
+                EventName: action == "download"
+                    ? ObservabilityEventNames.Resource.Download
+                    : ObservabilityEventNames.Resource.Viewed,
+                CorrelationId: Guid.NewGuid(),
+                UserId: actorId,
+                UsernameSnapshot: actor?.Email,
+                SessionId: null,
+                Resource: "Payslip",
+                Action: action,
+                Result: AccessEventResults.Success,
+                ReasonCode: null,
+                StatusCode: statusCode,
+                HttpMethod: "GET",
+                Path: $"/api/v1/rh/payslips/{year}/{month}",
+                MetadataJson: metadata),
+            cancellationToken);
     }
 
     private sealed record PayslipSyncContext(

@@ -48,4 +48,12 @@ public interface IPayslipService
     Task<PayslipRequestResultDto> CreateRequestAsync(
         CreatePayslipRequestDto request,
         CancellationToken cancellationToken = default);
+
+    Task<PagedPayslipAccessLogDto> GetAccessLogAsync(
+        DateTimeOffset? from,
+        DateTimeOffset? to,
+        Guid? targetPersonId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default);
 }

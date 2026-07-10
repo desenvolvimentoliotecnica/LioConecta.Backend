@@ -115,6 +115,34 @@ public sealed class PayslipsController(IPayslipService payslipService) : Control
         }
     }
 
+    [HttpGet("access-log")]
+    [ProducesResponseType(typeof(PagedPayslipAccessLogDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<PagedPayslipAccessLogDto>> GetAccessLog(
+        [FromQuery] DateTimeOffset? from,
+        [FromQuery] DateTimeOffset? to,
+        [FromQuery] Guid? targetPersonId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 25,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var result = await payslipService.GetAccessLogAsync(
+                from,
+                to,
+                targetPersonId,
+                page,
+                pageSize,
+                cancellationToken);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
     [HttpGet("{year:int}/{month:int}/pdf")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

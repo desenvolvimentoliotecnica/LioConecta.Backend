@@ -22,4 +22,9 @@ public class PontoAdjustmentRecord : BaseEntity
     public Guid? ServiceRequestId { get; set; }
 
     public string? DataSource { get; set; }
+
+    /// <summary>"pending_rm_sync" | "synced" | "failed" | "dry_run" — write-back Onda 1B (ABATFUN).</summary>
+    public string? RmSyncStatus { get; set; }
+
+    public string? RmExternalId { get; set; }
 }

@@ -16,7 +16,7 @@ public sealed class LeaveWriteBackService(
 {
     public async Task<int> ProcessPendingAsync(CancellationToken cancellationToken = default)
     {
-        if (!settings.GetBool(AppSettingKeys.LeaveRmWriteBackEnabled, false))
+        if (RmWriteBackModes.ResolveLeaveMode(settings) == RmWriteBackModes.Off)
         {
             return 0;
         }

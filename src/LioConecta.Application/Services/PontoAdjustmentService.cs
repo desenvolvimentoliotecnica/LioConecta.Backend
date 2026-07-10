@@ -273,6 +273,101 @@ public sealed class PontoAdjustmentService(
         return new PontoAttachmentFileDto(bytes, meta.ContentType, meta.FileName);
     }
 
+    public async Task<PontoAdjustmentManagementDetailDto?> ApproveAsync(
+        Guid recordId,
+        ApprovePontoAdjustmentRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await EnsureManagedRecordAsync(recordId, cancellationToken);
+        if (record is null)
+        {
+            return null;
+        }
+
+        record.Status = "approved";
+        record.RmSyncStatus = "pending_rm_sync";
+        record.UpdatedAt = DateTimeOffset.UtcNow;
+
+        if (!string.IsNullOrWhiteSpace(request.Comment))
+        {
+            record.DetailsJson = MergeDetailField(record.DetailsJson, "approvalComment", request.Comment!);
+        }
+
+        await pontoAdjustmentRepository.UpdateAsync(record, cancellationToken);
+
+        return await GetManagementDetailAsync(recordId, cancellationToken);
+    }
+
+    public async Task<PontoAdjustmentManagementDetailDto?> RejectAsync(
+        Guid recordId,
+        RejectPontoAdjustmentRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await EnsureManagedRecordAsync(recordId, cancellationToken);
+        if (record is null)
+        {
+            return null;
+        }
+
+        record.Status = "rejected";
+        record.RmSyncStatus = null;
+        record.UpdatedAt = DateTimeOffset.UtcNow;
+
+        if (!string.IsNullOrWhiteSpace(request.Reason))
+        {
+            record.DetailsJson = MergeDetailField(record.DetailsJson, "rejectionReason", request.Reason!);
+        }
+
+        await pontoAdjustmentRepository.UpdateAsync(record, cancellationToken);
+
+        return await GetManagementDetailAsync(recordId, cancellationToken);
+    }
+
+    private async Task<PontoAdjustmentRecord?> EnsureManagedRecordAsync(Guid recordId, CancellationToken cancellationToken)
+    {
+        var (canAccess, isRhScope, personId) = await EnsureCanManageAsync(cancellationToken);
+        if (!canAccess)
+        {
+            throw new UnauthorizedAccessException("Acesso à gestão de ponto negado.");
+        }
+
+        var record = await pontoAdjustmentRepository.GetWithPersonAsync(recordId, cancellationToken);
+        if (record is null)
+        {
+            return null;
+        }
+
+        if (!isRhScope)
+        {
+            var reports = await personRepository.GetDirectReportsAsync(personId, cancellationToken);
+            if (reports.All(r => r.Id != record.PersonId))
+            {
+                throw new UnauthorizedAccessException("Acesso à solicitação de ponto negado.");
+            }
+        }
+
+        return record;
+    }
+
+    private static string MergeDetailField(string? detailsJson, string key, string value)
+    {
+        try
+        {
+            var dict = string.IsNullOrWhiteSpace(detailsJson) || detailsJson == "{}"
+                ? new Dictionary<string, JsonElement>()
+                : JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(detailsJson, JsonOptions)
+                    ?? new Dictionary<string, JsonElement>();
+
+            var merged = dict.ToDictionary(kv => kv.Key, kv => (object?)kv.Value);
+            merged[key] = value;
+            return JsonSerializer.Serialize(merged, JsonOptions);
+        }
+        catch
+        {
+            return detailsJson ?? "{}";
+        }
+    }
+
     private async Task NotifyCreatedInternalAsync(
         PontoAdjustmentRecord record,
         Guid requesterPersonId,

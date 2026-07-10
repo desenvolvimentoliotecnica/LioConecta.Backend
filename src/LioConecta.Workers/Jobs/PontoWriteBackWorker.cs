@@ -4,38 +4,38 @@ using LioConecta.Infrastructure.Services;
 
 namespace LioConecta.Workers.Jobs;
 
-public sealed class LeaveWriteBackWorker(
+public sealed class PontoWriteBackWorker(
     IServiceProvider services,
-    ILogger<LeaveWriteBackWorker> logger,
+    ILogger<PontoWriteBackWorker> logger,
     IAppSettingsProvider settings) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("Leave write-back worker started (interval: 15 min)");
+        logger.LogInformation("Ponto write-back worker started (interval: 15 min)");
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            if (RmWriteBackModes.ResolveLeaveMode(settings) != RmWriteBackModes.Off)
+            if (RmWriteBackModes.ResolvePontoMode(settings) != RmWriteBackModes.Off)
             {
                 try
                 {
                     using var scope = services.CreateScope();
                     var recorder = scope.ServiceProvider.GetRequiredService<IWorkerRunRecorder>();
-                    var writeBack = scope.ServiceProvider.GetRequiredService<LeaveWriteBackService>();
+                    var writeBack = scope.ServiceProvider.GetRequiredService<PontoWriteBackService>();
 
                     await recorder.ExecuteAsync(
-                        WorkerKeys.LeaveWriteBack,
+                        WorkerKeys.PontoWriteBack,
                         "scheduled",
                         async (context, ct) =>
                         {
                             var processed = await writeBack.ProcessPendingAsync(ct);
-                            await context.LogInfoAsync($"Processados {processed} write-back(s) de férias.", ct);
+                            await context.LogInfoAsync($"Processados {processed} write-back(s) de ponto.", ct);
                         },
                         stoppingToken);
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
-                    logger.LogError(ex, "Leave write-back worker failed");
+                    logger.LogError(ex, "Ponto write-back worker failed");
                 }
             }
 

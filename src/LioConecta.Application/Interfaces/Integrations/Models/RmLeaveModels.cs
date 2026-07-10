@@ -18,9 +18,11 @@ public sealed record RmVacationRequestRecord(
 
 public sealed record RmLeaveBalanceData(
     int AvailableDays,
+    int AcquiringDays,
     int AcquiredDays,
     int ScheduledDays,
     int ExpiredDays,
+    DateOnly? NextLiberationAt,
     DateOnly? NextScheduledStart,
     DateOnly? NextScheduledEnd,
     IReadOnlyList<RmLeavePeriodRecord> Periods,

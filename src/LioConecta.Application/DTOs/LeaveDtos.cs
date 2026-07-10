@@ -2,6 +2,8 @@ namespace LioConecta.Application.DTOs;
 
 public sealed record LeaveSummaryDto(
     int AvailableDays,
+    int AcquiringDays,
+    DateOnly? NextLiberationAt,
     int PendingRequests,
     string? NextScheduledLabel);
 
@@ -22,13 +24,18 @@ public sealed record LeavePeriodDto(
     int AcquiredDays,
     int UsedDays,
     int AvailableDays,
-    DateOnly? ExpiresAt);
+    DateOnly? ExpiresAt,
+    string Status,
+    DateOnly? LiberatesAt,
+    string? ContextNote);
 
 public sealed record LeaveBalanceDto(
     int AvailableDays,
+    int AcquiringDays,
     int AcquiredDays,
     int ScheduledDays,
     int ExpiredDays,
+    DateOnly? NextLiberationAt,
     IReadOnlyList<LeavePeriodDto> Periods,
     IReadOnlyList<string> Notes);
 
@@ -173,3 +180,7 @@ public sealed record LeaveAttachmentFileDto(
     byte[] Content,
     string ContentType,
     string FileName);
+
+public sealed record ApproveLeaveRequestDto(string? Comment, bool TriggerWriteBack = true);
+
+public sealed record RejectLeaveRequestDto(string? Reason);

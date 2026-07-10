@@ -1,4 +1,5 @@
 using System.Text.Json;
+using LioConecta.Api.Authorization;
 using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Infrastructure.Services;
@@ -156,6 +157,54 @@ public sealed class PontoController(
             }
 
             return File(file.Content, file.ContentType, file.FileName);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
+    [HttpPost("adjustments/management/{id:guid}/approve")]
+    [RequirePermission("ponto.approve")]
+    [ProducesResponseType(typeof(PontoAdjustmentManagementDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<PontoAdjustmentManagementDetailDto>> ApproveAdjustment(
+        Guid id,
+        [FromBody] ApprovePontoAdjustmentRequestDto? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var detail = await pontoAdjustmentService.ApproveAsync(
+                id,
+                request ?? new ApprovePontoAdjustmentRequestDto(null),
+                cancellationToken);
+            return detail is null ? NotFound() : Ok(detail);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
+    [HttpPost("adjustments/management/{id:guid}/reject")]
+    [RequirePermission("ponto.approve")]
+    [ProducesResponseType(typeof(PontoAdjustmentManagementDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<PontoAdjustmentManagementDetailDto>> RejectAdjustment(
+        Guid id,
+        [FromBody] RejectPontoAdjustmentRequestDto? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var detail = await pontoAdjustmentService.RejectAsync(
+                id,
+                request ?? new RejectPontoAdjustmentRequestDto(null),
+                cancellationToken);
+            return detail is null ? NotFound() : Ok(detail);
         }
         catch (UnauthorizedAccessException)
         {

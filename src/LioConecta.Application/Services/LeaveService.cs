@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using LioConecta.Application.Common;
 using LioConecta.Application.DTOs;
+using LioConecta.Application.Interfaces.Integrations;
 using LioConecta.Application.Interfaces.Repositories;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Domain.Entities;
@@ -21,7 +22,8 @@ public sealed class LeaveService(
     INotificationService notificationService,
     ILeaveEmailNotifier leaveEmailNotifier,
     ILeaveAttachmentStore leaveAttachmentStore,
-    IHourBankService hourBankService) : ILeaveService
+    IHourBankService hourBankService,
+    ILeaveRmWriteBack leaveRmWriteBack) : ILeaveService
 {
     private const string VacationServiceKey = "solicitar-ferias";
     private const string MedicalCertificateServiceKey = "atestado";
@@ -56,11 +58,14 @@ public sealed class LeaveService(
 
         if (balance is null)
         {
-            return new LeaveSummaryDto(0, pending, null);
+            return new LeaveSummaryDto(0, 0, null, pending, null);
         }
 
+        var breakdown = DeserializeBreakdown(balance.BreakdownJson);
         return new LeaveSummaryDto(
             balance.AvailableDays,
+            breakdown.AcquiringDays,
+            breakdown.NextLiberationAt,
             pending,
             FormatScheduledLabel(balance.NextScheduledStart));
     }
@@ -79,9 +84,11 @@ public sealed class LeaveService(
         var breakdown = DeserializeBreakdown(balance.BreakdownJson);
         return new LeaveBalanceDto(
             balance.AvailableDays,
+            breakdown.AcquiringDays,
             balance.AcquiredDays,
             balance.ScheduledDays,
             balance.ExpiredDays,
+            breakdown.NextLiberationAt,
             breakdown.Periods,
             breakdown.Notes);
     }
@@ -209,6 +216,15 @@ public sealed class LeaveService(
 
             if (available <= 0 || days.Value > available)
             {
+                var acquiring = DeserializeBreakdown(balance?.BreakdownJson ?? "{}").AcquiringDays;
+                if (available <= 0 && acquiring > 0)
+                {
+                    throw new LeaveInsufficientBalanceException(
+                        days.Value,
+                        available,
+                        $"Você ainda não possui dias liberados para gozo. Há {acquiring} dia(s) em aquisição.");
+                }
+
                 throw new LeaveInsufficientBalanceException(days.Value, available);
             }
         }
@@ -440,6 +456,154 @@ public sealed class LeaveService(
 
         var record = await leaveRepository.GetRecordWithPersonAsync(recordId, cancellationToken);
         return record is null ? null : BuildPdf(record);
+    }
+
+    public async Task<LeaveManagementDetailDto?> ApproveAsync(
+        Guid recordId,
+        ApproveLeaveRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await EnsureManagedRecordAsync(recordId, cancellationToken);
+        if (record is null)
+        {
+            return null;
+        }
+
+        var isVacation = string.Equals(record.ServiceKey, VacationServiceKey, StringComparison.OrdinalIgnoreCase);
+
+        record.Status = "approved";
+        record.UpdatedAt = DateTimeOffset.UtcNow;
+        if (isVacation)
+        {
+            record.RmSyncStatus = "pending_rm_sync";
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Comment))
+        {
+            record.DetailsJson = MergeDetailField(record.DetailsJson, "approvalComment", request.Comment!);
+        }
+
+        await leaveRepository.UpdateRecordAsync(record, cancellationToken);
+
+        if (isVacation
+            && request.TriggerWriteBack
+            && record.StartDate is not null
+            && record.EndDate is not null
+            && record.Days is not null)
+        {
+            await TryImmediateWriteBackAsync(record, cancellationToken);
+        }
+
+        return await ToManagementDetailAsync(record, cancellationToken);
+    }
+
+    public async Task<LeaveManagementDetailDto?> RejectAsync(
+        Guid recordId,
+        RejectLeaveRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await EnsureManagedRecordAsync(recordId, cancellationToken);
+        if (record is null)
+        {
+            return null;
+        }
+
+        record.Status = "rejected";
+        record.RmSyncStatus = null;
+        record.UpdatedAt = DateTimeOffset.UtcNow;
+
+        if (!string.IsNullOrWhiteSpace(request.Reason))
+        {
+            record.DetailsJson = MergeDetailField(record.DetailsJson, "rejectionReason", request.Reason!);
+        }
+
+        await leaveRepository.UpdateRecordAsync(record, cancellationToken);
+
+        return await ToManagementDetailAsync(record, cancellationToken);
+    }
+
+    private async Task<LeaveRecord?> EnsureManagedRecordAsync(Guid recordId, CancellationToken cancellationToken)
+    {
+        var (canAccess, isRhScope, personId) = await EnsureCanManageAsync(cancellationToken);
+        if (!canAccess)
+        {
+            throw new UnauthorizedAccessException("Acesso à gestão de férias negado.");
+        }
+
+        var record = await leaveRepository.GetRecordWithPersonAsync(recordId, cancellationToken);
+        if (record is null
+            || (record.ServiceKey != VacationServiceKey && record.ServiceKey != MedicalCertificateServiceKey))
+        {
+            return null;
+        }
+
+        if (!isRhScope)
+        {
+            var reports = await personRepository.GetDirectReportsAsync(personId, cancellationToken);
+            if (reports.All(r => r.Id != record.PersonId))
+            {
+                throw new UnauthorizedAccessException("Acesso à solicitação de férias negado.");
+            }
+        }
+
+        return record;
+    }
+
+    private async Task TryImmediateWriteBackAsync(LeaveRecord record, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var person = await personRepository.GetByIdAsync(record.PersonId, cancellationToken);
+            if (person is null || string.IsNullOrWhiteSpace(person.EmployeeId))
+            {
+                return;
+            }
+
+            var chapa = TotvsRmChapaNormalizer.Normalize(person.EmployeeId);
+            if (string.IsNullOrWhiteSpace(chapa))
+            {
+                return;
+            }
+
+            var result = await leaveRmWriteBack.SubmitVacationRequestAsync(
+                new LeaveRmWriteBackCommand(
+                    record.Id,
+                    record.PersonId,
+                    chapa,
+                    record.StartDate!.Value,
+                    record.EndDate!.Value,
+                    record.Days!.Value,
+                    null),
+                cancellationToken);
+
+            record.RmSyncStatus = result.Status;
+            record.RmExternalId = result.ExternalId ?? record.RmExternalId;
+            record.UpdatedAt = DateTimeOffset.UtcNow;
+            await leaveRepository.UpdateRecordAsync(record, cancellationToken);
+        }
+        catch
+        {
+            // Write-back imediato é best-effort na aprovação; o worker de fila garante retry.
+        }
+    }
+
+    private static string MergeDetailField(string? detailsJson, string key, string value)
+    {
+        try
+        {
+            var dict = string.IsNullOrWhiteSpace(detailsJson) || detailsJson == "{}"
+                ? new Dictionary<string, JsonElement>()
+                : JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(detailsJson, JsonOptions)
+                    ?? new Dictionary<string, JsonElement>();
+
+            var merged = dict.ToDictionary(kv => kv.Key, kv => (object?)kv.Value);
+            merged[key] = value;
+            return JsonSerializer.Serialize(merged, JsonOptions);
+        }
+        catch
+        {
+            return detailsJson ?? "{}";
+        }
     }
 
     private async Task NotifyLeaveRequestCreatedInternalAsync(
@@ -841,11 +1005,15 @@ public sealed class LeaveService(
         }
     }
 
-    private static (IReadOnlyList<LeavePeriodDto> Periods, IReadOnlyList<string> Notes) DeserializeBreakdown(string json)
+    private static (
+        IReadOnlyList<LeavePeriodDto> Periods,
+        IReadOnlyList<string> Notes,
+        int AcquiringDays,
+        DateOnly? NextLiberationAt) DeserializeBreakdown(string json)
     {
         if (string.IsNullOrWhiteSpace(json))
         {
-            return ([], []);
+            return ([], [], 0, null);
         }
 
         try
@@ -853,6 +1021,21 @@ public sealed class LeaveService(
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
             var periods = new List<LeavePeriodDto>();
+            var acquiringDays = 0;
+            DateOnly? nextLiberationAt = null;
+
+            if (root.TryGetProperty("acquiringDays", out var acquiringEl) &&
+                acquiringEl.TryGetInt32(out var acquiringParsed))
+            {
+                acquiringDays = acquiringParsed;
+            }
+
+            if (root.TryGetProperty("nextLiberationAt", out var nextLibEl) &&
+                nextLibEl.ValueKind == JsonValueKind.String &&
+                DateOnly.TryParse(nextLibEl.GetString(), out var nextLibParsed))
+            {
+                nextLiberationAt = nextLibParsed;
+            }
 
             if (root.TryGetProperty("periods", out var periodsEl) && periodsEl.ValueKind == JsonValueKind.Array)
             {
@@ -861,17 +1044,41 @@ public sealed class LeaveService(
                     DateOnly? expires = null;
                     if (item.TryGetProperty("expiresAt", out var expEl) &&
                         expEl.ValueKind == JsonValueKind.String &&
-                        DateOnly.TryParse(expEl.GetString(), out var parsed))
+                        DateOnly.TryParse(expEl.GetString(), out var parsedExp))
                     {
-                        expires = parsed;
+                        expires = parsedExp;
+                    }
+
+                    DateOnly? liberatesAt = null;
+                    if (item.TryGetProperty("liberatesAt", out var libEl) &&
+                        libEl.ValueKind == JsonValueKind.String &&
+                        DateOnly.TryParse(libEl.GetString(), out var parsedLib))
+                    {
+                        liberatesAt = parsedLib;
+                    }
+
+                    var status = item.TryGetProperty("status", out var statusEl)
+                        ? statusEl.GetString() ?? LeavePeriodClassifier.StatusLiberado
+                        : LeavePeriodClassifier.StatusLiberado;
+                    var contextNote = item.TryGetProperty("contextNote", out var noteEl)
+                        ? noteEl.GetString()
+                        : null;
+
+                    var availableDays = item.GetProperty("availableDays").GetInt32();
+                    if (acquiringDays == 0 && status == LeavePeriodClassifier.StatusEmAquisicao)
+                    {
+                        acquiringDays += availableDays;
                     }
 
                     periods.Add(new LeavePeriodDto(
                         item.GetProperty("label").GetString() ?? "—",
                         item.GetProperty("acquiredDays").GetInt32(),
                         item.GetProperty("usedDays").GetInt32(),
-                        item.GetProperty("availableDays").GetInt32(),
-                        expires));
+                        availableDays,
+                        expires,
+                        status,
+                        liberatesAt,
+                        contextNote));
                 }
             }
 
@@ -888,11 +1095,11 @@ public sealed class LeaveService(
                 }
             }
 
-            return (periods, notes);
+            return (periods, notes, acquiringDays, nextLiberationAt);
         }
         catch
         {
-            return ([], []);
+            return ([], [], 0, null);
         }
     }
 

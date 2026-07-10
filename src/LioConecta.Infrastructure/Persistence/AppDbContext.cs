@@ -20,6 +20,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Group> Groups => Set<Group>();
     public DbSet<GroupMember> GroupMembers => Set<GroupMember>();
     public DbSet<GroupPost> GroupPosts => Set<GroupPost>();
+    public DbSet<GroupPostReaction> GroupPostReactions => Set<GroupPostReaction>();
+    public DbSet<GroupTopic> GroupTopics => Set<GroupTopic>();
+    public DbSet<GroupTopicReply> GroupTopicReplies => Set<GroupTopicReply>();
+    public DbSet<GroupOwnershipTransfer> GroupOwnershipTransfers => Set<GroupOwnershipTransfer>();
     public DbSet<DocumentMetadata> Documents => Set<DocumentMetadata>();
     public DbSet<BookmarkCatalogItem> BookmarkCatalogItems => Set<BookmarkCatalogItem>();
     public DbSet<ServiceRequest> ServiceRequests => Set<ServiceRequest>();
@@ -347,12 +351,19 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         {
             entity.HasIndex(g => g.OwnerId);
             entity.HasIndex(g => g.Status);
+            entity.HasIndex(g => g.ApproverId);
+            entity.HasIndex(g => g.ExpiresAt);
             entity.Property(g => g.Icon).HasMaxLength(64);
 
             entity.HasOne(g => g.Owner)
                 .WithMany()
                 .HasForeignKey(g => g.OwnerId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(g => g.Approver)
+                .WithMany()
+                .HasForeignKey(g => g.ApproverId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasOne(g => g.ReviewedBy)
                 .WithMany()
@@ -378,6 +389,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         modelBuilder.Entity<GroupPost>(entity =>
         {
             entity.HasIndex(p => p.GroupId);
+            entity.Property(p => p.ImageUrl).HasMaxLength(1024);
 
             entity.HasOne(p => p.Group)
                 .WithMany(g => g.Posts)
@@ -388,6 +400,80 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany()
                 .HasForeignKey(p => p.AuthorId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<GroupPostReaction>(entity =>
+        {
+            entity.HasIndex(r => new { r.PostId, r.PersonId }).IsUnique();
+
+            entity.HasOne(r => r.Post)
+                .WithMany(p => p.Reactions)
+                .HasForeignKey(r => r.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(r => r.Person)
+                .WithMany()
+                .HasForeignKey(r => r.PersonId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<GroupTopic>(entity =>
+        {
+            entity.HasIndex(t => t.GroupId);
+            entity.HasIndex(t => t.LastActivityAt);
+            entity.Property(t => t.Title).HasMaxLength(200);
+
+            entity.HasOne(t => t.Group)
+                .WithMany(g => g.Topics)
+                .HasForeignKey(t => t.GroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(t => t.Author)
+                .WithMany()
+                .HasForeignKey(t => t.AuthorId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<GroupTopicReply>(entity =>
+        {
+            entity.HasIndex(r => r.TopicId);
+
+            entity.HasOne(r => r.Topic)
+                .WithMany(t => t.Replies)
+                .HasForeignKey(r => r.TopicId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(r => r.Author)
+                .WithMany()
+                .HasForeignKey(r => r.AuthorId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<GroupOwnershipTransfer>(entity =>
+        {
+            entity.HasIndex(t => t.GroupId);
+            entity.HasIndex(t => t.ApproverId);
+            entity.HasIndex(t => t.Status);
+
+            entity.HasOne(t => t.Group)
+                .WithMany(g => g.OwnershipTransfers)
+                .HasForeignKey(t => t.GroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(t => t.FromOwner)
+                .WithMany()
+                .HasForeignKey(t => t.FromOwnerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(t => t.ToPerson)
+                .WithMany()
+                .HasForeignKey(t => t.ToPersonId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(t => t.Approver)
+                .WithMany()
+                .HasForeignKey(t => t.ApproverId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 

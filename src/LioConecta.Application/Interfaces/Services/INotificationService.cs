@@ -93,4 +93,67 @@ public interface INotificationService
         string? moduleTitle,
         Guid questionId,
         CancellationToken cancellationToken = default);
+
+    Task NotifyGroupCreationRequestedAsync(
+        Guid managerPersonId,
+        Guid groupId,
+        string groupName,
+        string requesterName,
+        CancellationToken cancellationToken = default);
+
+    Task NotifyGroupCreationDecisionAsync(
+        Guid ownerPersonId,
+        Guid groupId,
+        string groupName,
+        bool approved,
+        string? reason,
+        CancellationToken cancellationToken = default);
+
+    Task NotifyGroupCreationExpiredAsync(
+        Guid ownerPersonId,
+        Guid groupId,
+        string groupName,
+        CancellationToken cancellationToken = default);
+
+    Task NotifyGroupWallPostAsync(
+        IReadOnlyList<Guid> recipientPersonIds,
+        Guid groupId,
+        string groupName,
+        string authorName,
+        CancellationToken cancellationToken = default);
+
+    Task NotifyGroupTopicCreatedAsync(
+        IReadOnlyList<Guid> recipientPersonIds,
+        Guid groupId,
+        Guid topicId,
+        string groupName,
+        string topicTitle,
+        string authorName,
+        CancellationToken cancellationToken = default);
+
+    Task NotifyGroupTopicReplyAsync(
+        IReadOnlyList<Guid> recipientPersonIds,
+        Guid groupId,
+        Guid topicId,
+        string groupName,
+        string topicTitle,
+        string authorName,
+        CancellationToken cancellationToken = default);
+
+    Task NotifyGroupOwnershipTransferRequestedAsync(
+        Guid toPersonId,
+        Guid managerPersonId,
+        Guid groupId,
+        string groupName,
+        string fromOwnerName,
+        string toPersonName,
+        CancellationToken cancellationToken = default);
+
+    Task NotifyGroupOwnershipTransferDecisionAsync(
+        IReadOnlyList<Guid> recipientPersonIds,
+        Guid groupId,
+        string groupName,
+        bool approved,
+        string? reason,
+        CancellationToken cancellationToken = default);
 }

@@ -87,9 +87,11 @@ public class AuthEndpointTests : IClassFixture<LioConectaWebApplicationFactory>
 public class AuthLdapLoginTests : IClassFixture<LdapMockWebApplicationFactory>
 {
     private readonly HttpClient _client;
+    private readonly LdapMockWebApplicationFactory _factory;
 
     public AuthLdapLoginTests(LdapMockWebApplicationFactory factory)
     {
+        _factory = factory;
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -118,6 +120,20 @@ public class AuthLdapLoginTests : IClassFixture<LdapMockWebApplicationFactory>
         Assert.Equal(FakeLdapAuthService.LdapUserEmail, payload!.User.Email);
         Assert.DoesNotContain("Admin", payload.User.Roles.Select(role => role.ToString()));
         Assert.Contains("Employee", payload.User.Roles.Select(role => role.ToString()));
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var person = await db.People.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Email == FakeLdapAuthService.LdapUserEmail);
+        Assert.NotNull(person);
+
+        var assignment = await db.SubjectRoleAssignments.AsNoTracking()
+            .Include(a => a.Role)
+            .FirstOrDefaultAsync(a =>
+                a.SubjectType == LioConecta.Domain.Enums.RbacSubjectType.Person
+                && a.SubjectId == person!.Id);
+        Assert.NotNull(assignment);
+        Assert.Equal("Employee", assignment!.Role.Slug);
     }
 
     [Fact]

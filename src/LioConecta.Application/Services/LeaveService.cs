@@ -19,9 +19,11 @@ public sealed class LeaveService(
     IPersonRepository personRepository,
     LeaveNotifyRecipientResolver leaveNotifyRecipientResolver,
     INotificationService notificationService,
-    ILeaveEmailNotifier leaveEmailNotifier) : ILeaveService
+    ILeaveEmailNotifier leaveEmailNotifier,
+    ILeaveAttachmentStore leaveAttachmentStore) : ILeaveService
 {
     private const string VacationServiceKey = "solicitar-ferias";
+    private const string MedicalCertificateServiceKey = "atestado";
     private const string ApprovalNote =
         "A aprovação formal da solicitação é feita no RM Labore. O portal apenas registra, notifica e espelha o status.";
     private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
@@ -177,6 +179,7 @@ public sealed class LeaveService(
 
     public async Task<LeaveRequestResultDto> CreateRequestAsync(
         CreateLeaveRequestDto request,
+        IReadOnlyList<LeaveAttachmentInput>? attachments = null,
         CancellationToken cancellationToken = default)
     {
         var personId = await currentUserService.GetPersonIdAsync(cancellationToken);
@@ -191,11 +194,17 @@ public sealed class LeaveService(
             throw new InvalidOperationException("Este serviço requer encaminhamento offline ao RH.");
         }
 
+        var isMedicalCertificate = string.Equals(
+            service.Id,
+            MedicalCertificateServiceKey,
+            StringComparison.OrdinalIgnoreCase);
+        var isVacation = string.Equals(service.Id, VacationServiceKey, StringComparison.OrdinalIgnoreCase);
+
         DateOnly? startDate = request.StartDate;
         DateOnly? endDate = request.EndDate;
         int? days = request.Days;
 
-        if (string.Equals(service.Id, VacationServiceKey, StringComparison.OrdinalIgnoreCase))
+        if (isVacation)
         {
             if (startDate is null || endDate is null)
             {
@@ -214,6 +223,11 @@ public sealed class LeaveService(
             }
         }
 
+        var savedAttachments = await SaveAttachmentsAsync(
+            attachments,
+            requireAtLeastOne: isMedicalCertificate,
+            cancellationToken);
+
         var now = DateTimeOffset.UtcNow;
         var payload = new Dictionary<string, object?>
         {
@@ -222,6 +236,14 @@ public sealed class LeaveService(
             ["endDate"] = endDate?.ToString("O"),
             ["days"] = days,
             ["notes"] = request.Notes,
+            ["attachments"] = savedAttachments.Select(a => new
+            {
+                a.FileName,
+                a.StorageFileName,
+                a.ContentType,
+                a.SizeBytes,
+                a.Url,
+            }).ToList(),
         };
 
         var created = await serviceRequestService.CreateAsync(
@@ -239,11 +261,15 @@ public sealed class LeaveService(
             StartDate = startDate,
             EndDate = endDate,
             Days = days,
-            DetailsJson = JsonSerializer.Serialize(new { notes = request.Notes }, JsonOptions),
+            DetailsJson = JsonSerializer.Serialize(
+                new
+                {
+                    notes = request.Notes,
+                    attachments = savedAttachments,
+                },
+                JsonOptions),
             ServiceRequestId = created.Id,
-            RmSyncStatus = string.Equals(service.Id, VacationServiceKey, StringComparison.OrdinalIgnoreCase)
-                ? "pending_rm_sync"
-                : null,
+            RmSyncStatus = isVacation ? "pending_rm_sync" : null,
             DataSource = "portal",
             CreatedAt = now,
             UpdatedAt = now,
@@ -252,17 +278,63 @@ public sealed class LeaveService(
         payload["recordId"] = record.Id;
         await leaveRepository.AddRecordAsync(record, cancellationToken);
 
-        if (string.Equals(service.Id, VacationServiceKey, StringComparison.OrdinalIgnoreCase))
+        var protocol = BuildProtocol(record.Id);
+
+        if (isVacation || isMedicalCertificate)
         {
-            await NotifyVacationRequestCreatedAsync(record, personId, cancellationToken);
+            await NotifyLeaveRequestCreatedInternalAsync(record, personId, service.Title, cancellationToken);
         }
+
+        var message = isMedicalCertificate
+            ? $"Atestado médico enviado com sucesso. Protocolo: {protocol}. O RH foi notificado."
+            : $"Solicitação registrada com sucesso. Protocolo: {protocol}. Acompanhe o andamento na página de Férias e ausências.";
 
         return new LeaveRequestResultDto(
             created.Id,
             record.Id,
             created.Status.ToString(),
-            "Solicitação registrada com sucesso. Acompanhe o andamento na página de Férias e ausências.");
+            message,
+            protocol);
     }
+
+    private async Task<IReadOnlyList<LeaveAttachmentMetaDto>> SaveAttachmentsAsync(
+        IReadOnlyList<LeaveAttachmentInput>? attachments,
+        bool requireAtLeastOne,
+        CancellationToken cancellationToken)
+    {
+        var list = attachments ?? [];
+        if (list.Count == 0)
+        {
+            if (requireAtLeastOne)
+            {
+                throw new ArgumentException("Anexe o atestado em PDF ou PNG para enviar a solicitação.");
+            }
+
+            return [];
+        }
+
+        if (list.Count > LeaveAttachmentLimits.MaxFilesPerRequest)
+        {
+            throw new ArgumentException(
+                $"Máximo de {LeaveAttachmentLimits.MaxFilesPerRequest} anexos por solicitação.");
+        }
+
+        var saved = new List<LeaveAttachmentMetaDto>(list.Count);
+        foreach (var attachment in list)
+        {
+            saved.Add(await leaveAttachmentStore.SaveAsync(
+                attachment.Content,
+                attachment.FileName,
+                attachment.ContentType,
+                attachment.SizeBytes,
+                cancellationToken));
+        }
+
+        return saved;
+    }
+
+    private static string BuildProtocol(Guid recordId) =>
+        $"LC-{recordId.ToString("N")[..8].ToUpperInvariant()}";
 
     public async Task<IReadOnlyList<LeaveManagementItemDto>> GetManagementListAsync(
         string? status,
@@ -308,7 +380,9 @@ public sealed class LeaveService(
         }
 
         var record = await leaveRepository.GetRecordWithPersonAsync(recordId, cancellationToken);
-        if (record is null || record.ServiceKey != VacationServiceKey)
+        if (record is null
+            || (record.ServiceKey != VacationServiceKey
+                && record.ServiceKey != MedicalCertificateServiceKey))
         {
             return null;
         }
@@ -349,9 +423,10 @@ public sealed class LeaveService(
         return record is null ? null : BuildPdf(record);
     }
 
-    private async Task NotifyVacationRequestCreatedAsync(
+    private async Task NotifyLeaveRequestCreatedInternalAsync(
         LeaveRecord record,
         Guid requesterPersonId,
+        string serviceTitle,
         CancellationToken cancellationToken)
     {
         try
@@ -363,16 +438,28 @@ public sealed class LeaveService(
             }
 
             var requester = await personRepository.GetByIdAsync(requesterPersonId, cancellationToken);
+            var isMedical = string.Equals(
+                record.ServiceKey,
+                MedicalCertificateServiceKey,
+                StringComparison.OrdinalIgnoreCase);
             var period = FormatPeriodLabel(record.StartDate, record.EndDate);
+            var title = isMedical
+                ? "Novo atestado médico"
+                : "Nova solicitação de férias";
             var summary = requester is null
-                ? $"Nova solicitação de férias ({period})."
-                : $"{requester.Name} solicitou férias ({period}).";
+                ? (isMedical
+                    ? $"Novo atestado médico registrado ({period})."
+                    : $"Nova solicitação de férias ({period}).")
+                : (isMedical
+                    ? $"{requester.Name} enviou atestado médico ({period})."
+                    : $"{requester.Name} solicitou férias ({period}).");
 
             await notificationService.NotifyLeaveRequestCreatedAsync(
                 recipients.Select(r => r.Id).ToList(),
                 record.Id,
                 summary,
-                cancellationToken);
+                cancellationToken,
+                title);
 
             if (requester is not null)
             {
@@ -380,6 +467,7 @@ public sealed class LeaveService(
                     record,
                     requester,
                     recipients,
+                    serviceTitle,
                     cancellationToken);
             }
         }

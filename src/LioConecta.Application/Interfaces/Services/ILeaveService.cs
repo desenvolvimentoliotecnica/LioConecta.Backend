@@ -22,6 +22,7 @@ public interface ILeaveService
 
     Task<LeaveRequestResultDto> CreateRequestAsync(
         CreateLeaveRequestDto request,
+        IReadOnlyList<LeaveAttachmentInput>? attachments = null,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<LeaveManagementItemDto>> GetManagementListAsync(

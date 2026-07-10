@@ -14,6 +14,7 @@ public interface ILeaveEmailNotifier
         LeaveRecord record,
         Person requester,
         IReadOnlyList<Person> recipients,
+        string serviceTitle,
         CancellationToken cancellationToken = default);
 }
 
@@ -27,6 +28,7 @@ public sealed class LeaveEmailNotifier(
         LeaveRecord record,
         Person requester,
         IReadOnlyList<Person> recipients,
+        string serviceTitle,
         CancellationToken cancellationToken = default)
     {
         if (!settingsProvider.GetBool(AppSettingKeys.LeaveEmailEnabled, true))
@@ -46,25 +48,32 @@ public sealed class LeaveEmailNotifier(
             return;
         }
 
+        var isMedical = string.Equals(record.ServiceKey, "atestado", StringComparison.OrdinalIgnoreCase);
+        var protocol = $"LC-{record.Id.ToString("N")[..8].ToUpperInvariant()}";
         var deepLink = $"/servicos/ferias-ausencias/gestao?requestId={record.Id}";
         var period = FormatPeriod(record.StartDate, record.EndDate);
         var days = record.Days?.ToString(PtBr) ?? "—";
-        var subject = $"Nova solicitação de férias — {requester.Name}";
+        var actionLabel = isMedical ? "enviou atestado médico" : "solicitou férias";
+        var subject = isMedical
+            ? $"Novo atestado médico — {requester.Name}"
+            : $"Nova solicitação de férias — {requester.Name}";
         var bodyText =
-            $"O colaborador {requester.Name} ({requester.EmployeeId ?? requester.Email}) solicitou férias.\n"
+            $"O colaborador {requester.Name} ({requester.EmployeeId ?? requester.Email}) {actionLabel}.\n"
+            + $"Serviço: {serviceTitle}\n"
             + $"Período: {period}\n"
             + $"Dias: {days}\n"
             + $"Chapa/matrícula: {requester.EmployeeId ?? "—"}\n"
-            + $"Protocolo portal: {record.Id}\n\n"
-            + $"Acompanhe no portal (aprovação formal no RM Labore):\n{deepLink}\n";
+            + $"Protocolo: {protocol}\n\n"
+            + $"Acompanhe no portal:\n{deepLink}\n";
         var bodyHtml =
             $"<p>O colaborador <strong>{WebUtility.HtmlEncode(requester.Name)}</strong> "
-            + $"({WebUtility.HtmlEncode(requester.EmployeeId ?? requester.Email)}) solicitou férias.</p>"
-            + $"<ul><li><strong>Período:</strong> {WebUtility.HtmlEncode(period)}</li>"
+            + $"({WebUtility.HtmlEncode(requester.EmployeeId ?? requester.Email)}) {WebUtility.HtmlEncode(actionLabel)}.</p>"
+            + $"<ul><li><strong>Serviço:</strong> {WebUtility.HtmlEncode(serviceTitle)}</li>"
+            + $"<li><strong>Período:</strong> {WebUtility.HtmlEncode(period)}</li>"
             + $"<li><strong>Dias:</strong> {WebUtility.HtmlEncode(days)}</li>"
             + $"<li><strong>Chapa/matrícula:</strong> {WebUtility.HtmlEncode(requester.EmployeeId ?? "—")}</li>"
-            + $"<li><strong>Protocolo portal:</strong> {record.Id}</li></ul>"
-            + $"<p>Acompanhe no portal (aprovação formal no RM Labore): "
+            + $"<li><strong>Protocolo:</strong> {WebUtility.HtmlEncode(protocol)}</li></ul>"
+            + $"<p>Acompanhe no portal: "
             + $"<a href=\"{WebUtility.HtmlEncode(deepLink)}\">{WebUtility.HtmlEncode(deepLink)}</a></p>";
 
         var to = realEmails;
@@ -87,8 +96,9 @@ public sealed class LeaveEmailNotifier(
 
         var metadata = JsonSerializer.Serialize(new
         {
-            source = "leave.request.created",
+            source = isMedical ? "leave.atestado.created" : "leave.request.created",
             leaveRecordId = record.Id,
+            protocol,
             originalRecipients = realEmails,
             overrideEnabled,
         });

@@ -80,7 +80,7 @@ public static class AppSettingKeys
     public const string WorkersTotvsPayslipCacheTtlMinutes = "workers.totvs_payslip_cache_ttl_minutes";
     public const string WorkersTotvsLeaveSyncIntervalMinutes = "workers.totvs_leave_sync_interval_minutes";
     public const string WorkersTotvsLeaveCacheTtlMinutes = "workers.totvs_leave_cache_ttl_minutes";
-    /// <summary>Legacy: quando "leave.rm.writeback.mode" não estiver definido, true mapeia para "apply" e false para "off".</summary>
+    /// <summary>Legacy: quando "leave.rm.writeback.mode" nÃ£o estiver definido, true mapeia para "apply" e false para "off".</summary>
     public const string LeaveRmWriteBackEnabled = "leave.rm.writeback.enabled";
     public const string LeaveRmWriteBackMode = "leave.rm.writeback.mode";
     public const string LeaveRmWriteBackAllowProd = "leave.rm.writeback.allow_prod";
@@ -94,6 +94,10 @@ public static class AppSettingKeys
     public const string PontoNotifyEmails = "ponto.notify_emails";
     public const string PontoNotifyRoles = "ponto.notify_roles";
     public const string WorkersPollClosureIntervalMinutes = "workers.poll_closure_interval_minutes";
+    public const string WorkersComunicadoScheduleIntervalMinutes = "workers.comunicado_schedule_interval_minutes";
+    public const string WorkersNewHireAnnouncementIntervalMinutes = "workers.new_hire_announce_interval_minutes";
+    public const string FeedNewHireAnnouncementEnabled = "feed.new_hire_announce.enabled";
+    public const string FeedNewHireAnnouncementWindowDays = "feed.new_hire_announce.window_days";
 
     public const string SerilogDefaultLevel = "serilog.default_level";
 

@@ -22,15 +22,16 @@ public sealed class MoodCheckRepository(AppDbContext db) : IMoodCheckRepository
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    public Task<IReadOnlyList<MoodCheck>> GetByDateRangeAsync(
+    public async Task<IReadOnlyList<MoodCheck>> GetByDateRangeAsync(
         DateOnly from,
         DateOnly to,
         CancellationToken cancellationToken = default) =>
-        db.MoodChecks
+        await db.MoodChecks
             .AsNoTracking()
+            .Include(m => m.Person)
+                .ThenInclude(p => p!.Department)
             .Where(m => m.CheckDate >= from && m.CheckDate <= to)
             .OrderByDescending(m => m.CheckDate)
             .ThenByDescending(m => m.RecordedAt)
-            .ToListAsync(cancellationToken)
-            .ContinueWith(t => (IReadOnlyList<MoodCheck>)t.Result, cancellationToken);
+            .ToListAsync(cancellationToken);
 }

@@ -1,4 +1,5 @@
 using LioConecta.Domain.Entities;
+using LioConecta.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace LioConecta.Infrastructure.Persistence;
@@ -17,6 +18,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Celebration> Celebrations => Set<Celebration>();
     public DbSet<Comunicado> Comunicados => Set<Comunicado>();
     public DbSet<ComunicadoRead> ComunicadoReads => Set<ComunicadoRead>();
+    public DbSet<NewHireAnnouncement> NewHireAnnouncements => Set<NewHireAnnouncement>();
+    public DbSet<FeedbackSubmission> FeedbackSubmissions => Set<FeedbackSubmission>();
     public DbSet<Group> Groups => Set<Group>();
     public DbSet<GroupMember> GroupMembers => Set<GroupMember>();
     public DbSet<GroupPost> GroupPosts => Set<GroupPost>();
@@ -117,6 +120,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureObservability(modelBuilder);
         ConfigureUserPreferences(modelBuilder);
         ConfigureMoodChecks(modelBuilder);
+        ConfigureEngagement(modelBuilder);
         ConfigureAppSettings(modelBuilder);
         ConfigureComunicadoHeroImages(modelBuilder);
         ConfigurePayslips(modelBuilder);
@@ -323,11 +327,16 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         modelBuilder.Entity<Comunicado>(entity =>
         {
             entity.HasIndex(c => c.Kind);
+            entity.HasIndex(c => c.Status);
             entity.HasIndex(c => c.PublishedAt);
+            entity.HasIndex(c => c.ScheduledAt);
             entity.HasIndex(c => c.ArchivedAt);
             entity.HasIndex(c => c.AuthorId);
             entity.HasIndex(c => c.Slug).IsUnique();
             entity.Property(c => c.Slug).HasMaxLength(120);
+            entity.Property(c => c.AudienceDepartmentIdsJson).HasDefaultValue("[]");
+            entity.Property(c => c.AudienceType).HasDefaultValue(ComunicadoAudienceType.All);
+            // Status default is applied in migration SQL / CreateAsync — avoid CLR Draft sentinel clash with DB default Published.
 
             entity.HasOne(c => c.Author)
                 .WithMany()
@@ -608,6 +617,22 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany()
                 .HasForeignKey(m => m.UpdatedById)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+    }
+
+    private static void ConfigureEngagement(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<NewHireAnnouncement>(entity =>
+        {
+            entity.HasIndex(x => x.PersonId).IsUnique(); entity.HasIndex(x => x.FeedPostId).IsUnique();
+            entity.HasOne(x => x.Person).WithMany().HasForeignKey(x => x.PersonId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.FeedPost).WithMany().HasForeignKey(x => x.FeedPostId).OnDelete(DeleteBehavior.Restrict);
+        });
+        modelBuilder.Entity<FeedbackSubmission>(entity =>
+        {
+            entity.HasIndex(x => new { x.Status, x.CreatedAt }); entity.Property(x => x.Subject).HasMaxLength(200).IsRequired(); entity.Property(x => x.Message).IsRequired();
+            entity.HasOne(x => x.Author).WithMany().HasForeignKey(x => x.AuthorId).OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(x => x.Assignee).WithMany().HasForeignKey(x => x.AssigneeId).OnDelete(DeleteBehavior.SetNull);
         });
     }
 

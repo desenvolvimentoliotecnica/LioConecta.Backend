@@ -58,6 +58,8 @@ public sealed class FeedRepository(AppDbContext db) : IFeedRepository
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted, cancellationToken);
 
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default) => db.SaveChangesAsync(cancellationToken);
+
     public async Task<bool> SoftDeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;

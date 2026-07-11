@@ -14,7 +14,8 @@ public sealed class FeedService(
     IPersonRepository personRepository,
     IAnalyticsRepository analyticsRepository,
     ICurrentUserService currentUserService,
-    INotificationService notificationService) : IFeedService
+    INotificationService notificationService,
+    IPermissionService permissionService) : IFeedService
 {
     public async Task<PagedResult<FeedPostDto>> GetFeedAsync(
         CursorPageRequest request,
@@ -74,6 +75,8 @@ public sealed class FeedService(
         var authorId = await currentUserService.GetPersonIdAsync(cancellationToken);
         var now = DateTimeOffset.UtcNow;
 
+        if (request.Type == PostType.News && !await permissionService.HasPermissionAsync("news.manage", cancellationToken: cancellationToken) && !await permissionService.HasPermissionAsync("feed.manage", cancellationToken: cancellationToken)) throw new UnauthorizedAccessException("Permiss?o necess?ria: news.manage ou feed.manage.");
+
         if (request.Type == PostType.Poll)
         {
             return await CreatePollPostAsync(request, authorId, now, cancellationToken);
@@ -122,8 +125,8 @@ public sealed class FeedService(
 
         var message = CelebrationCreateParser.NormalizeMessage(request.Content);
         var content = string.IsNullOrWhiteSpace(message)
-            ? $"Parabéns, {celebrated.Name}! 🎂"
-            : $"Parabéns, {celebrated.Name}! {message}";
+            ? $"ParabÃƒÆ’Ã‚Â©ns, {celebrated.Name}! ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Å¡"
+            : $"ParabÃƒÆ’Ã‚Â©ns, {celebrated.Name}! {message}";
 
         var metadata = new Dictionary<string, object?>
         {
@@ -173,12 +176,12 @@ public sealed class FeedService(
 
         if (post.AuthorId != personId)
         {
-            throw new UnauthorizedAccessException("Você só pode excluir publicações criadas por você.");
+            throw new UnauthorizedAccessException("VocÃƒÆ’Ã‚Âª sÃƒÆ’Ã‚Â³ pode excluir publicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Âµes criadas por vocÃƒÆ’Ã‚Âª.");
         }
 
         if (post.Type is PostType.Comunicado or PostType.News or PostType.MoodCheck or PostType.Celebration)
         {
-            throw new UnauthorizedAccessException("Este tipo de publicação não pode ser excluído pelo feed.");
+            throw new UnauthorizedAccessException("Este tipo de publicaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o nÃƒÆ’Ã‚Â£o pode ser excluÃƒÆ’Ã‚Â­do pelo feed.");
         }
 
         var deleted = await feedRepository.SoftDeleteAsync(postId, cancellationToken);
@@ -563,4 +566,12 @@ public sealed class FeedService(
                 hrefObj?.ToString());
         }).ToList();
     }
+    public async Task SetPinnedAsync(Guid postId, bool isPinned, CancellationToken cancellationToken = default)
+    {
+        var post = await feedRepository.GetByIdAsync(postId, cancellationToken) ?? throw new KeyNotFoundException($"Post {postId} was not found.");
+        post.IsPinned = isPinned;
+        post.UpdatedAt = DateTimeOffset.UtcNow;
+        await feedRepository.SaveChangesAsync(cancellationToken);
+    }
+
 }

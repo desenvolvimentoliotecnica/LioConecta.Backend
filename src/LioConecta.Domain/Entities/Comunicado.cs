@@ -23,6 +23,14 @@ public class Comunicado : BaseEntity
 
     public bool IsMandatory { get; set; }
 
+    public ComunicadoStatus Status { get; set; } = ComunicadoStatus.Published;
+
+    public DateTimeOffset? ScheduledAt { get; set; }
+
+    public ComunicadoAudienceType AudienceType { get; set; } = ComunicadoAudienceType.All;
+
+    public string AudienceDepartmentIdsJson { get; set; } = "[]";
+
     public DateTimeOffset? PublishedAt { get; set; }
 
     public DateTimeOffset? ArchivedAt { get; set; }

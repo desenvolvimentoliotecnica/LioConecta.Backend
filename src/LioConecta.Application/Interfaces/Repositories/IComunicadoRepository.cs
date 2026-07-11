@@ -9,6 +9,8 @@ public interface IComunicadoRepository
     Task<PagedResult<Comunicado>> GetPageAsync(
         ComunicadoKind? kind,
         bool archivedOnly,
+        Guid? viewerDepartmentId,
+        bool includeUnpublished,
         CursorPageRequest request,
         CancellationToken cancellationToken = default);
 
@@ -32,4 +34,15 @@ public interface IComunicadoRepository
     Task<IReadOnlyList<Comunicado>> GetRecentActiveAsync(
         int limit,
         CancellationToken cancellationToken = default);
+
+    Task<Guid?> GetDepartmentIdAsync(Guid personId, CancellationToken cancellationToken = default);
+    Task<Comunicado?> GetTrackedByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Comunicado>> GetScheduledDueAsync(DateTimeOffset now, CancellationToken cancellationToken = default);
+    Task AddAsync(Comunicado comunicado, CancellationToken cancellationToken = default);
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
+    Task<bool> HasFeedPostAsync(Guid comunicadoId, CancellationToken cancellationToken = default);
+    Task AddFeedPostAsync(Comunicado comunicado, DateTimeOffset timestamp, CancellationToken cancellationToken = default);
+    Task<ComunicadoMetrics> GetMetricsAsync(Comunicado comunicado, CancellationToken cancellationToken = default);
 }
+
+public sealed record ComunicadoMetrics(int EligibleReaders, int ReadCount);

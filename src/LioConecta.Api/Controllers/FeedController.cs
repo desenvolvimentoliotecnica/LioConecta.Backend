@@ -1,4 +1,5 @@
 using LioConecta.Application.Common;
+using LioConecta.Api.Authorization;
 using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -58,6 +59,18 @@ public sealed class FeedController(
         {
             return NotFound(new { message = ex.Message });
         }
+    }
+
+    [HttpGet("news")]
+    public async Task<IActionResult> GetNews([FromQuery] int limit = 10, CancellationToken cancellationToken = default) =>
+        Ok(await feedService.GetNewsAsync(limit, cancellationToken));
+
+    [HttpPatch("posts/{id:guid}/pin")]
+    [RequirePermission("feed.manage")]
+    public async Task<IActionResult> SetPinned(Guid id, SetPinnedRequest request, CancellationToken cancellationToken)
+    {
+        await feedService.SetPinnedAsync(id, request.IsPinned, cancellationToken);
+        return NoContent();
     }
 
     [HttpDelete("posts/{id:guid}")]
@@ -136,7 +149,7 @@ public sealed class FeedController(
     {
         if (string.IsNullOrWhiteSpace(mediaUrl))
         {
-            return BadRequest(new { message = "mediaUrl é obrigatório." });
+            return BadRequest(new { message = "mediaUrl Ã© obrigatÃ³rio." });
         }
 
         try

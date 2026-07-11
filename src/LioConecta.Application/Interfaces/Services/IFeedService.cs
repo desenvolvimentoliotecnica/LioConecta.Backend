@@ -13,6 +13,8 @@ public interface IFeedService
 
     Task DeletePostAsync(Guid postId, CancellationToken cancellationToken = default);
 
+    Task SetPinnedAsync(Guid postId, bool isPinned, CancellationToken cancellationToken = default);
+
     Task<CommentDto> AddCommentAsync(Guid postId, CreateCommentRequest request, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<CommentDto>> GetPostMediaCommentsAsync(

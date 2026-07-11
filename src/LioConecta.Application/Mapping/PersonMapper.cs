@@ -340,6 +340,12 @@ public static class FeedMapper
 
 public static class ComunicadoMapper
 {
+    private static IReadOnlyList<Guid> AudienceDepartments(Comunicado comunicado) =>
+        JsonMapper.DeserializeObjectDictionary($"{{\"ids\":{comunicado.AudienceDepartmentIdsJson}}}")
+            .TryGetValue("ids", out var ids)
+            ? JsonSerializer.Deserialize<IReadOnlyList<Guid>>(JsonSerializer.Serialize(ids)) ?? []
+            : [];
+
     public static ComunicadoListItemDto ToListItem(Comunicado comunicado, bool isRead)
         => new(
             comunicado.Id,
@@ -350,6 +356,10 @@ public static class ComunicadoMapper
             PersonMapper.ToSummary(comunicado.Author ?? new Person { Name = "Desconhecido" }),
             comunicado.HeroImageUrl,
             comunicado.IsMandatory,
+            comunicado.Status,
+            comunicado.ScheduledAt,
+            comunicado.AudienceType,
+            AudienceDepartments(comunicado),
             comunicado.PublishedAt,
             comunicado.ArchivedAt,
             isRead);
@@ -365,6 +375,10 @@ public static class ComunicadoMapper
             PersonMapper.ToSummary(comunicado.Author ?? new Person { Name = "Desconhecido" }),
             comunicado.HeroImageUrl,
             comunicado.IsMandatory,
+            comunicado.Status,
+            comunicado.ScheduledAt,
+            comunicado.AudienceType,
+            AudienceDepartments(comunicado),
             comunicado.PublishedAt,
             isRead);
 }

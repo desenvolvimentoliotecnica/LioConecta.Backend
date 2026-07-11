@@ -47,6 +47,8 @@ try
     builder.Services.AddHostedService<LeaveWriteBackWorker>();
     builder.Services.AddHostedService<PontoWriteBackWorker>();
     builder.Services.AddHostedService<EmailDispatchWorker>();
+    builder.Services.AddHostedService<ComunicadoScheduleWorker>();
+    builder.Services.AddHostedService<NewHireAnnouncementWorker>();
 
     var host = builder.Build();
     await host.RunAsync();

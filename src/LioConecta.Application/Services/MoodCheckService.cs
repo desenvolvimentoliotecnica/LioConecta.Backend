@@ -82,12 +82,30 @@ public sealed class MoodCheckService(
         }
 
         var entries = await moodCheckRepository.GetByDateRangeAsync(rangeFrom, rangeTo, cancellationToken);
-        var byMood = entries
+        var byMood = CountByMood(entries);
+
+        var daily = entries
+            .GroupBy(e => e.CheckDate)
+            .OrderBy(g => g.Key)
+            .Select(g => new MoodDayBucketDto(g.Key, g.Count(), CountByMood(g)))
+            .ToList();
+
+        var byDepartment = entries
+            .GroupBy(e => string.IsNullOrWhiteSpace(e.Person?.Department?.Name)
+                ? "Sem departamento"
+                : e.Person!.Department!.Name.Trim())
+            .OrderByDescending(g => g.Count())
+            .ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new MoodDepartmentBucketDto(g.Key, g.Count(), CountByMood(g)))
+            .ToList();
+
+        return new MoodMetricsDto(rangeFrom, rangeTo, entries.Count, byMood, daily, byDepartment);
+    }
+
+    private static IReadOnlyDictionary<string, int> CountByMood(IEnumerable<MoodCheck> entries) =>
+        entries
             .GroupBy(e => e.Mood.ToString())
             .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
-
-        return new MoodMetricsDto(rangeFrom, rangeTo, entries.Count, byMood);
-    }
 
     internal static DateOnly GetCompanyToday()
     {

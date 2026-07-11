@@ -11,6 +11,8 @@ public interface IFeedRepository
 
     Task<bool> SoftDeleteAsync(Guid id, CancellationToken cancellationToken = default);
 
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
+
     Task AddPostAsync(FeedPost post, CancellationToken cancellationToken = default);
 
     Task AddPostWithCelebrationAsync(FeedPost post, Celebration celebration, CancellationToken cancellationToken = default);

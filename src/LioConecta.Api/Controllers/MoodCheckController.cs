@@ -38,7 +38,7 @@ public sealed class MoodCheckController(IMoodCheckService moodCheckService) : Co
     }
 
     [HttpGet("metrics")]
-    [Authorize(Policy = AuthPolicies.RequireHR)]
+    [RequirePermission("mood.analytics")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<MoodMetricsDto>> GetMetrics(
         [FromQuery] DateOnly? from,

@@ -42,6 +42,11 @@ public interface INotificationService
         Person author,
         CancellationToken cancellationToken = default);
 
+    Task NotifyNewHireAsync(
+        FeedPost post,
+        Person newHire,
+        CancellationToken cancellationToken = default);
+
     Task NotifyFeedPostLikedAsync(
         FeedPost post,
         Person liker,

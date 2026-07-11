@@ -1,14 +1,10 @@
 using LioConecta.Application.Common;
 using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Services;
-using LioConecta.Application.Mapping;
 using LioConecta.Api.Authorization;
-using LioConecta.Domain.Entities;
 using LioConecta.Domain.Enums;
-using LioConecta.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
 
 namespace LioConecta.Api.Controllers;
 
@@ -16,10 +12,7 @@ namespace LioConecta.Api.Controllers;
 [Route("api/v1/comunicados")]
 [Authorize]
 public sealed class ComunicadosController(
-    IComunicadoService comunicadoService,
-    INotificationService notificationService,
-    AppDbContext dbContext,
-    ICurrentUserService currentUserService) : ControllerBase
+    IComunicadoService comunicadoService) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -28,11 +21,13 @@ public sealed class ComunicadosController(
         [FromQuery] string? cursor,
         [FromQuery] int limit = 20,
         [FromQuery] bool archived = false,
+        [FromQuery] bool manage = false,
         CancellationToken cancellationToken = default)
     {
         var page = await comunicadoService.ListAsync(
             kind,
             archived,
+            manage,
             new CursorPageRequest { Cursor = cursor, Limit = limit },
             cancellationToken);
 
@@ -74,50 +69,43 @@ public sealed class ComunicadosController(
     }
 
     [HttpPost]
-    [Authorize(Policy = AuthPolicies.RequireAdmin)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     public async Task<IActionResult> Create(
         [FromBody] CreateComunicadoRequest request,
         CancellationToken cancellationToken)
     {
-        var authorId = await currentUserService.GetPersonIdAsync(cancellationToken);
-        var now = DateTimeOffset.UtcNow;
-        var comunicadoId = Guid.NewGuid();
-
-        var comunicado = new Comunicado
-        {
-            Id = comunicadoId,
-            Kind = request.Kind,
-            Title = request.Title.Trim(),
-            Slug = SlugHelper.FromTitle(request.Title, comunicadoId),
-            Excerpt = request.Excerpt?.Trim(),
-            ContentJson = JsonSerializer.Serialize(request.Content ?? new Dictionary<string, object?>()),
-            AuthorId = authorId,
-            HeroImageUrl = request.HeroImageUrl,
-            IsMandatory = request.IsMandatory,
-            PublishedAt = request.PublishedAt ?? now,
-            CreatedAt = now,
-            UpdatedAt = now,
-        };
-
-        dbContext.Comunicados.Add(comunicado);
-        dbContext.FeedPosts.Add(ComunicadoFeedMapper.CreateFeedPost(comunicado, now));
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        await dbContext.Entry(comunicado).Reference(c => c.Author).LoadAsync(cancellationToken);
-
-        await notificationService.NotifyComunicadoCreatedAsync(comunicado, cancellationToken);
-
-        var dto = ComunicadoMapper.ToDto(comunicado, isRead: false);
-        return CreatedAtAction(nameof(GetById), new { id = comunicado.Id }, dto);
+        var comunicado = await comunicadoService.CreateAsync(request, cancellationToken);
+        return CreatedAtAction(nameof(GetById), new { id = comunicado.Id }, comunicado);
     }
-}
 
-public sealed record CreateComunicadoRequest(
-    ComunicadoKind Kind,
-    string Title,
-    string? Excerpt,
-    IReadOnlyDictionary<string, object?>? Content,
-    string? HeroImageUrl,
-    bool IsMandatory,
-    DateTimeOffset? PublishedAt);
+    [HttpPatch("{id:guid}")]
+    [RequirePermission("comunicados.manage")]
+    public async Task<ActionResult<ComunicadoDto>> Update(
+        Guid id,
+        [FromBody] UpdateComunicadoRequest request,
+        CancellationToken cancellationToken) =>
+        Ok(await comunicadoService.UpdateAsync(id, request, cancellationToken));
+
+    [HttpPost("{id:guid}/publish")]
+    [RequirePermission("comunicados.manage")]
+    public async Task<ActionResult<ComunicadoDto>> Publish(Guid id, CancellationToken cancellationToken) =>
+        Ok(await comunicadoService.PublishAsync(id, cancellationToken));
+
+    [HttpPost("{id:guid}/archive")]
+    [RequirePermission("comunicados.manage")]
+    public async Task<ActionResult<ComunicadoDto>> Archive(Guid id, CancellationToken cancellationToken) =>
+        Ok(await comunicadoService.ArchiveAsync(id, cancellationToken));
+
+    [HttpPost("{id:guid}/schedule")]
+    [RequirePermission("comunicados.manage")]
+    public async Task<ActionResult<ComunicadoDto>> Schedule(
+        Guid id,
+        [FromBody] ScheduleComunicadoRequest request,
+        CancellationToken cancellationToken) =>
+        Ok(await comunicadoService.ScheduleAsync(id, request.ScheduledAt, cancellationToken));
+
+    [HttpGet("{id:guid}/metrics")]
+    [RequirePermission("comunicados.manage")]
+    public async Task<ActionResult<ComunicadoMetricsDto>> GetMetrics(Guid id, CancellationToken cancellationToken) =>
+        Ok(await comunicadoService.GetMetricsAsync(id, cancellationToken));
+}

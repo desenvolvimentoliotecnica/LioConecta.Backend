@@ -22,6 +22,8 @@ public sealed record CommentDto(
     PersonSummaryDto Author,
     DateTimeOffset CreatedAt);
 
+public sealed record SetPinnedRequest(bool IsPinned);
+
 public sealed record CreatePostRequest(
     PostType Type,
     string Content,

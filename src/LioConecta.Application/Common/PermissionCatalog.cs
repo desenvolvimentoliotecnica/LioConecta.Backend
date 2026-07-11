@@ -64,6 +64,18 @@ public static class PermissionCatalog
             "Notícias",
             "Publicar e editar notícias corporativas.",
             GlobalOnly, "/noticias"),
+        P("mood.analytics", BusinessArea.RH,
+            "Clima organizacional",
+            "Consultar agregados anônimos do check-in diário de humor (sem identificação individual).",
+            GlobalOnly, "/servicos/clima"),
+        P("feedback.submit", BusinessArea.Core,
+            "Enviar feedback",
+            "Enviar sugestões, elogios e reclamações pelo canal formal.",
+            SelfOnly, "/feedback"),
+        P("feedback.triage", BusinessArea.RH,
+            "Triagem de feedback",
+            "Listar, analisar e responder feedbacks formais dos colaboradores.",
+            GlobalOnly, "/feedback/triagem"),
 
         // ── Comunicados ──────────────────────────────────────────────────────
         P("comunicados.read", BusinessArea.Marketing,

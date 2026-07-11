@@ -20,7 +20,9 @@ public sealed class WorkerTriggerService(
     ILeaveSyncService leaveSyncService,
     LeaveWriteBackService leaveWriteBackService,
     PontoWriteBackService pontoWriteBackService,
-    IEmailDispatchService emailDispatchService) : IWorkerTriggerService
+    IEmailDispatchService emailDispatchService,
+    IComunicadoService comunicadoService,
+    INewHireAnnouncementService newHireAnnouncementService) : IWorkerTriggerService
 {
     public Task<IReadOnlyList<WorkerDefinitionDto>> ListWorkersAsync(CancellationToken cancellationToken)
     {
@@ -152,7 +154,7 @@ public sealed class WorkerTriggerService(
                 async (context, ct) =>
                 {
                     var processed = await leaveWriteBackService.ProcessPendingAsync(ct);
-                    await context.LogInfoAsync($"Processados {processed} write-back(s) de férias.", ct);
+                    await context.LogInfoAsync($"Processados {processed} write-back(s) de fÃƒÂ©rias.", ct);
                 },
                 cancellationToken),
             WorkerKeys.PontoWriteBack => workerRunRecorder.ExecuteAsync(
@@ -175,6 +177,22 @@ public sealed class WorkerTriggerService(
                         ct);
                 },
                 cancellationToken),
+            WorkerKeys.ComunicadoSchedule => workerRunRecorder.ExecuteAsync(
+                workerKey,
+                "manual",
+                async (context, ct) =>
+                {
+                    var published = await comunicadoService.PublishScheduledAsync(ct);
+                    await context.LogInfoAsync($"Published {published} scheduled comunicado(s).", ct);
+                },
+                cancellationToken),
+            WorkerKeys.NewHireAnnouncement => workerRunRecorder.ExecuteAsync(
+                workerKey, "manual",
+                async (context, ct) =>
+                {
+                    var announced = await newHireAnnouncementService.AnnounceRecentHiresAsync(ct);
+                    await context.LogInfoAsync($"Announced {announced} new hire(s).", ct);
+                }, cancellationToken),
             _ => throw new ArgumentException($"Unknown worker key: {workerKey}", nameof(workerKey))
         };
     }

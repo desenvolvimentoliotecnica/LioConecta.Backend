@@ -23,6 +23,8 @@ public static class DependencyInjection
         services.AddScoped<ISearchService, SearchService>();
         services.AddScoped<IActivityService, ActivityService>();
         services.AddScoped<IMoodCheckService, MoodCheckService>();
+        services.AddScoped<IFeedbackService, FeedbackService>();
+        services.AddScoped<INewHireAnnouncementService, NewHireAnnouncementService>();
         services.AddScoped<IAppSettingService, AppSettingService>();
         services.AddScoped<IPayslipService, PayslipService>();
         services.AddScoped<IBenefitService, BenefitService>();

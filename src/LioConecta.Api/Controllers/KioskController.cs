@@ -24,8 +24,8 @@ public sealed class KioskController(
         CancellationToken cancellationToken = default)
     {
         var result = await feedService.GetFeedAsync(
-            new CursorPageRequest { Cursor = cursor, Limit = limit },
-            cancellationToken);
+            request: new CursorPageRequest { Cursor = cursor, Limit = limit },
+            cancellationToken: cancellationToken);
         return Ok(result);
     }
 
@@ -46,6 +46,7 @@ public sealed class KioskController(
         var result = await comunicadoService.ListAsync(
             kind,
             archivedOnly: false,
+            manage: false,
             new CursorPageRequest { Cursor = cursor, Limit = limit },
             cancellationToken);
         return Ok(result);

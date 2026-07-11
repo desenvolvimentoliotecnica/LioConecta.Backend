@@ -110,7 +110,7 @@ public sealed class NotificationService(
         await BroadcastAsync(
             () => Task.FromResult(recipients),
             NotificationType.ServiceRequest,
-            string.IsNullOrWhiteSpace(title) ? "Nova solicitação de férias" : title.Trim(),
+            string.IsNullOrWhiteSpace(title) ? "Nova solicitaÃ§Ã£o de fÃ©rias" : title.Trim(),
             summary.Trim(),
             href,
             cancellationToken);
@@ -133,7 +133,7 @@ public sealed class NotificationService(
         await BroadcastAsync(
             () => Task.FromResult(recipients),
             NotificationType.ServiceRequest,
-            string.IsNullOrWhiteSpace(title) ? "Nova solicitação de ajuste de ponto" : title.Trim(),
+            string.IsNullOrWhiteSpace(title) ? "Nova solicitaÃ§Ã£o de ajuste de ponto" : title.Trim(),
             summary.Trim(),
             href,
             cancellationToken);
@@ -145,10 +145,10 @@ public sealed class NotificationService(
         Person author,
         CancellationToken cancellationToken = default)
     {
-        // Sempre notifica o parabenizado — inclusive se autor == celebrado (auto-parabéns).
+        // Sempre notifica o parabenizado â€” inclusive se autor == celebrado (auto-parabÃ©ns).
         var now = DateTimeOffset.UtcNow;
         var title = celebrated.Id == author.Id
-            ? "Você publicou parabéns no feed"
+            ? "VocÃª publicou parabÃ©ns no feed"
             : $"{author.Name} te parabenizou";
         var notification = new Notification
         {
@@ -179,6 +179,9 @@ public sealed class NotificationService(
         }
     }
 
+    public Task NotifyNewHireAsync(FeedPost post, Person newHire, CancellationToken cancellationToken = default) =>
+        BroadcastToAllActivePersonsAsync(NotificationType.Feed, "Novo colaborador", $"D? as boas-vindas a {newHire.Name.Trim()}!", $"/?post={post.Id}", cancellationToken);
+
     public async Task NotifyFeedPostLikedAsync(
         FeedPost post,
         Person liker,
@@ -207,7 +210,7 @@ public sealed class NotificationService(
             Id = Guid.NewGuid(),
             PersonId = author.Id,
             Type = NotificationType.Feed,
-            Title = $"{liker.Name.Trim()} curtiu sua publicação",
+            Title = $"{liker.Name.Trim()} curtiu sua publicaÃ§Ã£o",
             Body = string.IsNullOrWhiteSpace(body) ? "Veja no feed." : body,
             Href = $"/?post={post.Id}",
             IsRead = false,
@@ -260,8 +263,8 @@ public sealed class NotificationService(
             Id = Guid.NewGuid(),
             PersonId = author.Id,
             Type = NotificationType.Feed,
-            Title = $"{commenter.Name.Trim()} comentou sua publicação",
-            Body = string.IsNullOrWhiteSpace(body) ? "Veja o comentário no feed." : body,
+            Title = $"{commenter.Name.Trim()} comentou sua publicaÃ§Ã£o",
+            Body = string.IsNullOrWhiteSpace(body) ? "Veja o comentÃ¡rio no feed." : body,
             Href = $"/?post={post.Id}",
             IsRead = false,
             CreatedAt = now,
@@ -298,11 +301,11 @@ public sealed class NotificationService(
         }
 
         var href = $"/unilio/admin/aprovacoes/{courseId}";
-        var body = $"{submitterName.Trim()} enviou o curso \"{courseTitle.Trim()}\" para aprovação.";
+        var body = $"{submitterName.Trim()} enviou o curso \"{courseTitle.Trim()}\" para aprovaÃ§Ã£o.";
         await BroadcastAsync(
             () => Task.FromResult(recipients),
             NotificationType.System,
-            "Curso aguardando aprovação",
+            "Curso aguardando aprovaÃ§Ã£o",
             body,
             href,
             cancellationToken);
@@ -345,7 +348,7 @@ public sealed class NotificationService(
         var href = $"/unilio/curso/{course.Id}";
         return BroadcastToAllActivePersonsAsync(
             NotificationType.System,
-            "Novo curso disponível",
+            "Novo curso disponÃ­vel",
             course.Title.Trim(),
             href,
             cancellationToken);
@@ -391,13 +394,13 @@ public sealed class NotificationService(
 
         var context = string.IsNullOrWhiteSpace(moduleTitle)
             ? $"curso \"{courseTitle.Trim()}\""
-            : $"módulo \"{moduleTitle.Trim()}\" do curso \"{courseTitle.Trim()}\"";
+            : $"mÃ³dulo \"{moduleTitle.Trim()}\" do curso \"{courseTitle.Trim()}\"";
         var href = $"/unilio/instrutor/duvidas?question={questionId}";
-        var body = $"{learnerName.Trim()} enviou uma dúvida sobre o {context}.";
+        var body = $"{learnerName.Trim()} enviou uma dÃºvida sobre o {context}.";
         await BroadcastAsync(
             () => Task.FromResult<IReadOnlyList<Person>>([instructor]),
             NotificationType.System,
-            "Nova dúvida de aluno",
+            "Nova dÃºvida de aluno",
             body,
             href,
             cancellationToken);
@@ -418,13 +421,13 @@ public sealed class NotificationService(
 
         var context = string.IsNullOrWhiteSpace(moduleTitle)
             ? $"curso \"{courseTitle.Trim()}\""
-            : $"módulo \"{moduleTitle.Trim()}\"";
+            : $"mÃ³dulo \"{moduleTitle.Trim()}\"";
         var href = $"/unilio/minhas-duvidas?question={questionId}";
-        var body = $"O instrutor respondeu sua dúvida sobre o {context}.";
+        var body = $"O instrutor respondeu sua dÃºvida sobre o {context}.";
         await BroadcastAsync(
             () => Task.FromResult<IReadOnlyList<Person>>([learner]),
             NotificationType.System,
-            "Resposta à sua dúvida",
+            "Resposta Ã  sua dÃºvida",
             body,
             href,
             cancellationToken);
@@ -446,8 +449,8 @@ public sealed class NotificationService(
         await BroadcastAsync(
             () => Task.FromResult<IReadOnlyList<Person>>([manager]),
             NotificationType.System,
-            "Aprovação de grupo pendente",
-            $"{requesterName.Trim()} solicitou a criação do grupo \"{groupName.Trim()}\".",
+            "AprovaÃ§Ã£o de grupo pendente",
+            $"{requesterName.Trim()} solicitou a criaÃ§Ã£o do grupo \"{groupName.Trim()}\".",
             "/grupos/aprovacoes",
             cancellationToken);
     }
@@ -497,7 +500,7 @@ public sealed class NotificationService(
             () => Task.FromResult<IReadOnlyList<Person>>([owner]),
             NotificationType.System,
             "Pedido de grupo expirado",
-            $"O pedido do grupo \"{groupName.Trim()}\" expirou. Você pode solicitar aprovação novamente.",
+            $"O pedido do grupo \"{groupName.Trim()}\" expirou. VocÃª pode solicitar aprovaÃ§Ã£o novamente.",
             "/grupos/meus-grupos",
             cancellationToken);
     }
@@ -552,7 +555,7 @@ public sealed class NotificationService(
         await BroadcastAsync(
             () => Task.FromResult(recipients),
             NotificationType.Feed,
-            "Novo tópico no grupo",
+            "Novo tÃ³pico no grupo",
             $"{authorName.Trim()} criou \"{topicTitle.Trim()}\" em \"{groupName.Trim()}\".",
             $"/grupos/{groupId}?tab=topicos&topic={topicId}",
             cancellationToken);
@@ -581,7 +584,7 @@ public sealed class NotificationService(
         await BroadcastAsync(
             () => Task.FromResult(recipients),
             NotificationType.Feed,
-            "Nova resposta em tópico",
+            "Nova resposta em tÃ³pico",
             $"{authorName.Trim()} respondeu em \"{topicTitle.Trim()}\" ({groupName.Trim()}).",
             $"/grupos/{groupId}?tab=topicos&topic={topicId}",
             cancellationToken);
@@ -605,8 +608,8 @@ public sealed class NotificationService(
         await BroadcastAsync(
             () => Task.FromResult(recipients),
             NotificationType.System,
-            "Transferência de dono de grupo",
-            $"{fromOwnerName.Trim()} quer transferir a direção de \"{groupName.Trim()}\" para {toPersonName.Trim()}.",
+            "TransferÃªncia de dono de grupo",
+            $"{fromOwnerName.Trim()} quer transferir a direÃ§Ã£o de \"{groupName.Trim()}\" para {toPersonName.Trim()}.",
             "/grupos/aprovacoes",
             cancellationToken);
     }
@@ -630,10 +633,10 @@ public sealed class NotificationService(
             return;
         }
 
-        var title = approved ? "Transferência de dono aprovada" : "Transferência de dono rejeitada";
+        var title = approved ? "TransferÃªncia de dono aprovada" : "TransferÃªncia de dono rejeitada";
         var body = approved
-            ? $"A direção do grupo \"{groupName.Trim()}\" foi transferida."
-            : $"A transferência do grupo \"{groupName.Trim()}\" foi rejeitada."
+            ? $"A direÃ§Ã£o do grupo \"{groupName.Trim()}\" foi transferida."
+            : $"A transferÃªncia do grupo \"{groupName.Trim()}\" foi rejeitada."
               + (string.IsNullOrWhiteSpace(reason) ? "" : $" Motivo: {reason.Trim()}");
         await BroadcastAsync(
             () => Task.FromResult(recipients),

@@ -52,6 +52,8 @@ public static class RoleTemplateCatalog
         ("unilio.events.register", DataScope.Self),
         ("unilio.skills.read", DataScope.Self),
         ("unilio.recommendations.read", DataScope.Self),
+        ("comunicados.read", DataScope.Global),
+        ("feedback.submit", DataScope.Self),
     ];
 
     public static IReadOnlyList<RoleTemplateDefinition> All() =>
@@ -76,6 +78,8 @@ public static class RoleTemplateCatalog
                 ("ponto.admin", DataScope.Global),
                 ("people.salary.read", DataScope.Global),
                 ("payslips.audit", DataScope.Global),
+                ("mood.analytics", DataScope.Global),
+                ("feedback.triage", DataScope.Global),
             ]).ToArray()),
         Role("TI", "Tecnologia da Informação", "Operações de TI", BusinessArea.TI, true, false,
             EmployeeBase.Concat([
@@ -106,6 +110,11 @@ public static class RoleTemplateCatalog
                     ("compass.access", DataScope.Global), ("compass.read", DataScope.Global), ("compass.manage", DataScope.Global),
                     ("compass.financial.read", DataScope.Global), ("compass.financial.reconcile", DataScope.Global),
                     ("compass.export", DataScope.Global),
+                    ("feed.manage", DataScope.Global), ("news.manage", DataScope.Global),
+                    ("comunicados.publish.official", DataScope.Global), ("comunicados.publish.departmental", DataScope.Global),
+                    ("comunicados.publish.urgent", DataScope.Global), ("comunicados.manage", DataScope.Global),
+                    ("mood.analytics", DataScope.Global), ("feedback.triage", DataScope.Global),
+                    ("payslips.audit", DataScope.Global),
                 ]).Distinct().ToArray()),
         Role("AnalyticsViewer", "Analytics", "Observabilidade e auditoria", BusinessArea.Analytics, true, false,
             EmployeeBase.Concat([
@@ -120,7 +129,7 @@ public static class RoleTemplateCatalog
             ("benefits.manage", DataScope.Global), ("leave.manage", DataScope.Global), ("leave.approve", DataScope.Global),
             ("rh_requests.manage", DataScope.Global), ("transport.manage", DataScope.Global), ("ponto.manage", DataScope.Global),
             ("ponto.approve", DataScope.Global), ("ponto.admin", DataScope.Global), ("people.salary.read", DataScope.Global),
-            ("payslips.audit", DataScope.Global)),
+            ("payslips.audit", DataScope.Global), ("mood.analytics", DataScope.Global), ("feedback.triage", DataScope.Global)),
         KeyUser("KeyUser-Financeiro", "Key User Financeiro", BusinessArea.Financeiro,
             ("reimbursement.manage", DataScope.Global), ("travel_advance.manage", DataScope.Global)),
         KeyUser("KeyUser-Contabil", "Key User Contábil", BusinessArea.Contabil,

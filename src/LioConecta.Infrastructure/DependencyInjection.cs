@@ -69,6 +69,8 @@ public static class DependencyInjection
         services.AddScoped<IUserPreferenceRepository, UserPreferenceRepository>();
         services.AddScoped<ISearchRepository, SearchRepository>();
         services.AddScoped<IMoodCheckRepository, MoodCheckRepository>();
+        services.AddScoped<IFeedbackRepository, FeedbackRepository>();
+        services.AddScoped<INewHireAnnouncementRepository, NewHireAnnouncementRepository>();
         services.AddScoped<IAppSettingRepository, AppSettingRepository>();
         services.AddScoped<IComunicadoHeroImageRepository, ComunicadoHeroImageRepository>();
         services.AddScoped<IPayslipRepository, PayslipRepository>();

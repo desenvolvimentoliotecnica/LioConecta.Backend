@@ -15,9 +15,10 @@ public sealed class SearchController(ISearchService searchService) : ControllerB
     public async Task<ActionResult<SearchResultDto>> Search(
         [FromQuery] string q,
         [FromQuery] int limit = 20,
+        [FromQuery] string? types = null,
         CancellationToken cancellationToken = default)
     {
-        var results = await searchService.SearchAsync(q, limit, cancellationToken);
+        var results = await searchService.SearchAsync(q, limit, types, cancellationToken);
         return Ok(results);
     }
 }

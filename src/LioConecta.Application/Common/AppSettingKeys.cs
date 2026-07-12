@@ -95,6 +95,7 @@ public static class AppSettingKeys
     public const string PontoNotifyRoles = "ponto.notify_roles";
     public const string WorkersPollClosureIntervalMinutes = "workers.poll_closure_interval_minutes";
     public const string WorkersComunicadoScheduleIntervalMinutes = "workers.comunicado_schedule_interval_minutes";
+    public const string WorkersNewsScheduleIntervalMinutes = "workers.news_schedule_interval_minutes";
     public const string WorkersNewHireAnnouncementIntervalMinutes = "workers.new_hire_announce_interval_minutes";
     public const string FeedNewHireAnnouncementEnabled = "feed.new_hire_announce.enabled";
     public const string FeedNewHireAnnouncementWindowDays = "feed.new_hire_announce.window_days";

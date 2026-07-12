@@ -22,6 +22,7 @@ public sealed class WorkerTriggerService(
     PontoWriteBackService pontoWriteBackService,
     IEmailDispatchService emailDispatchService,
     IComunicadoService comunicadoService,
+    IFeedService feedService,
     INewHireAnnouncementService newHireAnnouncementService) : IWorkerTriggerService
 {
     public Task<IReadOnlyList<WorkerDefinitionDto>> ListWorkersAsync(CancellationToken cancellationToken)
@@ -184,6 +185,15 @@ public sealed class WorkerTriggerService(
                 {
                     var published = await comunicadoService.PublishScheduledAsync(ct);
                     await context.LogInfoAsync($"Published {published} scheduled comunicado(s).", ct);
+                },
+                cancellationToken),
+            WorkerKeys.NewsSchedule => workerRunRecorder.ExecuteAsync(
+                workerKey,
+                "manual",
+                async (context, ct) =>
+                {
+                    var published = await feedService.PublishScheduledNewsAsync(ct);
+                    await context.LogInfoAsync($"Published {published} scheduled news post(s).", ct);
                 },
                 cancellationToken),
             WorkerKeys.NewHireAnnouncement => workerRunRecorder.ExecuteAsync(

@@ -87,6 +87,21 @@ public sealed class FeedService(
             return await CreateCelebrationPostAsync(request, authorId, now, cancellationToken);
         }
 
+        DateTimeOffset? scheduledAt = null;
+        if (request.ScheduledAt.HasValue)
+        {
+            if (request.Type != PostType.News)
+            {
+                throw new ArgumentException("Agendamento só é suportado para notícias.", nameof(request));
+            }
+
+            var candidate = request.ScheduledAt.Value.ToUniversalTime();
+            if (candidate > now.AddMinutes(1))
+            {
+                scheduledAt = candidate;
+            }
+        }
+
         var post = new FeedPost
         {
             Id = Guid.NewGuid(),
@@ -95,6 +110,7 @@ public sealed class FeedService(
             Content = request.Content.Trim(),
             MetadataJson = JsonMapper.SerializeObjectDictionary(
                 FeedPostMediaHelper.NormalizeMetadataForCreate(request.Metadata)),
+            ScheduledAt = scheduledAt,
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -102,6 +118,12 @@ public sealed class FeedService(
         await feedRepository.AddPostAsync(post, cancellationToken);
         var saved = await feedRepository.GetByIdAsync(post.Id, cancellationToken)
             ?? throw new InvalidOperationException($"Post {post.Id} was not found after save.");
+
+        if (saved.Type == PostType.News && !scheduledAt.HasValue)
+        {
+            await notificationService.NotifyNewsPublishedAsync(saved, cancellationToken);
+        }
+
         return FeedMapper.ToDto(saved, authorId);
     }
 
@@ -556,16 +578,53 @@ public sealed class FeedService(
             metadata.TryGetValue("heroImageUrl", out var heroObj);
             metadata.TryGetValue("href", out var hrefObj);
 
+            var title = titleObj?.ToString()?.Trim();
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                title = TruncateForDisplay(post.Content, 120);
+            }
+
+            var excerpt = excerptObj?.ToString()?.Trim();
+            if (string.IsNullOrWhiteSpace(excerpt))
+            {
+                excerpt = TruncateForDisplay(post.Content, 240);
+            }
+
             return new NewsItemDto(
                 post.Id,
-                titleObj?.ToString() ?? post.Content,
-                excerptObj?.ToString() ?? string.Empty,
+                title,
+                excerpt,
                 heroObj?.ToString(),
                 PersonMapper.ToSummary(post.Author ?? new Person { Name = "Desconhecido" }),
                 post.CreatedAt,
-                hrefObj?.ToString());
+                hrefObj?.ToString(),
+                post.IsPinned);
         }).ToList();
     }
+
+    public async Task<int> PublishScheduledNewsAsync(CancellationToken cancellationToken = default)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var due = await feedRepository.GetScheduledNewsDueAsync(now, cancellationToken);
+        foreach (var post in due)
+        {
+            post.ScheduledAt = null;
+            post.CreatedAt = now;
+            post.UpdatedAt = now;
+        }
+
+        if (due.Count > 0)
+        {
+            await feedRepository.SaveChangesAsync(cancellationToken);
+            foreach (var post in due)
+            {
+                await notificationService.NotifyNewsPublishedAsync(post, cancellationToken);
+            }
+        }
+
+        return due.Count;
+    }
+
     public async Task SetPinnedAsync(Guid postId, bool isPinned, CancellationToken cancellationToken = default)
     {
         var post = await feedRepository.GetByIdAsync(postId, cancellationToken) ?? throw new KeyNotFoundException($"Post {postId} was not found.");
@@ -574,4 +633,24 @@ public sealed class FeedService(
         await feedRepository.SaveChangesAsync(cancellationToken);
     }
 
+    private static string TruncateForDisplay(string? value, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var normalized = value.Trim().Replace("\r\n", " ").Replace('\n', ' ').Replace('\r', ' ');
+        while (normalized.Contains("  ", StringComparison.Ordinal))
+        {
+            normalized = normalized.Replace("  ", " ", StringComparison.Ordinal);
+        }
+
+        if (normalized.Length <= maxLength)
+        {
+            return normalized;
+        }
+
+        return normalized[..(maxLength - 1)].TrimEnd() + "…";
+    }
 }

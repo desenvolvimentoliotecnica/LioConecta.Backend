@@ -20,7 +20,7 @@ public sealed class FeedRepository(AppDbContext db) : IFeedRepository
             .Include(p => p.Comments).ThenInclude(c => c.Author)
             .Include(p => p.Reactions).ThenInclude(r => r.Person)
             .AsNoTracking()
-            .Where(p => !p.IsDeleted)
+            .Where(p => !p.IsDeleted && (p.ScheduledAt == null || p.ScheduledAt <= DateTimeOffset.UtcNow))
             .AsQueryable();
 
         if (cursorCreatedAt.HasValue && cursorId.HasValue)
@@ -193,11 +193,29 @@ public sealed class FeedRepository(AppDbContext db) : IFeedRepository
         db.FeedPosts
             .Include(p => p.Author)
             .AsNoTracking()
-            .Where(p => p.Type == PostType.News && !p.IsDeleted)
+            .Where(p =>
+                p.Type == PostType.News &&
+                !p.IsDeleted &&
+                (p.ScheduledAt == null || p.ScheduledAt <= DateTimeOffset.UtcNow))
             .OrderByDescending(p => p.CreatedAt)
             .Take(Math.Clamp(limit, 1, 100))
             .ToListAsync(cancellationToken)
             .ContinueWith(t => (IReadOnlyList<FeedPost>)t.Result, cancellationToken);
+
+    public async Task<IReadOnlyList<FeedPost>> GetScheduledNewsDueAsync(
+        DateTimeOffset now,
+        CancellationToken cancellationToken = default)
+    {
+        var items = await db.FeedPosts
+            .Where(p =>
+                p.Type == PostType.News &&
+                !p.IsDeleted &&
+                p.ScheduledAt != null &&
+                p.ScheduledAt <= now)
+            .OrderBy(p => p.ScheduledAt)
+            .ToListAsync(cancellationToken);
+        return items;
+    }
 
     public Task<IReadOnlyList<Poll>> GetPollsPendingClosureNotificationAsync(
         CancellationToken cancellationToken = default) =>

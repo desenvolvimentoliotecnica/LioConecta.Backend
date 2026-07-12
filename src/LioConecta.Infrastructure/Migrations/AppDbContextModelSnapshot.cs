@@ -1492,6 +1492,9 @@ namespace LioConecta.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTimeOffset?>("ScheduledAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
@@ -1503,6 +1506,8 @@ namespace LioConecta.Infrastructure.Migrations
                     b.HasIndex("AuthorId");
 
                     b.HasIndex("CreatedAt");
+
+                    b.HasIndex("ScheduledAt");
 
                     b.HasIndex("Type");
 
@@ -1548,6 +1553,9 @@ namespace LioConecta.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<Guid?>("TargetPersonId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1557,7 +1565,11 @@ namespace LioConecta.Infrastructure.Migrations
 
                     b.HasIndex("AuthorId");
 
+                    b.HasIndex("TargetPersonId");
+
                     b.HasIndex("Status", "CreatedAt");
+
+                    b.HasIndex("TargetPersonId", "CreatedAt");
 
                     b.ToTable("feedback_submissions");
                 });
@@ -4877,9 +4889,16 @@ namespace LioConecta.Infrastructure.Migrations
                         .HasForeignKey("AuthorId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("LioConecta.Domain.Entities.Person", "TargetPerson")
+                        .WithMany()
+                        .HasForeignKey("TargetPersonId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Assignee");
 
                     b.Navigation("Author");
+
+                    b.Navigation("TargetPerson");
                 });
 
             modelBuilder.Entity("LioConecta.Domain.Entities.Group", b =>

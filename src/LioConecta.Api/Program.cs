@@ -70,6 +70,7 @@ try
         builder.Services.AddHostedService<PontoWriteBackWorker>();
         builder.Services.AddHostedService<EmailDispatchWorker>();
         builder.Services.AddHostedService<ComunicadoScheduleWorker>();
+        builder.Services.AddHostedService<NewsScheduleWorker>();
         builder.Services.AddHostedService<NewHireAnnouncementWorker>();
     }
 

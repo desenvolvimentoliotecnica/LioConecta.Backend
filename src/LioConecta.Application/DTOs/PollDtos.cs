@@ -30,4 +30,5 @@ public sealed record NewsItemDto(
     string? HeroImageUrl,
     PersonSummaryDto Author,
     DateTimeOffset PublishedAt,
-    string? Href);
+    string? Href,
+    bool IsPinned);

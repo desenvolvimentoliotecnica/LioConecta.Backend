@@ -13,5 +13,6 @@ public static class WorkerKeys
     public const string PontoWriteBack = "ponto-writeback";
     public const string EmailDispatch = "email-dispatch";
     public const string ComunicadoSchedule = "comunicado-schedule";
+    public const string NewsSchedule = "news-schedule";
     public const string NewHireAnnouncement = "new-hire-announce";
 }

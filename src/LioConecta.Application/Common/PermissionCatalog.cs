@@ -70,11 +70,11 @@ public static class PermissionCatalog
             GlobalOnly, "/servicos/clima"),
         P("feedback.submit", BusinessArea.Core,
             "Enviar feedback",
-            "Enviar sugestões, elogios e reclamações pelo canal formal.",
+            "Enviar sugestões ao RH e feedback 1:1 para colegas (visível ao autor, à pessoa alvo e ao gestor dela).",
             SelfOnly, "/feedback"),
         P("feedback.triage", BusinessArea.RH,
             "Triagem de feedback",
-            "Listar, analisar e responder feedbacks formais dos colaboradores.",
+            "Listar, analisar e responder feedbacks do canal formal com o RH (não inclui 1:1).",
             GlobalOnly, "/feedback/triagem"),
 
         // ── Comunicados ──────────────────────────────────────────────────────

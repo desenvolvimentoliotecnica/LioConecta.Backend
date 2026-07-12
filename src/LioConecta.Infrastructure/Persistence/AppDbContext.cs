@@ -18,6 +18,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Celebration> Celebrations => Set<Celebration>();
     public DbSet<Comunicado> Comunicados => Set<Comunicado>();
     public DbSet<ComunicadoRead> ComunicadoReads => Set<ComunicadoRead>();
+    public DbSet<WikiArticle> WikiArticles => Set<WikiArticle>();
     public DbSet<NewHireAnnouncement> NewHireAnnouncements => Set<NewHireAnnouncement>();
     public DbSet<FeedbackSubmission> FeedbackSubmissions => Set<FeedbackSubmission>();
     public DbSet<Group> Groups => Set<Group>();
@@ -109,6 +110,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureDepartment(modelBuilder);
         ConfigureFeed(modelBuilder);
         ConfigureComunicado(modelBuilder);
+        ConfigureWiki(modelBuilder);
         ConfigureGroup(modelBuilder);
         ConfigureDocuments(modelBuilder);
         ConfigureBookmarkCatalog(modelBuilder);
@@ -357,6 +359,27 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasOne(r => r.Person)
                 .WithMany()
                 .HasForeignKey(r => r.PersonId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureWiki(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<WikiArticle>(entity =>
+        {
+            entity.HasIndex(a => a.Status);
+            entity.HasIndex(a => a.Category);
+            entity.HasIndex(a => a.UpdatedAt);
+            entity.HasIndex(a => a.AuthorId);
+            entity.HasIndex(a => a.Slug).IsUnique();
+            entity.Property(a => a.Slug).HasMaxLength(120);
+            entity.Property(a => a.Title).HasMaxLength(200);
+            entity.Property(a => a.Summary).HasMaxLength(500);
+            entity.Property(a => a.Category).HasMaxLength(64);
+
+            entity.HasOne(a => a.Author)
+                .WithMany()
+                .HasForeignKey(a => a.AuthorId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }

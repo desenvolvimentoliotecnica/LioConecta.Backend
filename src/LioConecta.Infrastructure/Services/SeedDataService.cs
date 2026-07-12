@@ -20,6 +20,7 @@ public sealed class SeedDataService(
         {
             await EnsureRmLinkedProfilesCleanAsync(cancellationToken);
             await EnsureComunicadosCatalogAsync(cancellationToken);
+            await EnsureWikiCatalogAsync(cancellationToken);
             await EnsureArchivedAtBackfillAsync(cancellationToken);
             await EnsureGroupsCatalogAsync(cancellationToken);
             await EnsurePayslipsCatalogAsync(cancellationToken);
@@ -162,6 +163,7 @@ public sealed class SeedDataService(
         };
 
         var comunicados = ComunicadoCatalogSeed.CreateAll(seedTime).ToArray();
+        var wikiArticles = WikiCatalogSeed.CreateAll(seedTime, SeedIds.JulioSchwartzman).ToArray();
 
         var feedPosts = new[]
         {
@@ -272,6 +274,7 @@ public sealed class SeedDataService(
         db.Departments.AddRange(departments);
         db.People.AddRange(people);
         db.Comunicados.AddRange(comunicados);
+        db.WikiArticles.AddRange(wikiArticles);
         db.FeedPosts.AddRange(feedPosts);
         db.Polls.Add(poll);
         db.Notifications.AddRange(notifications);
@@ -389,6 +392,42 @@ public sealed class SeedDataService(
 
         await db.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Seeded {Count} catalog comunicados.", added);
+    }
+
+    private async Task EnsureWikiCatalogAsync(CancellationToken cancellationToken)
+    {
+        var existingSlugs = await db.WikiArticles
+            .Select(a => a.Slug)
+            .ToListAsync(cancellationToken);
+
+        var existingSlugSet = existingSlugs.ToHashSet(StringComparer.Ordinal);
+        var seedTime = DateTimeOffset.UtcNow.AddDays(-30);
+        var added = 0;
+
+        foreach (var entry in WikiCatalogSeed.Entries)
+        {
+            if (existingSlugSet.Contains(entry.Slug))
+            {
+                continue;
+            }
+
+            var existsById = await db.WikiArticles.AnyAsync(a => a.Id == entry.Id, cancellationToken);
+            if (existsById)
+            {
+                continue;
+            }
+
+            db.WikiArticles.Add(WikiCatalogSeed.ToEntity(entry, SeedIds.JulioSchwartzman, seedTime));
+            added++;
+        }
+
+        if (added == 0)
+        {
+            return;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Seeded {Count} catalog wiki articles.", added);
     }
 
     private async Task EnsurePayslipsCatalogAsync(CancellationToken cancellationToken)

@@ -57,6 +57,7 @@ public static class DependencyInjection
         services.AddScoped<IPersonRepository, PersonRepository>();
         services.AddScoped<IFeedRepository, FeedRepository>();
         services.AddScoped<IComunicadoRepository, ComunicadoRepository>();
+        services.AddScoped<IWikiRepository, WikiRepository>();
         services.AddScoped<IGroupRepository, GroupRepository>();
         services.AddScoped<IDocumentRepository, DocumentRepository>();
         services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();

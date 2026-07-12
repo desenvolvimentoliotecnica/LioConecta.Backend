@@ -27,12 +27,11 @@ public sealed class HelpDeskController(IHelpDeskService helpDeskService) : Contr
 
     [HttpGet("knowledge")]
     [ProducesResponseType(typeof(IReadOnlyList<HelpDeskKnowledgeArticleDto>), StatusCodes.Status200OK)]
-    public ActionResult<IReadOnlyList<HelpDeskKnowledgeArticleDto>> GetKnowledge(
+    public async Task<ActionResult<IReadOnlyList<HelpDeskKnowledgeArticleDto>>> GetKnowledge(
         [FromQuery] string? q,
         CancellationToken cancellationToken = default)
     {
-        _ = cancellationToken;
-        return Ok(helpDeskService.GetKnowledge(q));
+        return Ok(await helpDeskService.GetKnowledgeAsync(q, cancellationToken));
     }
 
     [HttpPost("tickets")]

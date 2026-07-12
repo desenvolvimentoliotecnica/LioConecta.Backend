@@ -59,6 +59,56 @@ public sealed class NotificationService(
             cancellationToken);
     }
 
+    public Task NotifyNewsPublishedAsync(
+        FeedPost post,
+        CancellationToken cancellationToken = default)
+    {
+        var metadata = JsonMapper.DeserializeObjectDictionary(post.MetadataJson);
+        metadata.TryGetValue("title", out var titleObj);
+        var newsTitle = titleObj?.ToString()?.Trim();
+        if (string.IsNullOrWhiteSpace(newsTitle))
+        {
+            newsTitle = TruncateBody(post.Content, 120);
+        }
+
+        var body = string.IsNullOrWhiteSpace(newsTitle) ? "Veja a nova notícia no feed." : newsTitle;
+        return BroadcastToAllActivePersonsAsync(
+            NotificationType.Feed,
+            "Nova notícia",
+            body,
+            $"/?post={post.Id}",
+            cancellationToken);
+    }
+
+    public async Task NotifyPeerFeedbackAsync(
+        FeedbackSubmission feedback,
+        IReadOnlyList<Guid> recipientPersonIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (recipientPersonIds.Count == 0)
+        {
+            return;
+        }
+
+        var recipients = await personRepository.GetByIdsAsync(recipientPersonIds, cancellationToken);
+        if (recipients.Count == 0)
+        {
+            return;
+        }
+
+        var body = string.IsNullOrWhiteSpace(feedback.Subject)
+            ? TruncateBody(feedback.Message, 160)
+            : feedback.Subject.Trim();
+
+        await BroadcastAsync(
+            () => Task.FromResult(recipients),
+            NotificationType.ServiceRequest,
+            "Novo feedback 1:1",
+            body,
+            $"/feedback?tab=meus&id={feedback.Id}",
+            cancellationToken);
+    }
+
     public Task NotifyPollCreatedAsync(
         FeedPost post,
         Poll poll,
@@ -729,5 +779,26 @@ public sealed class NotificationService(
                 // Real-time delivery is best-effort; notifications are persisted regardless.
             }
         }
+    }
+
+    private static string TruncateBody(string? value, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var normalized = value.Trim().Replace("\r\n", " ").Replace('\n', ' ').Replace('\r', ' ');
+        while (normalized.Contains("  ", StringComparison.Ordinal))
+        {
+            normalized = normalized.Replace("  ", " ", StringComparison.Ordinal);
+        }
+
+        if (normalized.Length <= maxLength)
+        {
+            return normalized;
+        }
+
+        return normalized[..(maxLength - 1)].TrimEnd() + "…";
     }
 }

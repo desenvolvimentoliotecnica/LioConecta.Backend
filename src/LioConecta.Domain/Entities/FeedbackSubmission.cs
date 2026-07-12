@@ -15,5 +15,12 @@ public sealed class FeedbackSubmission : BaseEntity
     public string? ResponseText { get; set; }
     public Guid? AssigneeId { get; set; }
     public Person? Assignee { get; set; }
+
+    /// <summary>
+    /// When set, this is a peer 1:1 feedback (not the RH suggestion channel).
+    /// </summary>
+    public Guid? TargetPersonId { get; set; }
+    public Person? TargetPerson { get; set; }
+
     public DateTimeOffset? RespondedAt { get; set; }
 }

@@ -48,6 +48,10 @@ public interface IFeedRepository
 
     Task<IReadOnlyList<FeedPost>> GetNewsPostsAsync(int limit, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<FeedPost>> GetScheduledNewsDueAsync(
+        DateTimeOffset now,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Poll>> GetPollsPendingClosureNotificationAsync(
         CancellationToken cancellationToken = default);
 

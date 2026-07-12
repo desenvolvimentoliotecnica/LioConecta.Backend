@@ -36,4 +36,6 @@ public interface IFeedService
     Task<CelebrationDto?> GetCelebrationAsync(Guid postId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<NewsItemDto>> GetNewsAsync(int limit = 10, CancellationToken cancellationToken = default);
+
+    Task<int> PublishScheduledNewsAsync(CancellationToken cancellationToken = default);
 }

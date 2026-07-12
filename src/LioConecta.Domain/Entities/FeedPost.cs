@@ -21,6 +21,11 @@ public class FeedPost : BaseEntity
 
     public DateTimeOffset? DeletedAt { get; set; }
 
+    /// <summary>
+    /// When set in the future, the post stays hidden from feed/news until published by the schedule worker.
+    /// </summary>
+    public DateTimeOffset? ScheduledAt { get; set; }
+
     public ICollection<Comment> Comments { get; set; } = [];
 
     public ICollection<Reaction> Reactions { get; set; } = [];

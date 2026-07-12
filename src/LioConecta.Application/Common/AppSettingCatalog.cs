@@ -194,6 +194,8 @@ public static class AppSettingCatalog
             "Frequência do worker de notificação de enquetes encerradas.", "integer", false, "1", 10),
         new(AppSettingKeys.WorkersComunicadoScheduleIntervalMinutes, "workers", "Intervalo publicação programada de comunicados (minutos)",
             "Frequência para publicar comunicados cuja data agendada foi atingida.", "integer", false, "1", 10),
+        new(AppSettingKeys.WorkersNewsScheduleIntervalMinutes, "workers", "Intervalo publicação programada de notícias (minutos)",
+            "Frequência para publicar notícias cuja data agendada foi atingida.", "integer", false, "1", 10),
         new(AppSettingKeys.WorkersNewHireAnnouncementIntervalMinutes, "workers", "Intervalo anúncio novos colaboradores (minutos)",
             "Frequência do worker que publica boas-vindas no feed para admissões recentes.", "integer", false, "60", 11),
         new(AppSettingKeys.FeedNewHireAnnouncementEnabled, "feed", "Anúncio automático de novos colaboradores",

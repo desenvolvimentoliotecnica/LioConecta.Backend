@@ -18,6 +18,13 @@ public interface INotificationService
 
     Task NotifyComunicadoCreatedAsync(Comunicado comunicado, CancellationToken cancellationToken = default);
 
+    Task NotifyNewsPublishedAsync(FeedPost post, CancellationToken cancellationToken = default);
+
+    Task NotifyPeerFeedbackAsync(
+        FeedbackSubmission feedback,
+        IReadOnlyList<Guid> recipientPersonIds,
+        CancellationToken cancellationToken = default);
+
     Task NotifyPollCreatedAsync(FeedPost post, Poll poll, CancellationToken cancellationToken = default);
 
     Task NotifyPollClosedAsync(FeedPost post, Poll poll, CancellationToken cancellationToken = default);

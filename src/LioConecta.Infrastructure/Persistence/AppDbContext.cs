@@ -212,6 +212,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.HasIndex(p => p.CreatedAt);
             entity.HasIndex(p => p.AuthorId);
             entity.HasIndex(p => p.Type);
+            entity.HasIndex(p => p.ScheduledAt);
 
             entity.HasOne(p => p.Author)
                 .WithMany()
@@ -630,9 +631,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         });
         modelBuilder.Entity<FeedbackSubmission>(entity =>
         {
-            entity.HasIndex(x => new { x.Status, x.CreatedAt }); entity.Property(x => x.Subject).HasMaxLength(200).IsRequired(); entity.Property(x => x.Message).IsRequired();
+            entity.HasIndex(x => new { x.Status, x.CreatedAt });
+            entity.HasIndex(x => new { x.TargetPersonId, x.CreatedAt });
+            entity.Property(x => x.Subject).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Message).IsRequired();
             entity.HasOne(x => x.Author).WithMany().HasForeignKey(x => x.AuthorId).OnDelete(DeleteBehavior.SetNull);
             entity.HasOne(x => x.Assignee).WithMany().HasForeignKey(x => x.AssigneeId).OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(x => x.TargetPerson).WithMany().HasForeignKey(x => x.TargetPersonId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 

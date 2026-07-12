@@ -27,7 +27,8 @@ public sealed record SetPinnedRequest(bool IsPinned);
 public sealed record CreatePostRequest(
     PostType Type,
     string Content,
-    IReadOnlyDictionary<string, object?>? Metadata);
+    IReadOnlyDictionary<string, object?>? Metadata,
+    DateTimeOffset? ScheduledAt = null);
 
 public sealed record CreateCommentRequest(string Text);
 

@@ -17,6 +17,7 @@ public sealed class HelpDeskService(
     IPersonRepository personRepository,
     IAppSettingsProvider appSettings,
     IGlpiAdapter glpiAdapter,
+    IWikiService wikiService,
     ILogger<HelpDeskService> logger) : IHelpDeskService
 {
     public const string HelpDeskType = "servicos-help-desk";
@@ -69,7 +70,7 @@ public sealed class HelpDeskService(
                 false,
                 "Consultar",
                 "Busque por palavra-chave antes de abrir chamado. Muitos problemas comuns já possuem solução documentada.",
-                "https://wiki.dev.local/ti"),
+                "/documentos/wiki"),
             new(
                 "chat-ao-vivo",
                 "Chat ao vivo",
@@ -106,22 +107,10 @@ public sealed class HelpDeskService(
         ];
     }
 
-    public IReadOnlyList<HelpDeskKnowledgeArticleDto> GetKnowledge(string? query = null)
-    {
-        var normalized = query?.Trim().ToLowerInvariant();
-        var catalog = KnowledgeCatalog;
-        if (string.IsNullOrWhiteSpace(normalized))
-        {
-            return catalog;
-        }
-
-        return catalog
-            .Where(article =>
-                article.Title.Contains(normalized, StringComparison.OrdinalIgnoreCase) ||
-                article.Summary.Contains(normalized, StringComparison.OrdinalIgnoreCase) ||
-                article.Category.Contains(normalized, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-    }
+    public Task<IReadOnlyList<HelpDeskKnowledgeArticleDto>> GetKnowledgeAsync(
+        string? query = null,
+        CancellationToken cancellationToken = default) =>
+        wikiService.GetPublishedKnowledgeAsync(query, cancellationToken);
 
     public async Task<HelpDeskTicketResultDto> CreateTicketAsync(
         CreateHelpDeskTicketRequestDto request,
@@ -346,14 +335,4 @@ public sealed class HelpDeskService(
         var roles = await currentUserService.GetRolesAsync(cancellationToken);
         return roles.Contains(UserRole.TI) || roles.Contains(UserRole.Admin);
     }
-
-    private static readonly IReadOnlyList<HelpDeskKnowledgeArticleDto> KnowledgeCatalog =
-    [
-        new("kb-vpn", "VPN instável ou desconectando", "Passos para reconectar VPN corporativa no Windows e macOS.", "acesso", DateTimeOffset.UtcNow.AddDays(-2), "https://wiki.dev.local/ti/vpn-instavel"),
-        new("kb-senha", "Redefinir senha de rede", "Fluxo de reset de senha AD via portal de autoatendimento.", "acesso", DateTimeOffset.UtcNow.AddDays(-5), "https://wiki.dev.local/ti/reset-senha"),
-        new("kb-impressora", "Impressora corporativa offline", "Verificar fila, driver e conexão de rede da impressora.", "hardware", DateTimeOffset.UtcNow.AddDays(-8), "https://wiki.dev.local/ti/impressora-offline"),
-        new("kb-email", "Outlook não sincroniza", "Soluções para caixa de entrada travada ou perfil corrompido.", "software", DateTimeOffset.UtcNow.AddDays(-12), "https://wiki.dev.local/ti/outlook-sync"),
-        new("kb-notebook", "Solicitar troca de notebook", "Critérios de elegibilidade e prazos para substituição de equipamento.", "hardware", DateTimeOffset.UtcNow.AddDays(-15), "https://wiki.dev.local/ti/troca-notebook"),
-        new("kb-wifi", "Conectar à rede Wi-Fi corporativa", "Configuração de certificado e autenticação 802.1X.", "acesso", DateTimeOffset.UtcNow.AddDays(-20), "https://wiki.dev.local/ti/wifi-corporativo"),
-    ];
 }

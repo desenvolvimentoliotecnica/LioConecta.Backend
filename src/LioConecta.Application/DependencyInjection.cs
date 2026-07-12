@@ -11,6 +11,7 @@ public static class DependencyInjection
         services.AddScoped<IPersonService, PersonService>();
         services.AddScoped<IFeedService, FeedService>();
         services.AddScoped<IComunicadoService, ComunicadoService>();
+        services.AddScoped<IWikiService, WikiService>();
         services.AddScoped<IGroupService, GroupService>();
         services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<IServiceRequestService, ServiceRequestService>();

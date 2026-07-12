@@ -53,6 +53,7 @@ public static class RoleTemplateCatalog
         ("unilio.skills.read", DataScope.Self),
         ("unilio.recommendations.read", DataScope.Self),
         ("comunicados.read", DataScope.Global),
+        ("wiki.read", DataScope.Global),
         ("feedback.submit", DataScope.Self),
     ];
 
@@ -84,6 +85,7 @@ public static class RoleTemplateCatalog
         Role("TI", "Tecnologia da Informação", "Operações de TI", BusinessArea.TI, true, false,
             EmployeeBase.Concat([
                 ("helpdesk.manage", DataScope.Global),
+                ("wiki.manage", DataScope.Global),
                 ("systems.manage", DataScope.Global),
                 ("equipment.manage", DataScope.Global),
                 ("vpn.manage", DataScope.Global),
@@ -113,6 +115,7 @@ public static class RoleTemplateCatalog
                     ("feed.manage", DataScope.Global), ("news.manage", DataScope.Global),
                     ("comunicados.publish.official", DataScope.Global), ("comunicados.publish.departmental", DataScope.Global),
                     ("comunicados.publish.urgent", DataScope.Global), ("comunicados.manage", DataScope.Global),
+                    ("wiki.manage", DataScope.Global),
                     ("mood.analytics", DataScope.Global), ("feedback.triage", DataScope.Global),
                     ("payslips.audit", DataScope.Global),
                 ]).Distinct().ToArray()),
@@ -136,7 +139,8 @@ public static class RoleTemplateCatalog
             ("compass.access", DataScope.Global), ("compass.read", DataScope.Global), ("compass.financial.read", DataScope.Global),
             ("compass.financial.reconcile", DataScope.Global), ("compass.manage", DataScope.Global), ("compass.export", DataScope.Global)),
         KeyUser("KeyUser-TI", "Key User TI", BusinessArea.TI,
-            ("helpdesk.manage", DataScope.Global), ("systems.manage", DataScope.Global), ("equipment.manage", DataScope.Global),
+            ("helpdesk.manage", DataScope.Global), ("wiki.manage", DataScope.Global),
+            ("systems.manage", DataScope.Global), ("equipment.manage", DataScope.Global),
             ("vpn.manage", DataScope.Global), ("ramais.manage", DataScope.Global)),
         KeyUser("KeyUser-Facilities", "Key User Facilities", BusinessArea.Facilities,
             PermissionCatalog.All().Where(p => p.Key.StartsWith("facilities.", StringComparison.Ordinal))

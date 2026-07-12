@@ -172,7 +172,7 @@ public sealed class SearchService(
 
         {
 
-            knowledge = helpDeskService.GetKnowledge(query)
+            knowledge = (await helpDeskService.GetKnowledgeAsync(query, cancellationToken))
 
                 .Take(Math.Clamp(limit, 1, 100))
 

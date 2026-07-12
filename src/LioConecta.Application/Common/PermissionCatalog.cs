@@ -277,6 +277,16 @@ public static class PermissionCatalog
             "Aprovar e administrar adiantamentos de viagem.",
             GlobalOnly, "/servicos/adiantamento-viagem"),
 
+        // ── TI — Wiki ────────────────────────────────────────────────────────
+        P("wiki.read", BusinessArea.TI,
+            "Wiki",
+            "Consultar a base de conhecimento e artigos da Wiki corporativa.",
+            SelfGlobal, "/documentos/wiki"),
+        P("wiki.manage", BusinessArea.TI,
+            "Gerenciar Wiki",
+            "Criar, editar, publicar e arquivar artigos da Wiki corporativa.",
+            GlobalOnly, "/documentos/wiki/novo"),
+
         // ── TI — Help Desk ───────────────────────────────────────────────────
         P("helpdesk.read", BusinessArea.TI,
             "Help Desk",

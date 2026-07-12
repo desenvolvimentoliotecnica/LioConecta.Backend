@@ -8,7 +8,9 @@ public interface IHelpDeskService
 
     IReadOnlyList<HelpDeskServiceDto> GetServices();
 
-    IReadOnlyList<HelpDeskKnowledgeArticleDto> GetKnowledge(string? query = null);
+    Task<IReadOnlyList<HelpDeskKnowledgeArticleDto>> GetKnowledgeAsync(
+        string? query = null,
+        CancellationToken cancellationToken = default);
 
     Task<HelpDeskTicketResultDto> CreateTicketAsync(
         CreateHelpDeskTicketRequestDto request,

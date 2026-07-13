@@ -531,7 +531,207 @@ public sealed class GlpiAdapter(
             Description = ReadElement(payload.GetValueOrDefault("content")).Trim('"'),
             Assignee = "TI — Service Desk",
             Followups = [],
+            Attachments = await LoadTicketAttachmentsAsync(credentials, sessionToken, ticketId, cancellationToken),
         };
+    }
+
+    public async Task<GlpiTicketAttachmentContent?> GetTicketAttachmentAsync(
+        string ticketId,
+        string documentId,
+        string requesterEmail,
+        bool skipOwnershipCheck = false,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(ticketId) || string.IsNullOrWhiteSpace(documentId))
+        {
+            return null;
+        }
+
+        var credentials = credentialsResolver.Resolve();
+        var requesterId = await ResolveUserIdAsync(credentials, requesterEmail, cancellationToken);
+        if (!skipOwnershipCheck)
+        {
+            var ownsTicket = await VerifyTicketOwnershipAsync(credentials, ticketId, requesterId, cancellationToken);
+            if (!ownsTicket)
+            {
+                logger.LogWarning(
+                    "User {Email} attempted to download GLPI document {DocumentId} on ticket {TicketId}",
+                    requesterEmail,
+                    documentId,
+                    ticketId);
+                return null;
+            }
+        }
+
+        var attachments = await LoadTicketAttachmentsAsync(
+            credentials,
+            await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken),
+            ticketId,
+            cancellationToken);
+
+        var meta = attachments.FirstOrDefault(item =>
+            item.DocumentId.Equals(documentId.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (meta is null)
+        {
+            return null;
+        }
+
+        var sessionToken = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
+        using var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            BuildUrl(credentials.BaseUrl, $"Document/{meta.DocumentId}?alt=media"));
+        ApplySessionHeaders(request, credentials, sessionToken);
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            logger.LogWarning(
+                "GLPI document download failed for {DocumentId}: {Status}",
+                meta.DocumentId,
+                (int)response.StatusCode);
+            return null;
+        }
+
+        var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        var contentType = response.Content.Headers.ContentType?.MediaType
+            ?? meta.ContentType
+            ?? "application/octet-stream";
+
+        return new GlpiTicketAttachmentContent
+        {
+            FileName = meta.FileName,
+            ContentType = contentType,
+            Content = bytes,
+        };
+    }
+
+    private async Task<IReadOnlyList<GlpiTicketAttachment>> LoadTicketAttachmentsAsync(
+        GlpiRuntimeCredentials credentials,
+        string sessionToken,
+        string ticketId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(
+                HttpMethod.Get,
+                BuildUrl(credentials.BaseUrl, $"Ticket/{ticketId}/Document_Item"));
+            ApplySessionHeaders(request, credentials, sessionToken);
+
+            using var response = await httpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning(
+                    "GLPI Ticket/{TicketId}/Document_Item failed: {Status}",
+                    ticketId,
+                    (int)response.StatusCode);
+                return [];
+            }
+
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Array)
+            {
+                return [];
+            }
+
+            var results = new List<GlpiTicketAttachment>();
+            foreach (var item in root.EnumerateArray())
+            {
+                var documentsId = ReadJsonInt(item, "documents_id");
+                if (documentsId is null or <= 0)
+                {
+                    continue;
+                }
+
+                var meta = await LoadDocumentMetaAsync(
+                    credentials,
+                    sessionToken,
+                    documentsId.Value.ToString(),
+                    cancellationToken);
+                if (meta is not null)
+                {
+                    results.Add(meta);
+                }
+            }
+
+            return results;
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "Failed to load GLPI attachments for ticket {TicketId}", ticketId);
+            return [];
+        }
+    }
+
+    private async Task<GlpiTicketAttachment?> LoadDocumentMetaAsync(
+        GlpiRuntimeCredentials credentials,
+        string sessionToken,
+        string documentId,
+        CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, BuildUrl(credentials.BaseUrl, $"Document/{documentId}"));
+        ApplySessionHeaders(request, credentials, sessionToken);
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        var payload = await response.Content.ReadFromJsonAsync<Dictionary<string, JsonElement>>(JsonOptions, cancellationToken);
+        if (payload is null)
+        {
+            return null;
+        }
+
+        var fileName = ReadElement(payload.GetValueOrDefault("filename")).Trim('"');
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            fileName = ReadElement(payload.GetValueOrDefault("name")).Trim('"');
+        }
+
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            fileName = $"documento-{documentId}";
+        }
+
+        var mime = ReadElement(payload.GetValueOrDefault("mime")).Trim('"');
+        long? sizeBytes = null;
+        if (payload.TryGetValue("filesize", out var sizeElement) &&
+            long.TryParse(ReadElement(sizeElement).Trim('"'), out var parsedSize))
+        {
+            sizeBytes = parsedSize;
+        }
+
+        return new GlpiTicketAttachment
+        {
+            DocumentId = documentId,
+            FileName = fileName,
+            ContentType = string.IsNullOrWhiteSpace(mime) ? null : mime,
+            SizeBytes = sizeBytes,
+        };
+    }
+
+    private static int? ReadJsonInt(JsonElement element, string propertyName)
+    {
+        if (!element.TryGetProperty(propertyName, out var value))
+        {
+            return null;
+        }
+
+        if (value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var number))
+        {
+            return number;
+        }
+
+        if (value.ValueKind == JsonValueKind.String &&
+            int.TryParse(value.GetString(), out var parsed))
+        {
+            return parsed;
+        }
+
+        return null;
     }
 
     private async Task<IReadOnlyList<GlpiTicketSummary>> SearchTicketsAsync(

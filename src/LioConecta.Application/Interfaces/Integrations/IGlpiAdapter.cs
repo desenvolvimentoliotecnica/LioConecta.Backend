@@ -41,4 +41,11 @@ public interface IGlpiAdapter
         string requesterEmail,
         bool skipOwnershipCheck = false,
         CancellationToken cancellationToken = default);
+
+    Task<GlpiTicketAttachmentContent?> GetTicketAttachmentAsync(
+        string ticketId,
+        string documentId,
+        string requesterEmail,
+        bool skipOwnershipCheck = false,
+        CancellationToken cancellationToken = default);
 }

@@ -209,18 +209,10 @@ public sealed class CompassScenarioQueryService(
         string? search,
         CancellationToken cancellationToken)
     {
-        var needsSkuJoin = !string.IsNullOrWhiteSpace(search);
-        var fromClause = needsSkuJoin
-            ? """
-              FROM public.etl_hyperion h
-              LEFT JOIN public.dim_item d ON d.it_codigo = REPLACE(h.sku, 'SKU_', '')
-              """
-            : "FROM public.etl_hyperion h";
-
         var sql = $"""
             SELECT COUNT(*)::bigint,
                    COALESCE(SUM(h.amount), 0)
-            {fromClause}
+            {BuildFromClause(includeLookups: !string.IsNullOrWhiteSpace(search))}
             WHERE {BuildWhereClause(def, ungFilter, search)}
             """;
 
@@ -250,11 +242,12 @@ public sealed class CompassScenarioQueryService(
             SELECT h.sku,
                    COALESCE(d.descricao, '') AS sku_description,
                    h.cliente,
+                   COALESCE(NULLIF(cli.nome_abrev, ''), NULLIF(cli.razao_social, ''), '') AS cliente_nome,
                    h.ung,
+                   COALESCE(NULLIF(cv.descricao, ''), uf.label, '') AS ung_nome,
                    h.entity,
                    h.amount
-            FROM public.etl_hyperion h
-            LEFT JOIN public.dim_item d ON d.it_codigo = REPLACE(h.sku, 'SKU_', '')
+            {BuildFromClause(includeLookups: true)}
             WHERE {BuildWhereClause(def, ungFilter, search)}
             ORDER BY h.amount DESC
             OFFSET @offset LIMIT @limit
@@ -275,10 +268,42 @@ public sealed class CompassScenarioQueryService(
                 reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
                 reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
                 reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
-                reader.IsDBNull(5) ? 0m : reader.GetDecimal(5)));
+                reader.IsDBNull(5) ? string.Empty : reader.GetString(5),
+                reader.IsDBNull(6) ? string.Empty : reader.GetString(6),
+                reader.IsDBNull(7) ? 0m : reader.GetDecimal(7)));
         }
 
         return rows;
+    }
+
+    private static string BuildFromClause(bool includeLookups)
+    {
+        if (!includeLookups)
+        {
+            return "FROM public.etl_hyperion h";
+        }
+
+        return """
+            FROM public.etl_hyperion h
+            LEFT JOIN public.dim_item d ON d.it_codigo = REPLACE(h.sku, 'SKU_', '')
+            LEFT JOIN public.dim_cliente cli
+              ON cli.cod_emitente = CASE
+                   WHEN h.cliente ~ '^CLI_[0-9]+$' THEN REPLACE(h.cliente, 'CLI_', '')::int
+                   ELSE NULL
+                 END
+            LEFT JOIN public.dim_canal_venda cv
+              ON cv.cod_canal_venda = CASE
+                   WHEN h.ung ~ '^UN_[0-9]+$' THEN REPLACE(h.ung, 'UN_', '')::int
+                   ELSE NULL
+                 END
+            LEFT JOIN (
+                VALUES
+                    ('UN_10', 'Soluções B2B'),
+                    ('UN_20', 'Distribuidores Varejo'),
+                    ('UN_50', 'Ingredientes Industriais'),
+                    ('UN_60', 'Diretas Exportação')
+            ) AS uf(code, label) ON uf.code = h.ung
+            """;
     }
 
     private static string BuildWhereClause(ScenarioDefinition def, string? ungFilter, string? search)
@@ -318,7 +343,17 @@ public sealed class CompassScenarioQueryService(
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            clauses.Add("(h.sku ILIKE @search OR h.cliente ILIKE @search OR COALESCE(d.descricao, '') ILIKE @search)");
+            clauses.Add("""
+                (
+                    h.sku ILIKE @search
+                    OR h.cliente ILIKE @search
+                    OR COALESCE(d.descricao, '') ILIKE @search
+                    OR COALESCE(cli.nome_abrev, '') ILIKE @search
+                    OR COALESCE(cli.razao_social, '') ILIKE @search
+                    OR COALESCE(cv.descricao, '') ILIKE @search
+                    OR COALESCE(uf.label, '') ILIKE @search
+                )
+                """);
         }
 
         return string.Join("\n              AND ", clauses);

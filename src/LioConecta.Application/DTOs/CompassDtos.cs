@@ -158,7 +158,9 @@ public sealed record CompassScenarioRowDto(
     string Sku,
     string SkuDescription,
     string Cliente,
+    string ClienteNome,
     string Ung,
+    string UngNome,
     string Entity,
     decimal Amount);
 

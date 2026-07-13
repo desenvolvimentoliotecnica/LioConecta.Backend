@@ -151,6 +151,13 @@ public sealed record CompassScenarioRowsQuery(
     string Period = "Jan",
     string? Search = null,
     string? Ung = null,
+    string? Sku = null,
+    string? SkuDescription = null,
+    string? Cliente = null,
+    string? UngLabel = null,
+    string? Entity = null,
+    string? SortBy = null,
+    string? SortDir = null,
     int Page = 1,
     int PageSize = 25);
 

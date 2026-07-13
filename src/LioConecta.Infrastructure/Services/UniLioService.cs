@@ -245,7 +245,8 @@ public sealed partial class UniLioService(
             courseStats.Completed,
             modules,
             course.CourseSkills.Select(cs => cs.Skill.Name).OrderBy(n => n).ToList(),
-            MapIntegrationLinks(course.IntegrationLinks));
+            MapIntegrationLinks(course.IntegrationLinks),
+            course.ScormPassingScore);
     }
 
     public async Task<UniLioCourseStartDto> StartCourseAsync(
@@ -423,6 +424,26 @@ public sealed partial class UniLioService(
 
         var module = course.Modules.FirstOrDefault(m => m.Id == moduleId)
             ?? throw new KeyNotFoundException($"Módulo {moduleId} não encontrado no curso {courseId}.");
+
+        if (string.Equals(course.ContentType, "scorm", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(module.ContentType, "scorm", StringComparison.OrdinalIgnoreCase))
+        {
+            var attempt = await db.UniLioScormAttempts.AsNoTracking()
+                .Where(a => a.CourseId == courseId && a.ModuleId == moduleId)
+                .Join(
+                    db.UniLioEnrollments.AsNoTracking().Where(e => e.PersonId == viewer.PersonId && e.CourseId == courseId),
+                    a => a.EnrollmentId,
+                    e => e.Id,
+                    (a, _) => a)
+                .OrderByDescending(a => a.UpdatedAt)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (attempt is null || !IsScormPass(attempt.LessonStatus, attempt.ScoreRaw, course.ScormPassingScore))
+            {
+                throw new InvalidOperationException(
+                    "Conclua o pacote SCORM com status passed (ou completed com nota mínima) antes de finalizar o curso.");
+            }
+        }
 
         var enrollment = await db.UniLioEnrollments
             .Include(e => e.ModuleProgress)
@@ -1360,12 +1381,37 @@ public sealed partial class UniLioService(
         var assessment = await db.UniLioAssessments.AsNoTracking()
             .FirstOrDefaultAsync(a => a.CourseId == courseId, cancellationToken);
 
-        if (assessment is not null)
+        var course = await db.UniLioCourses.AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == courseId, cancellationToken);
+
+        var isScormCourse = course is not null
+            && string.Equals(course.ContentType, "scorm", StringComparison.OrdinalIgnoreCase);
+
+        // Cursos SCORM usam o pacote como avaliação embutida — não exigir assessment UniLio.
+        if (assessment is not null && !isScormCourse)
         {
             var passed = await db.UniLioAssessmentAttempts.AsNoTracking()
                 .AnyAsync(a => a.PersonId == personId && a.AssessmentId == assessment.Id && a.Passed, cancellationToken);
 
             if (!passed)
+            {
+                return false;
+            }
+        }
+
+        if (isScormCourse)
+        {
+            var attempt = await db.UniLioScormAttempts.AsNoTracking()
+                .Where(a => a.CourseId == courseId)
+                .Join(
+                    db.UniLioEnrollments.AsNoTracking().Where(e => e.PersonId == personId && e.CourseId == courseId),
+                    a => a.EnrollmentId,
+                    e => e.Id,
+                    (a, _) => a)
+                .OrderByDescending(a => a.UpdatedAt)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (attempt is null || !IsScormPass(attempt.LessonStatus, attempt.ScoreRaw, course!.ScormPassingScore))
             {
                 return false;
             }
@@ -1507,6 +1553,198 @@ public sealed partial class UniLioService(
         {
             return [];
         }
+    }
+
+    public async Task<UniLioScormRuntimeDto> GetScormRuntimeAsync(
+        Guid courseId,
+        CancellationToken cancellationToken = default)
+    {
+        var viewer = await GetViewerAsync(cancellationToken);
+        var (package, enrollment, attempt) = await LoadScormContextAsync(courseId, viewer, createEnrollment: true, cancellationToken);
+
+        return MapScormRuntime(courseId, package, attempt, viewer, package.Course.ScormPassingScore);
+    }
+
+    public async Task<UniLioScormRuntimeDto> UpdateScormRuntimeAsync(
+        Guid courseId,
+        UniLioScormRuntimeUpdateRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var viewer = await GetViewerAsync(cancellationToken);
+        var (package, enrollment, attempt) = await LoadScormContextAsync(courseId, viewer, createEnrollment: true, cancellationToken);
+
+        var now = DateTimeOffset.UtcNow;
+        attempt.InitializedAt ??= now;
+
+        if (request.LessonStatus is not null)
+        {
+            attempt.LessonStatus = request.LessonStatus.Trim().ToLowerInvariant();
+        }
+
+        if (request.ScoreRaw is not null)
+        {
+            attempt.ScoreRaw = request.ScoreRaw;
+        }
+
+        if (request.ScoreMin is not null)
+        {
+            attempt.ScoreMin = request.ScoreMin;
+        }
+
+        if (request.ScoreMax is not null)
+        {
+            attempt.ScoreMax = request.ScoreMax;
+        }
+
+        if (request.SessionTime is not null)
+        {
+            attempt.SessionTime = request.SessionTime;
+        }
+
+        if (request.LessonLocation is not null)
+        {
+            attempt.LessonLocation = request.LessonLocation;
+        }
+
+        if (request.SuspendData is not null)
+        {
+            attempt.SuspendData = request.SuspendData;
+        }
+
+        if (request.CmiJson is not null)
+        {
+            attempt.CmiJson = request.CmiJson;
+        }
+
+        if (request.Finish)
+        {
+            attempt.FinishedAt = now;
+        }
+
+        attempt.UpdatedAt = now;
+        enrollment.Status = enrollment.Status == "completed" ? enrollment.Status : "in_progress";
+        enrollment.StartedAt ??= now;
+        enrollment.UpdatedAt = now;
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return MapScormRuntime(courseId, package, attempt, viewer, package.Course.ScormPassingScore);
+    }
+
+    private async Task<(UniLioScormPackage Package, UniLioEnrollment Enrollment, UniLioScormAttempt Attempt)> LoadScormContextAsync(
+        Guid courseId,
+        ViewerContext viewer,
+        bool createEnrollment,
+        CancellationToken cancellationToken)
+    {
+        var package = await db.UniLioScormPackages
+            .Include(p => p.Course)
+            .Where(p => p.CourseId == courseId)
+            .OrderByDescending(p => p.UploadedAt)
+            .FirstOrDefaultAsync(cancellationToken)
+            ?? throw new KeyNotFoundException("Pacote SCORM não encontrado para este curso.");
+
+        var enrollment = await db.UniLioEnrollments
+            .FirstOrDefaultAsync(e => e.PersonId == viewer.PersonId && e.CourseId == courseId, cancellationToken);
+
+        var now = DateTimeOffset.UtcNow;
+        if (enrollment is null)
+        {
+            if (!createEnrollment)
+            {
+                throw new InvalidOperationException("Matrícula não encontrada.");
+            }
+
+            enrollment = new UniLioEnrollment
+            {
+                Id = Guid.NewGuid(),
+                PersonId = viewer.PersonId,
+                CourseId = courseId,
+                Status = "in_progress",
+                ProgressPct = 0,
+                StartedAt = now,
+                CreatedAt = now,
+                UpdatedAt = now,
+            };
+            db.UniLioEnrollments.Add(enrollment);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        var attempt = await db.UniLioScormAttempts
+            .FirstOrDefaultAsync(a => a.EnrollmentId == enrollment.Id && a.PackageId == package.Id, cancellationToken);
+
+        if (attempt is null)
+        {
+            attempt = new UniLioScormAttempt
+            {
+                Id = Guid.NewGuid(),
+                EnrollmentId = enrollment.Id,
+                CourseId = courseId,
+                ModuleId = package.ModuleId,
+                PackageId = package.Id,
+                LessonStatus = "not attempted",
+                ScoreMin = 0,
+                ScoreMax = 100,
+                CreatedAt = now,
+                UpdatedAt = now,
+            };
+            db.UniLioScormAttempts.Add(attempt);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        return (package, enrollment, attempt);
+    }
+
+    private static UniLioScormRuntimeDto MapScormRuntime(
+        Guid courseId,
+        UniLioScormPackage package,
+        UniLioScormAttempt attempt,
+        ViewerContext viewer,
+        int passingScore) =>
+        new(
+            courseId,
+            package.ModuleId,
+            package.Id,
+            UniLioScormPackageStorage.BuildPublicLaunchUrl(package.Id, package.LaunchPath),
+            attempt.LessonStatus,
+            attempt.ScoreRaw,
+            attempt.ScoreMin,
+            attempt.ScoreMax,
+            attempt.SessionTime,
+            attempt.LessonLocation,
+            attempt.SuspendData,
+            viewer.PersonId.ToString("N"),
+            viewer.Name,
+            passingScore,
+            IsScormPass(attempt.LessonStatus, attempt.ScoreRaw, passingScore));
+
+    private static bool IsScormPass(string? lessonStatus, decimal? scoreRaw, int passingScore)
+    {
+        var status = (lessonStatus ?? string.Empty).Trim().ToLowerInvariant();
+        if (status is "failed" or "incomplete" or "browsed" or "not attempted" or "")
+        {
+            if (status == "failed")
+            {
+                return false;
+            }
+        }
+
+        if (status == "passed")
+        {
+            return !scoreRaw.HasValue || scoreRaw.Value >= passingScore || passingScore <= 0;
+        }
+
+        if (status == "completed")
+        {
+            if (passingScore <= 0)
+            {
+                return true;
+            }
+
+            return scoreRaw.HasValue && scoreRaw.Value >= passingScore;
+        }
+
+        return false;
     }
 
     private sealed record ViewerContext(

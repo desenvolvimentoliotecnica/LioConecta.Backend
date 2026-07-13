@@ -7,6 +7,7 @@ using LioConecta.Application.Interfaces.Repositories;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Domain.Enums;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 
 namespace LioConecta.Application.Services;
 
@@ -138,27 +139,27 @@ public sealed class HelpDeskService(
     public async Task<IReadOnlyList<HelpDeskAreaDto>> GetAreasAsync(
         CancellationToken cancellationToken = default)
     {
-        var definitions = HelpDeskAreaCatalog.Parse(
-            appSettings.GetString(AppSettingKeys.HelpDeskGlpiAreas));
+        var entities = await glpiAdapter.GetEntitiesAsync(cancellationToken);
+        var allCategories = await glpiAdapter.GetAllItilCategoriesAsync(cancellationToken);
 
-        IReadOnlyList<GlpiItilCategory> allCategories = [];
-        try
+        if (entities.Count == 0)
         {
-            allCategories = await glpiAdapter.GetAllItilCategoriesAsync(cancellationToken);
-        }
-        catch (Exception exception)
-        {
-            logger.LogWarning(
-                exception,
-                "Falha ao consultar categorias GLPI para contagem de áreas; usando serviceCount configurado.");
+            logger.LogWarning("GLPI não retornou entidades para o wizard de Help Desk.");
         }
 
-        return definitions
-            .Select(area =>
+        return entities
+            .Select(entity =>
             {
-                var areaCategories = HelpDeskAreaCatalog.ResolveAreaCategories(area, allCategories);
-                var serviceCount = HelpDeskAreaCatalog.CountSelectableServices(area, areaCategories);
-                return new HelpDeskAreaDto(area.Id, area.Name, area.Icon, serviceCount, area.EntityId);
+                var entityCategories = allCategories
+                    .Where(category => category.EntityId == entity.Id)
+                    .ToList();
+
+                return new HelpDeskAreaDto(
+                    entity.Id.ToString(CultureInfo.InvariantCulture),
+                    string.IsNullOrWhiteSpace(entity.Name) ? $"Entidade {entity.Id}" : entity.Name.Trim(),
+                    HelpDeskGlpiAreaMapper.ResolveEntityIcon(entity.Name),
+                    HelpDeskGlpiAreaMapper.CountSelectableLeaves(entityCategories),
+                    entity.Id);
             })
             .ToList();
     }
@@ -176,22 +177,15 @@ public sealed class HelpDeskService(
         string areaId,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(areaId))
+        if (!int.TryParse(areaId?.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var entityId) ||
+            entityId <= 0)
         {
-            throw new ArgumentException("Área inválida.");
+            throw new ArgumentException("Área inválida. Informe o ID da entidade GLPI.");
         }
 
-        var definitions = HelpDeskAreaCatalog.Parse(
-            appSettings.GetString(AppSettingKeys.HelpDeskGlpiAreas));
-        var area = definitions.FirstOrDefault(item =>
-                        item.Id.Equals(areaId.Trim(), StringComparison.OrdinalIgnoreCase))
-            ?? throw new ArgumentException("Área não encontrada.");
+        var categories = await glpiAdapter.GetItilCategoriesAsync(entityId, cancellationToken);
 
-        var allCategories = await glpiAdapter.GetAllItilCategoriesAsync(cancellationToken);
-        var areaCategories = HelpDeskAreaCatalog.ResolveAreaCategories(area, allCategories);
-        var built = HelpDeskItilCategoryTreeBuilder.Build(areaCategories, dedupeByLabel: false);
-
-        return built
+        return categories
             .Select(c => new HelpDeskItilCategoryDto(c.Id, c.Name, c.FullName, c.ParentId, c.HasChildren, c.EntityId))
             .ToList();
     }

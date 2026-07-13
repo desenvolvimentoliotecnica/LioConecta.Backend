@@ -65,10 +65,14 @@ Write-Host "Syncing to server..."
 ssh @sshArgs $sshTarget "mkdir -p $remoteDir/current"
 scp @sshArgs -r "$staging/*" "${sshTarget}:$remoteDir/current/"
 scp @sshArgs (Join-Path $staging ".env") "${sshTarget}:$remoteDir/current/.env"
+# Permissions MUST be fixed before nginx starts serving frontend-dist.
+# Otherwise nginx (non-root) hits Permission denied on index.html and returns 500
+# (SPA try_files redirect cycle). Historical deploys also hung on a late chmod -R.
+Write-Host "Fixing frontend-dist permissions (before nginx)..."
+ssh @sshArgs $sshTarget "chmod -R a+rX $remoteDir/current/frontend-dist; chmod +x $remoteDir/current/seed-dev-settings.sh $remoteDir/current/scripts/apply-db-fixes.sh $remoteDir/current/scripts/*.sh"
 Write-Host "Starting containers..."
-$remoteCmd = "cd $remoteDir/current; chmod +x seed-dev-settings.sh scripts/apply-db-fixes.sh scripts/*.sh; export POSTGRES_PASSWORD='$pgPass'; export LIOSNECTA_HTTP_PORT='$httpPort'; docker compose -f docker-compose.dev.yml --env-file .env up -d --build --remove-orphans; docker compose -f docker-compose.dev.yml restart nginx"
+$remoteCmd = "cd $remoteDir/current; export POSTGRES_PASSWORD='$pgPass'; export LIOSNECTA_HTTP_PORT='$httpPort'; docker compose -f docker-compose.dev.yml --env-file .env up -d --build --remove-orphans; docker compose -f docker-compose.dev.yml restart nginx"
 ssh @sshArgs $sshTarget $remoteCmd
-ssh @sshArgs $sshTarget "chmod -R a+rX $remoteDir/current/frontend-dist"
 Write-Host "Waiting for health..."
 $baseUrl = "http://${hostName}:$httpPort"
 $ready = $false

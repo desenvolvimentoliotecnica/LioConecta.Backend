@@ -255,6 +255,10 @@ public sealed class PlannerService(
         var groupingStart = task.StartDateTime ?? task.DueDateTime ?? task.CreatedDateTime;
         var groupingEnd = task.DueDateTime ?? task.StartDateTime ?? task.CreatedDateTime;
 
+        // UpdatedAt: Graph plannerTask não expõe lastModifiedDateTime.
+        // Usamos conclusão real quando existir; senão criação (edições intermediárias não avançam o "fim").
+        var updatedAt = task.CompletedDateTime ?? task.CreatedDateTime;
+
         return new PlannerTaskDto(
             task.Id,
             task.Title,
@@ -272,7 +276,7 @@ public sealed class PlannerService(
             isOwned,
             BuildPlannerUrl(planId, task.Id),
             FormatDateTime(task.CreatedDateTime),
-            FormatDateTime(task.CompletedDateTime ?? task.CreatedDateTime));
+            FormatDateTime(updatedAt));
     }
 
     private static IReadOnlyList<PlannerGraphChecklistItem>? MapChecklistToGraph(

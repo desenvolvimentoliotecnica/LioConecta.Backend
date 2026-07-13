@@ -102,7 +102,8 @@ public sealed record UniLioCourseDetailDto(
     int CompletedCount,
     IReadOnlyList<UniLioModuleDto> Modules,
     IReadOnlyList<string> SkillNames,
-    IReadOnlyList<UniLioIntegrationLinkDto> Integrations);
+    IReadOnlyList<UniLioIntegrationLinkDto> Integrations,
+    int ScormPassingScore = 70);
 
 public sealed record UniLioCourseEnrollmentRecordDto(
     Guid PersonId,
@@ -327,7 +328,8 @@ public sealed record UniLioUpsertCourseRequest(
     string? ExternalUrl,
     string? Provider,
     string? VisibilityJson,
-    IReadOnlyList<string>? Tags);
+    IReadOnlyList<string>? Tags,
+    int? ScormPassingScore = null);
 
 public sealed record UniLioUpsertModuleRequest(
     int SortOrder,
@@ -337,6 +339,17 @@ public sealed record UniLioUpsertModuleRequest(
     int DurationMinutes,
     string? ArticleHtml,
     string? QuizJson);
+
+public sealed record UniLioScormPackageDto(
+    Guid Id,
+    Guid ModuleId,
+    string Version,
+    string ManifestTitle,
+    string LaunchUrl,
+    int ScoCount,
+    string OriginalFileName,
+    long SizeBytes,
+    DateTimeOffset UploadedAt);
 
 public sealed record UniLioAuthoringCourseDto(
     Guid Id,
@@ -360,7 +373,37 @@ public sealed record UniLioAuthoringCourseDto(
     DateTimeOffset? SubmittedAt,
     string? RejectionReason,
     IReadOnlyList<UniLioModuleDto> Modules,
-    UniLioAuthoringAssessmentDto? Assessment);
+    UniLioAuthoringAssessmentDto? Assessment,
+    int ScormPassingScore = 70,
+    UniLioScormPackageDto? ScormPackage = null);
+
+public sealed record UniLioScormRuntimeDto(
+    Guid CourseId,
+    Guid ModuleId,
+    Guid PackageId,
+    string LaunchUrl,
+    string LessonStatus,
+    decimal? ScoreRaw,
+    decimal? ScoreMin,
+    decimal? ScoreMax,
+    string? SessionTime,
+    string? LessonLocation,
+    string? SuspendData,
+    string StudentId,
+    string StudentName,
+    int PassingScore,
+    bool CourseCompletable);
+
+public sealed record UniLioScormRuntimeUpdateRequest(
+    string? LessonStatus,
+    decimal? ScoreRaw,
+    decimal? ScoreMin,
+    decimal? ScoreMax,
+    string? SessionTime,
+    string? LessonLocation,
+    string? SuspendData,
+    string? CmiJson,
+    bool Finish = false);
 
 public sealed record UniLioAuthoringAssessmentDto(
     Guid Id,

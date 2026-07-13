@@ -246,6 +246,16 @@ try
         });
     });
 
+    builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+    {
+        options.MultipartBodyLengthLimit = 209_715_200;
+        options.ValueLengthLimit = 209_715_200;
+    });
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.Limits.MaxRequestBodySize = 209_715_200;
+    });
+
     builder.Services.AddControllers();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
@@ -332,6 +342,22 @@ try
     {
         FileProvider = new PhysicalFileProvider(uniLioModuleAttachmentsRoot),
         RequestPath = "/unilio/modules/attachments",
+    });
+
+    var uniLioScormPackagesRoot = Path.Combine(app.Environment.ContentRootPath, "App_Data", "unilio", "scorm-packages");
+    Directory.CreateDirectory(uniLioScormPackagesRoot);
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(uniLioScormPackagesRoot),
+        RequestPath = "/unilio/scorm",
+        OnPrepareResponse = ctx =>
+        {
+            ctx.Context.Response.Headers.XContentTypeOptions = "nosniff";
+            // SCORM packages are mutable after re-upload — avoid stale broken assets in the browser.
+            ctx.Context.Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
+            ctx.Context.Response.Headers.Pragma = "no-cache";
+            ctx.Context.Response.Headers.Expires = "0";
+        },
     });
 
     var leaveAttachmentsRoot = Path.Combine(app.Environment.ContentRootPath, "App_Data", "leave", "attachments");

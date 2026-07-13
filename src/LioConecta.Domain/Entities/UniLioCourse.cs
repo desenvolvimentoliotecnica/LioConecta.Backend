@@ -54,7 +54,12 @@ public class UniLioCourse : BaseEntity
 
     public string? VisibilityJson { get; set; }
 
+    /// <summary>Nota mínima (0–100) para concluir curso SCORM e emitir certificado. Default 70.</summary>
+    public int ScormPassingScore { get; set; } = 70;
+
     public ICollection<UniLioCourseModule> Modules { get; set; } = [];
+
+    public ICollection<UniLioScormPackage> ScormPackages { get; set; } = [];
 
     public ICollection<UniLioCourseSkill> CourseSkills { get; set; } = [];
 

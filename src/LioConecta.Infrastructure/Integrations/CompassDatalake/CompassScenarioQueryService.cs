@@ -46,7 +46,7 @@ public sealed class CompassScenarioQueryService(
                 "peso-financeiro",
                 "Peso_Financeiro",
                 "Peso financeiro",
-                "Peso financeiro por SKU (visão consolidada, sem cliente).",
+                "Peso financeiro por SKU (visão consolidada — sem cliente/UN).",
                 "Global_CC",
                 UseVolumeUng: false,
                 PesoMode: true),
@@ -209,10 +209,18 @@ public sealed class CompassScenarioQueryService(
         string? search,
         CancellationToken cancellationToken)
     {
+        var needsSkuJoin = !string.IsNullOrWhiteSpace(search);
+        var fromClause = needsSkuJoin
+            ? """
+              FROM public.etl_hyperion h
+              LEFT JOIN public.dim_item d ON d.it_codigo = REPLACE(h.sku, 'SKU_', '')
+              """
+            : "FROM public.etl_hyperion h";
+
         var sql = $"""
             SELECT COUNT(*)::bigint,
-                   COALESCE(SUM(amount), 0)
-            FROM public.etl_hyperion
+                   COALESCE(SUM(h.amount), 0)
+            {fromClause}
             WHERE {BuildWhereClause(def, ungFilter, search)}
             """;
 
@@ -239,10 +247,16 @@ public sealed class CompassScenarioQueryService(
         CancellationToken cancellationToken)
     {
         var sql = $"""
-            SELECT sku, cliente, ung, entity, amount
-            FROM public.etl_hyperion
+            SELECT h.sku,
+                   COALESCE(d.descricao, '') AS sku_description,
+                   h.cliente,
+                   h.ung,
+                   h.entity,
+                   h.amount
+            FROM public.etl_hyperion h
+            LEFT JOIN public.dim_item d ON d.it_codigo = REPLACE(h.sku, 'SKU_', '')
             WHERE {BuildWhereClause(def, ungFilter, search)}
-            ORDER BY amount DESC
+            ORDER BY h.amount DESC
             OFFSET @offset LIMIT @limit
             """;
 
@@ -260,7 +274,8 @@ public sealed class CompassScenarioQueryService(
                 reader.IsDBNull(1) ? string.Empty : reader.GetString(1),
                 reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
                 reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
-                reader.IsDBNull(4) ? 0m : reader.GetDecimal(4)));
+                reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
+                reader.IsDBNull(5) ? 0m : reader.GetDecimal(5)));
         }
 
         return rows;
@@ -270,40 +285,40 @@ public sealed class CompassScenarioQueryService(
     {
         var clauses = new List<string>
         {
-            "version = @version",
-            "scenario = @scenario",
-            "years = @years",
-            "period = @period",
-            "account = @account",
-            "entity = @entity",
-            "item = 'NA_Item'",
-            "atributo1 = 'NA'",
-            "sku LIKE 'SKU_%'",
-            "amount > 0",
+            "h.version = @version",
+            "h.scenario = @scenario",
+            "h.years = @years",
+            "h.period = @period",
+            "h.account = @account",
+            "h.entity = @entity",
+            "h.item = 'NA_Item'",
+            "h.atributo1 = 'NA'",
+            "h.sku LIKE 'SKU_%'",
+            "h.amount > 0",
         };
 
         if (def.PesoMode)
         {
-            clauses.Add("cliente = 'NA_Cliente'");
-            clauses.Add("ung = 'NA_UNG'");
-            clauses.Add("sku <> ALL(@blacklist)");
+            clauses.Add("h.cliente = 'NA_Cliente'");
+            clauses.Add("h.ung = 'NA_UNG'");
+            clauses.Add("h.sku <> ALL(@blacklist)");
         }
         else
         {
-            clauses.Add("cliente NOT IN ('Total_Clientes')");
+            clauses.Add("h.cliente NOT IN ('Total_Clientes')");
             if (!string.IsNullOrWhiteSpace(ungFilter))
             {
-                clauses.Add("ung = @ungFilter");
+                clauses.Add("h.ung = @ungFilter");
             }
             else if (def.UseVolumeUng)
             {
-                clauses.Add("ung = ANY(@ung)");
+                clauses.Add("h.ung = ANY(@ung)");
             }
         }
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            clauses.Add("(sku ILIKE @search OR cliente ILIKE @search)");
+            clauses.Add("(h.sku ILIKE @search OR h.cliente ILIKE @search OR COALESCE(d.descricao, '') ILIKE @search)");
         }
 
         return string.Join("\n              AND ", clauses);

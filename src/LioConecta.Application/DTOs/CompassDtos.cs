@@ -156,6 +156,7 @@ public sealed record CompassScenarioRowsQuery(
 
 public sealed record CompassScenarioRowDto(
     string Sku,
+    string SkuDescription,
     string Cliente,
     string Ung,
     string Entity,

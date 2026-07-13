@@ -6,10 +6,5 @@ UPDATE app_settings SET "Value" = 'https://servicedesk.liotecnica.com.br/api.php
 UPDATE app_settings SET "Value" = 'https://servicedesk.liotecnica.com.br', "UpdatedAt" = NOW() WHERE "Key" = 'glpi.portal_url';
 UPDATE app_settings SET "Value" = '7', "UpdatedAt" = NOW() WHERE "Key" = 'glpi.profile_id';
 UPDATE app_settings SET "Value" = 'ocJzsNsUJAFduci9UCeCNP3E9406oryHpFNn50Lp', "UpdatedAt" = NOW() WHERE "Key" = 'glpi.user_token';
-UPDATE app_settings SET "Value" = $json$[
-  {"id":"ti","name":"Área TI","icon":"laptop","entityId":1,"categoryRootIds":[],"serviceCount":21},
-  {"id":"custo","name":"Área CUSTO","icon":"money","entityId":1,"categoryRootIds":[],"serviceCount":1},
-  {"id":"pricing","name":"Área PRINCING","icon":"clipboard","entityId":1,"categoryRootIds":[],"serviceCount":6},
-  {"id":"financeira","name":"Área Financeira","icon":"money","entityId":1,"categoryRootIds":[],"serviceCount":2}
-]$json$, "UpdatedAt" = NOW() WHERE "Key" = 'helpdesk.glpi_areas';
+DELETE FROM app_settings WHERE "Key" = 'helpdesk.glpi_areas';
 UPDATE app_settings SET "Value" = 'false', "UpdatedAt" = NOW() WHERE "Key" = 'integrations.use_dev_adapters';

@@ -77,7 +77,7 @@ public sealed class CompassScenarioQueryService(
             var items = new List<CompassScenarioItemDto>(Definitions.Count);
             foreach (var def in Definitions.Values)
             {
-                var totals = await QueryTotalsAsync(connection, def, filters, ungFilter: null, search: null, cancellationToken);
+                var totals = await QueryTotalsAsync(connection, def, filters, RowFilters.Empty, cancellationToken);
                 items.Add(new CompassScenarioItemDto(
                     def.Id,
                     def.Account,
@@ -127,20 +127,22 @@ public sealed class CompassScenarioQueryService(
         {
             await connection.OpenAsync(cancellationToken);
 
+            var rowFilters = BuildRowFilters(query);
+
             var totals = await QueryTotalsAsync(
                 connection,
                 def,
                 filters,
-                ungFilter: query.Ung,
-                search: query.Search,
+                rowFilters,
                 cancellationToken);
 
             var items = await QueryRowsAsync(
                 connection,
                 def,
                 filters,
-                ungFilter: query.Ung,
-                search: query.Search,
+                rowFilters,
+                sortBy: query.SortBy,
+                sortDir: query.SortDir,
                 offset: (page - 1) * pageSize,
                 limit: pageSize,
                 cancellationToken);
@@ -205,19 +207,18 @@ public sealed class CompassScenarioQueryService(
         NpgsqlConnection connection,
         ScenarioDefinition def,
         CompassScenarioFiltersDto filters,
-        string? ungFilter,
-        string? search,
+        RowFilters rowFilters,
         CancellationToken cancellationToken)
     {
         var sql = $"""
             SELECT COUNT(*)::bigint,
                    COALESCE(SUM(h.amount), 0)
-            {BuildFromClause(includeLookups: !string.IsNullOrWhiteSpace(search))}
-            WHERE {BuildWhereClause(def, ungFilter, search)}
+            {BuildFromClause(includeLookups: rowFilters.NeedsLookups)}
+            WHERE {BuildWhereClause(def, rowFilters)}
             """;
 
         await using var cmd = new NpgsqlCommand(sql, connection);
-        BindParams(cmd, def, filters, ungFilter, search);
+        BindParams(cmd, def, filters, rowFilters);
 
         await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
         if (!await reader.ReadAsync(cancellationToken))
@@ -232,8 +233,9 @@ public sealed class CompassScenarioQueryService(
         NpgsqlConnection connection,
         ScenarioDefinition def,
         CompassScenarioFiltersDto filters,
-        string? ungFilter,
-        string? search,
+        RowFilters rowFilters,
+        string? sortBy,
+        string? sortDir,
         int offset,
         int limit,
         CancellationToken cancellationToken)
@@ -248,13 +250,13 @@ public sealed class CompassScenarioQueryService(
                    h.entity,
                    h.amount
             {BuildFromClause(includeLookups: true)}
-            WHERE {BuildWhereClause(def, ungFilter, search)}
-            ORDER BY h.amount DESC
+            WHERE {BuildWhereClause(def, rowFilters)}
+            {BuildOrderBy(sortBy, sortDir)}
             OFFSET @offset LIMIT @limit
             """;
 
         await using var cmd = new NpgsqlCommand(sql, connection);
-        BindParams(cmd, def, filters, ungFilter, search);
+        BindParams(cmd, def, filters, rowFilters);
         cmd.Parameters.AddWithValue("offset", offset);
         cmd.Parameters.AddWithValue("limit", limit);
 
@@ -306,7 +308,40 @@ public sealed class CompassScenarioQueryService(
             """;
     }
 
-    private static string BuildWhereClause(ScenarioDefinition def, string? ungFilter, string? search)
+    private static RowFilters BuildRowFilters(CompassScenarioRowsQuery query) =>
+        new(
+            query.Ung,
+            query.Search,
+            query.Sku,
+            query.SkuDescription,
+            query.Cliente,
+            query.UngLabel,
+            query.Entity);
+
+    private static string BuildOrderBy(string? sortBy, string? sortDir)
+    {
+        var dir = string.Equals(sortDir, "asc", StringComparison.OrdinalIgnoreCase) ? "ASC" : "DESC";
+        var key = (sortBy ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(key))
+        {
+            return "ORDER BY h.amount DESC";
+        }
+
+        var column = key switch
+        {
+            "sku" => "h.sku",
+            "skudescription" or "descricao" => "COALESCE(d.descricao, '')",
+            "cliente" => "COALESCE(NULLIF(cli.nome_abrev, ''), NULLIF(cli.razao_social, ''), h.cliente)",
+            "ung" => "COALESCE(NULLIF(cv.descricao, ''), uf.label, h.ung)",
+            "entity" => "h.entity",
+            "amount" or "valor" => "h.amount",
+            _ => "h.amount",
+        };
+
+        return $"ORDER BY {column} {dir}, h.sku ASC";
+    }
+
+    private static string BuildWhereClause(ScenarioDefinition def, RowFilters rowFilters)
     {
         var clauses = new List<string>
         {
@@ -331,7 +366,7 @@ public sealed class CompassScenarioQueryService(
         else
         {
             clauses.Add("h.cliente NOT IN ('Total_Clientes')");
-            if (!string.IsNullOrWhiteSpace(ungFilter))
+            if (!string.IsNullOrWhiteSpace(rowFilters.UngFilter))
             {
                 clauses.Add("h.ung = @ungFilter");
             }
@@ -341,7 +376,7 @@ public sealed class CompassScenarioQueryService(
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(search))
+        if (!string.IsNullOrWhiteSpace(rowFilters.Search))
         {
             clauses.Add("""
                 (
@@ -356,6 +391,43 @@ public sealed class CompassScenarioQueryService(
                 """);
         }
 
+        if (!string.IsNullOrWhiteSpace(rowFilters.Sku))
+        {
+            clauses.Add("h.sku ILIKE @skuFilter");
+        }
+
+        if (!string.IsNullOrWhiteSpace(rowFilters.SkuDescription))
+        {
+            clauses.Add("COALESCE(d.descricao, '') ILIKE @skuDescriptionFilter");
+        }
+
+        if (!string.IsNullOrWhiteSpace(rowFilters.Cliente))
+        {
+            clauses.Add("""
+                (
+                    h.cliente ILIKE @clienteFilter
+                    OR COALESCE(cli.nome_abrev, '') ILIKE @clienteFilter
+                    OR COALESCE(cli.razao_social, '') ILIKE @clienteFilter
+                )
+                """);
+        }
+
+        if (!string.IsNullOrWhiteSpace(rowFilters.UngLabel))
+        {
+            clauses.Add("""
+                (
+                    h.ung ILIKE @ungLabelFilter
+                    OR COALESCE(cv.descricao, '') ILIKE @ungLabelFilter
+                    OR COALESCE(uf.label, '') ILIKE @ungLabelFilter
+                )
+                """);
+        }
+
+        if (!string.IsNullOrWhiteSpace(rowFilters.Entity))
+        {
+            clauses.Add("h.entity ILIKE @entityFilter");
+        }
+
         return string.Join("\n              AND ", clauses);
     }
 
@@ -363,8 +435,7 @@ public sealed class CompassScenarioQueryService(
         NpgsqlCommand cmd,
         ScenarioDefinition def,
         CompassScenarioFiltersDto filters,
-        string? ungFilter,
-        string? search)
+        RowFilters rowFilters)
     {
         AddCommonParams(cmd, filters);
         cmd.Parameters.AddWithValue("account", def.Account);
@@ -374,19 +445,62 @@ public sealed class CompassScenarioQueryService(
         {
             cmd.Parameters.AddWithValue("blacklist", PesoFinanceiroSkuBlacklist);
         }
-        else if (!string.IsNullOrWhiteSpace(ungFilter))
+        else if (!string.IsNullOrWhiteSpace(rowFilters.UngFilter))
         {
-            cmd.Parameters.AddWithValue("ungFilter", ungFilter.Trim());
+            cmd.Parameters.AddWithValue("ungFilter", rowFilters.UngFilter.Trim());
         }
         else if (def.UseVolumeUng)
         {
             cmd.Parameters.AddWithValue("ung", VolumeUng);
         }
 
-        if (!string.IsNullOrWhiteSpace(search))
+        if (!string.IsNullOrWhiteSpace(rowFilters.Search))
         {
-            cmd.Parameters.AddWithValue("search", $"%{search.Trim()}%");
+            cmd.Parameters.AddWithValue("search", $"%{rowFilters.Search.Trim()}%");
         }
+
+        if (!string.IsNullOrWhiteSpace(rowFilters.Sku))
+        {
+            cmd.Parameters.AddWithValue("skuFilter", $"%{rowFilters.Sku.Trim()}%");
+        }
+
+        if (!string.IsNullOrWhiteSpace(rowFilters.SkuDescription))
+        {
+            cmd.Parameters.AddWithValue("skuDescriptionFilter", $"%{rowFilters.SkuDescription.Trim()}%");
+        }
+
+        if (!string.IsNullOrWhiteSpace(rowFilters.Cliente))
+        {
+            cmd.Parameters.AddWithValue("clienteFilter", $"%{rowFilters.Cliente.Trim()}%");
+        }
+
+        if (!string.IsNullOrWhiteSpace(rowFilters.UngLabel))
+        {
+            cmd.Parameters.AddWithValue("ungLabelFilter", $"%{rowFilters.UngLabel.Trim()}%");
+        }
+
+        if (!string.IsNullOrWhiteSpace(rowFilters.Entity))
+        {
+            cmd.Parameters.AddWithValue("entityFilter", $"%{rowFilters.Entity.Trim()}%");
+        }
+    }
+
+    private sealed record RowFilters(
+        string? UngFilter,
+        string? Search,
+        string? Sku,
+        string? SkuDescription,
+        string? Cliente,
+        string? UngLabel,
+        string? Entity)
+    {
+        public static RowFilters Empty { get; } = new(null, null, null, null, null, null, null);
+
+        public bool NeedsLookups =>
+            !string.IsNullOrWhiteSpace(Search)
+            || !string.IsNullOrWhiteSpace(SkuDescription)
+            || !string.IsNullOrWhiteSpace(Cliente)
+            || !string.IsNullOrWhiteSpace(UngLabel);
     }
 
     private static void AddCommonParams(NpgsqlCommand cmd, CompassScenarioFiltersDto filters)

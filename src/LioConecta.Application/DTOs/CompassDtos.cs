@@ -116,3 +116,62 @@ public sealed record CompassAggregatesQuery(
     string? Familia = null,
     string? Tipo = null,
     string? Search = null);
+
+public sealed record CompassScenariosQuery(
+    string Version = "Oficial",
+    string Scenario = "Orcado",
+    string Years = "FY26",
+    string Period = "Jan");
+
+public sealed record CompassScenarioFiltersDto(
+    string Version,
+    string Scenario,
+    string Years,
+    string Period);
+
+public sealed record CompassScenarioItemDto(
+    string Id,
+    string Account,
+    string Name,
+    string Description,
+    long RowCount,
+    decimal TotalAmount,
+    string Status);
+
+public sealed record CompassScenariosDto(
+    bool Configured,
+    string? Message,
+    CompassScenarioFiltersDto Filters,
+    IReadOnlyList<CompassScenarioItemDto> Scenarios);
+
+public sealed record CompassScenarioRowsQuery(
+    string Version = "Oficial",
+    string Scenario = "Orcado",
+    string Years = "FY26",
+    string Period = "Jan",
+    string? Search = null,
+    string? Ung = null,
+    int Page = 1,
+    int PageSize = 25);
+
+public sealed record CompassScenarioRowDto(
+    string Sku,
+    string Cliente,
+    string Ung,
+    string Entity,
+    decimal Amount);
+
+public sealed record CompassScenarioRowsPageDto(
+    string ScenarioId,
+    string Account,
+    string Name,
+    bool Configured,
+    string? Message,
+    CompassScenarioFiltersDto Filters,
+    IReadOnlyList<CompassScenarioRowDto> Items,
+    int Page,
+    int PageSize,
+    long TotalCount,
+    decimal TotalAmount,
+    int TotalPages);
+

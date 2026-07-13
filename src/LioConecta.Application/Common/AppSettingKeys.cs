@@ -153,6 +153,11 @@ public static class AppSettingKeys
     public const string CompassEnabled = "compass.enabled";
     public const string CompassAllowedRoles = "compass.allowed_roles";
     public const string CompassAllowedEmails = "compass.allowed_emails";
+    public const string CompassDatalakeHost = "compass.datalake.host";
+    public const string CompassDatalakeUsername = "compass.datalake.username";
+    public const string CompassDatalakePassword = "compass.datalake.password";
+    public const string CompassDatalakeDatabase = "compass.datalake.database";
+    public const string CompassDatalakePort = "compass.datalake.port";
 
     public const string UniLioEnabled = "unilio.enabled";
     public const string UniLioAllowedRoles = "unilio.allowed_roles";

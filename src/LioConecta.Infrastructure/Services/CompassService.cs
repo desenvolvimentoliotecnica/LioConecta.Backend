@@ -13,7 +13,8 @@ namespace LioConecta.Infrastructure.Services;
 public sealed class CompassService(
     AppDbContext db,
     IAppSettingsProvider settingsProvider,
-    IPermissionService permissionService) : ICompassService
+    IPermissionService permissionService,
+    ICompassScenarioQueryService scenarioQueryService) : ICompassService
 {
     private const string FaturamentoTipo = "Faturamento";
     private const string ContribuicaoLiquidaTipo = "Contribuição Líquida";
@@ -200,6 +201,23 @@ public sealed class CompassService(
         };
 
         return new CompassAggregatesDto(groupBy, items);
+    }
+
+    public async Task<CompassScenariosDto> GetScenariosAsync(
+        CompassScenariosQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureCanReadAsync(cancellationToken);
+        return await scenarioQueryService.GetScenariosAsync(query, cancellationToken);
+    }
+
+    public async Task<CompassScenarioRowsPageDto> GetScenarioRowsAsync(
+        string scenarioId,
+        CompassScenarioRowsQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureCanReadAsync(cancellationToken);
+        return await scenarioQueryService.GetScenarioRowsAsync(scenarioId, query, cancellationToken);
     }
 
     private static async Task<IReadOnlyList<CompassAggregateRowDto>> GroupAggregate(

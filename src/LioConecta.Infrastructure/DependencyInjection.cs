@@ -3,6 +3,7 @@ using LioConecta.Application.Interfaces.Integrations;
 using LioConecta.Application.Interfaces.Repositories;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Infrastructure.Configuration;
+using LioConecta.Infrastructure.Integrations.CompassDatalake;
 using LioConecta.Infrastructure.Integrations.Email;
 using LioConecta.Infrastructure.Integrations.Glpi;
 using LioConecta.Infrastructure.Integrations.Graph;
@@ -181,6 +182,8 @@ public static class DependencyInjection
         services.AddScoped<IBenefitManagementService, BenefitManagementService>();
         services.AddScoped<ISystemCatalogService, SystemCatalogService>();
         services.AddScoped<ICompassService, CompassService>();
+        services.AddScoped<ICompassDatalakeConnectionFactory, CompassDatalakeConnectionFactory>();
+        services.AddScoped<ICompassScenarioQueryService, CompassScenarioQueryService>();
         services.AddScoped<IUniLioService, UniLioService>();
         services.AddScoped<IUniLioAuthoringService, UniLioAuthoringService>();
         services.AddScoped<UniLioCompletionService>();

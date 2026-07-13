@@ -40,4 +40,28 @@ public sealed class CompassController(ICompassService compassService) : Controll
         [FromQuery] CompassAggregatesQuery query,
         CancellationToken cancellationToken)
         => Ok(await compassService.GetAggregatesAsync(query, cancellationToken));
+
+    [HttpGet("scenarios")]
+    [ProducesResponseType(typeof(CompassScenariosDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<CompassScenariosDto>> GetScenarios(
+        [FromQuery] CompassScenariosQuery query,
+        CancellationToken cancellationToken)
+        => Ok(await compassService.GetScenariosAsync(query, cancellationToken));
+
+    [HttpGet("scenarios/{id}/rows")]
+    [ProducesResponseType(typeof(CompassScenarioRowsPageDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CompassScenarioRowsPageDto>> GetScenarioRows(
+        [FromRoute] string id,
+        [FromQuery] CompassScenarioRowsQuery query,
+        CancellationToken cancellationToken)
+    {
+        var page = await compassService.GetScenarioRowsAsync(id, query, cancellationToken);
+        if (string.Equals(page.Message, "Cenário não encontrado.", StringComparison.Ordinal))
+        {
+            return NotFound(page);
+        }
+
+        return Ok(page);
+    }
 }

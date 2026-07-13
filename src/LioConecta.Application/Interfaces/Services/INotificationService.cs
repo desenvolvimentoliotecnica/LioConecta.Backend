@@ -43,6 +43,44 @@ public interface INotificationService
         CancellationToken cancellationToken = default,
         string? title = null);
 
+    Task NotifyServiceRequestCreatedAsync(
+        IReadOnlyList<Guid> recipientPersonIds,
+        Guid serviceRequestId,
+        string summary,
+        CancellationToken cancellationToken = default,
+        string? title = null);
+
+    Task NotifyServiceRequestDecisionAsync(
+        Guid requesterPersonId,
+        Guid serviceRequestId,
+        string requestType,
+        bool approved,
+        string? reason,
+        CancellationToken cancellationToken = default);
+
+    Task NotifyServiceRequestMessageAsync(
+        Guid recipientPersonId,
+        Guid serviceRequestId,
+        string requestType,
+        string actorName,
+        bool fromRh,
+        string preview,
+        CancellationToken cancellationToken = default);
+
+    Task NotifyServiceRequestFinalizedAsync(
+        Guid requesterPersonId,
+        Guid serviceRequestId,
+        string requestType,
+        string? comment,
+        CancellationToken cancellationToken = default);
+
+    Task NotifyServiceRequestClosureConfirmedAsync(
+        IReadOnlyList<Guid> recipientPersonIds,
+        Guid serviceRequestId,
+        string requestType,
+        string requesterName,
+        CancellationToken cancellationToken = default);
+
     Task NotifyBirthdayCongratsAsync(
         FeedPost post,
         Person celebrated,

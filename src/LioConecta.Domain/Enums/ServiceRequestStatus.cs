@@ -1,5 +1,8 @@
+using System.Text.Json.Serialization;
+
 namespace LioConecta.Domain.Enums;
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum ServiceRequestStatus
 {
     Draft,
@@ -8,5 +11,7 @@ public enum ServiceRequestStatus
     Approved,
     Rejected,
     Completed,
-    Cancelled
+    Cancelled,
+    /// <summary>RH encerrou o atendimento; aguarda confirmação do solicitante.</summary>
+    AwaitingConfirmation,
 }

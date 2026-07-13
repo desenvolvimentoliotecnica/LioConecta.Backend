@@ -76,8 +76,15 @@ public sealed record HelpDeskTicketEventDto(
     DateTimeOffset CreatedAt,
     string? Author);
 
+public sealed record HelpDeskTicketAttachmentDto(
+    string DocumentId,
+    string FileName,
+    string? ContentType,
+    long? SizeBytes);
+
 public sealed record HelpDeskTicketDetailDto(
     HelpDeskTicketListItemDto Summary,
     string Description,
     string? Assignee,
-    IReadOnlyList<HelpDeskTicketEventDto> Events);
+    IReadOnlyList<HelpDeskTicketEventDto> Events,
+    IReadOnlyList<HelpDeskTicketAttachmentDto> Attachments);

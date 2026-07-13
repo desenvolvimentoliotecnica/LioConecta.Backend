@@ -126,4 +126,21 @@ public sealed class HelpDeskController(IHelpDeskService helpDeskService) : Contr
         var detail = await helpDeskService.GetTicketDetailAsync(ticketId, cancellationToken);
         return detail is null ? NotFound() : Ok(detail);
     }
+
+    [HttpGet("tickets/{ticketId}/attachments/{documentId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetTicketAttachment(
+        string ticketId,
+        string documentId,
+        CancellationToken cancellationToken)
+    {
+        var file = await helpDeskService.GetTicketAttachmentAsync(ticketId, documentId, cancellationToken);
+        if (file is null)
+        {
+            return NotFound();
+        }
+
+        return File(file.Value.Content, file.Value.ContentType, file.Value.FileName);
+    }
 }

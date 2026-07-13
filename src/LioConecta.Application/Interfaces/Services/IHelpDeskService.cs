@@ -37,4 +37,9 @@ public interface IHelpDeskService
     Task<HelpDeskTicketDetailDto?> GetTicketDetailAsync(
         string ticketId,
         CancellationToken cancellationToken = default);
+
+    Task<(byte[] Content, string ContentType, string FileName)?> GetTicketAttachmentAsync(
+        string ticketId,
+        string documentId,
+        CancellationToken cancellationToken = default);
 }

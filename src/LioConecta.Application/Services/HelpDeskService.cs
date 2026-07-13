@@ -232,7 +232,31 @@ public sealed class HelpDeskService(
             detail.Assignee,
             detail.Followups
                 .Select(f => new HelpDeskTicketEventDto(f.Content, f.CreatedAt, f.Author))
+                .ToList(),
+            detail.Attachments
+                .Select(a => new HelpDeskTicketAttachmentDto(a.DocumentId, a.FileName, a.ContentType, a.SizeBytes))
                 .ToList());
+    }
+
+    public async Task<(byte[] Content, string ContentType, string FileName)?> GetTicketAttachmentAsync(
+        string ticketId,
+        string documentId,
+        CancellationToken cancellationToken = default)
+    {
+        var email = await GetCurrentUserEmailAsync(cancellationToken);
+        var canViewAll = await CanViewAllGlpiTicketsAsync(cancellationToken);
+        var file = await glpiAdapter.GetTicketAttachmentAsync(
+            ticketId,
+            documentId,
+            email,
+            canViewAll,
+            cancellationToken);
+        if (file is null)
+        {
+            return null;
+        }
+
+        return (file.Content, file.ContentType, file.FileName);
     }
 
     private async Task<string> GetCurrentUserEmailAsync(CancellationToken cancellationToken)

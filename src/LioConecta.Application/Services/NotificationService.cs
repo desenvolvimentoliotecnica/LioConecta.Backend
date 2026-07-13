@@ -189,6 +189,161 @@ public sealed class NotificationService(
             cancellationToken);
     }
 
+    public async Task NotifyServiceRequestCreatedAsync(
+        IReadOnlyList<Guid> recipientPersonIds,
+        Guid serviceRequestId,
+        string summary,
+        CancellationToken cancellationToken = default,
+        string? title = null)
+    {
+        var recipients = await personRepository.GetByIdsAsync(recipientPersonIds, cancellationToken);
+        if (recipients.Count == 0)
+        {
+            return;
+        }
+
+        var href = $"/servicos/solicitacoes-rh?requestId={serviceRequestId}";
+        await BroadcastAsync(
+            () => Task.FromResult(recipients),
+            NotificationType.ServiceRequest,
+            string.IsNullOrWhiteSpace(title) ? "Novo pedido de RH" : title.Trim(),
+            summary.Trim(),
+            href,
+            cancellationToken);
+    }
+
+    public async Task NotifyServiceRequestDecisionAsync(
+        Guid requesterPersonId,
+        Guid serviceRequestId,
+        string requestType,
+        bool approved,
+        string? reason,
+        CancellationToken cancellationToken = default)
+    {
+        var requester = await personRepository.GetByIdAsync(requesterPersonId, cancellationToken);
+        if (requester is null)
+        {
+            return;
+        }
+
+        var typeLabel = requestType.ToLowerInvariant() switch
+        {
+            "servicos-beneficios" => "benefício",
+            "servicos-contracheque" => "contracheque",
+            _ => "RH",
+        };
+        var title = approved ? $"Pedido de {typeLabel} aprovado" : $"Pedido de {typeLabel} rejeitado";
+        var body = approved
+            ? $"Seu pedido de {typeLabel} foi aprovado."
+            : $"Seu pedido de {typeLabel} foi rejeitado."
+              + (string.IsNullOrWhiteSpace(reason) ? "" : $" Motivo: {reason.Trim()}");
+        var href = $"/servicos/solicitacoes-rh?mine=1&requestId={serviceRequestId}";
+
+        await BroadcastAsync(
+            () => Task.FromResult<IReadOnlyList<Person>>([requester]),
+            NotificationType.ServiceRequest,
+            title,
+            body,
+            href,
+            cancellationToken);
+    }
+
+    public async Task NotifyServiceRequestMessageAsync(
+        Guid recipientPersonId,
+        Guid serviceRequestId,
+        string requestType,
+        string actorName,
+        bool fromRh,
+        string preview,
+        CancellationToken cancellationToken = default)
+    {
+        var recipient = await personRepository.GetByIdAsync(recipientPersonId, cancellationToken);
+        if (recipient is null)
+        {
+            return;
+        }
+
+        var typeLabel = ServiceRequestTypeLabel(requestType);
+        var safeActor = string.IsNullOrWhiteSpace(actorName) ? (fromRh ? "RH" : "Colaborador") : actorName.Trim();
+        var title = fromRh
+            ? $"Nova resposta do RH — {typeLabel}"
+            : $"Nova resposta do colaborador — {typeLabel}";
+        var body = string.IsNullOrWhiteSpace(preview)
+            ? $"{safeActor} enviou uma mensagem no pedido de {typeLabel}."
+            : $"{safeActor}: {preview.Trim()}";
+        var href = fromRh
+            ? $"/servicos/solicitacoes-rh?mine=1&requestId={serviceRequestId}"
+            : $"/servicos/solicitacoes-rh?requestId={serviceRequestId}";
+
+        await BroadcastAsync(
+            () => Task.FromResult<IReadOnlyList<Person>>([recipient]),
+            NotificationType.ServiceRequest,
+            title,
+            body.Length > 280 ? $"{body[..277]}…" : body,
+            href,
+            cancellationToken);
+    }
+
+    public async Task NotifyServiceRequestFinalizedAsync(
+        Guid requesterPersonId,
+        Guid serviceRequestId,
+        string requestType,
+        string? comment,
+        CancellationToken cancellationToken = default)
+    {
+        var requester = await personRepository.GetByIdAsync(requesterPersonId, cancellationToken);
+        if (requester is null)
+        {
+            return;
+        }
+
+        var typeLabel = ServiceRequestTypeLabel(requestType);
+        var body = $"O RH finalizou seu pedido de {typeLabel}. Confirme o encerramento para concluir."
+                   + (string.IsNullOrWhiteSpace(comment) ? "" : $" Observação: {comment.Trim()}");
+        var href = $"/servicos/solicitacoes-rh?mine=1&requestId={serviceRequestId}";
+
+        await BroadcastAsync(
+            () => Task.FromResult<IReadOnlyList<Person>>([requester]),
+            NotificationType.ServiceRequest,
+            $"Pedido finalizado — confirme o encerramento",
+            body.Length > 280 ? $"{body[..277]}…" : body,
+            href,
+            cancellationToken);
+    }
+
+    public async Task NotifyServiceRequestClosureConfirmedAsync(
+        IReadOnlyList<Guid> recipientPersonIds,
+        Guid serviceRequestId,
+        string requestType,
+        string requesterName,
+        CancellationToken cancellationToken = default)
+    {
+        var recipients = await personRepository.GetByIdsAsync(recipientPersonIds, cancellationToken);
+        if (recipients.Count == 0)
+        {
+            return;
+        }
+
+        var typeLabel = ServiceRequestTypeLabel(requestType);
+        var safeName = string.IsNullOrWhiteSpace(requesterName) ? "Colaborador" : requesterName.Trim();
+        var href = $"/servicos/solicitacoes-rh?requestId={serviceRequestId}";
+
+        await BroadcastAsync(
+            () => Task.FromResult(recipients),
+            NotificationType.ServiceRequest,
+            $"Encerramento confirmado — {typeLabel}",
+            $"{safeName} confirmou o encerramento do pedido de {typeLabel}.",
+            href,
+            cancellationToken);
+    }
+
+    private static string ServiceRequestTypeLabel(string requestType) => requestType.ToLowerInvariant() switch
+    {
+        "servicos-beneficios" => "benefício",
+        "servicos-contracheque" => "contracheque",
+        _ => "RH",
+    };
+
     public async Task NotifyBirthdayCongratsAsync(
         FeedPost post,
         Person celebrated,

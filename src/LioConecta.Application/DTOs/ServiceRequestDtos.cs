@@ -20,6 +20,30 @@ public sealed record CreateServiceRequestRequest(
     ServiceCategory Category,
     IReadOnlyDictionary<string, object?> Payload);
 
+public sealed record ApproveServiceRequestDto(string? Comment);
+
+public sealed record RejectServiceRequestDto(string? Reason);
+
+public sealed record FinalizeServiceRequestDto(string? Comment);
+
+public sealed record ServiceRequestAttachmentMetaDto(
+    string FileName,
+    string StorageFileName,
+    string ContentType,
+    long SizeBytes,
+    string Url);
+
+public sealed record ServiceRequestAttachmentInput(
+    Stream Content,
+    string FileName,
+    string? ContentType,
+    long SizeBytes);
+
+public sealed record ServiceRequestAttachmentFileDto(
+    byte[] Content,
+    string ContentType,
+    string FileName);
+
 public sealed record ServiceRequestEventDto(
     Guid Id,
     string EventType,

@@ -67,7 +67,7 @@ public sealed class BenefitService(
         return new BenefitRequestResultDto(
             created.Id,
             created.Status.ToString(),
-            "Solicitação registrada com sucesso. O RH analisará inclusão ou alteração do benefício.");
+            "Solicitação registrada com sucesso. O RH analisará a alteração ou informação sobre o benefício.");
     }
 
     private BenefitListItemDto ToListItem(Domain.Entities.EmployeeBenefit benefit) =>

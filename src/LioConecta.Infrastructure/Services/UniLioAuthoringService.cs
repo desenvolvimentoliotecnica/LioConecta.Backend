@@ -147,6 +147,7 @@ public sealed class UniLioAuthoringService(
             TagsJson = SerializeTags(request.Tags),
             Status = UniLioCourseStatuses.Draft,
             Rating = 0,
+            ScormPassingScore = NormalizePassingScore(request.ScormPassingScore),
             CreatedAt = now,
             UpdatedAt = now,
         };
@@ -178,6 +179,7 @@ public sealed class UniLioAuthoringService(
         course.Provider = request.Provider;
         course.VisibilityJson = request.VisibilityJson;
         course.TagsJson = SerializeTags(request.Tags);
+        course.ScormPassingScore = NormalizePassingScore(request.ScormPassingScore ?? course.ScormPassingScore);
         course.UpdatedAt = DateTimeOffset.UtcNow;
 
         await db.SaveChangesAsync(cancellationToken);
@@ -193,6 +195,16 @@ public sealed class UniLioAuthoringService(
         if (!UniLioCourseStatuses.EditableByInstructor.Contains(course.Status))
         {
             throw new InvalidOperationException("Curso não pode ser enviado para aprovação neste status.");
+        }
+
+        if (string.Equals(course.ContentType, "scorm", StringComparison.OrdinalIgnoreCase))
+        {
+            var hasPackage = course.ScormPackages.Count > 0
+                || await db.UniLioScormPackages.AnyAsync(p => p.CourseId == course.Id, cancellationToken);
+            if (!hasPackage)
+            {
+                throw new InvalidOperationException("Curso SCORM exige um pacote .zip válido antes do envio para aprovação.");
+            }
         }
 
         var now = DateTimeOffset.UtcNow;
@@ -223,6 +235,36 @@ public sealed class UniLioAuthoringService(
             // Notificações são best-effort.
         }
 
+        return MapAuthoringCourse(course);
+    }
+
+    public async Task<UniLioAuthoringCourseDto> WithdrawCourseAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var course = await LoadCourseAsync(id, cancellationToken);
+        var viewer = await GetViewerAsync(cancellationToken);
+
+        if (!string.Equals(course.Status, UniLioCourseStatuses.PendingApproval, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Apenas cursos em aprovação podem ser revertidos para rascunho.");
+        }
+
+        var canApprove = await UniLioAuthorization.CanApproveCoursesAsync(permissionService, cancellationToken);
+        var isOwner = IsCourseInstructor(course, viewer)
+            && await permissionService.HasPermissionAsync("unilio.courses.edit.own", cancellationToken: cancellationToken);
+
+        if (!canApprove && !isOwner)
+        {
+            throw new UnauthorizedAccessException("Sem permissão para reverter este curso.");
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        course.Status = UniLioCourseStatuses.Draft;
+        course.SubmittedAt = null;
+        course.SubmittedByPersonId = null;
+        course.RejectionReason = null;
+        course.UpdatedAt = now;
+
+        await db.SaveChangesAsync(cancellationToken);
         return MapAuthoringCourse(course);
     }
 
@@ -510,6 +552,108 @@ public sealed class UniLioAuthoringService(
         await db.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<UniLioScormPackageDto> UploadScormPackageAsync(
+        Guid courseId,
+        Stream content,
+        string fileName,
+        long sizeBytes,
+        int? passingScore,
+        CancellationToken cancellationToken = default)
+    {
+        var course = await LoadCourseAsync(courseId, cancellationToken);
+        var viewer = await GetViewerAsync(cancellationToken);
+        await EnsureCanEditAsync(course, viewer, cancellationToken);
+
+        if (!UniLioCourseStatuses.EditableByInstructor.Contains(course.Status))
+        {
+            throw new InvalidOperationException("Pacote SCORM só pode ser enviado em cursos rascunho ou rejeitados.");
+        }
+
+        UniLioScormPackageStorage.ValidateZip(fileName, sizeBytes);
+
+        var packageId = Guid.NewGuid();
+        var storageRoot = packageId.ToString("N");
+        var packageDirectory = UniLioScormPackageStorage.ResolvePackageDirectory(hostEnvironment, packageId);
+        var (launchPath, manifestTitle, scoCount) = await UniLioScormPackageStorage.ExtractAndValidateAsync(
+            content,
+            packageDirectory,
+            cancellationToken);
+
+        // Remove previous packages for this course.
+        foreach (var existing in course.ScormPackages.ToList())
+        {
+            UniLioScormPackageStorage.DeletePackageDirectory(hostEnvironment, existing.StorageRoot);
+            db.UniLioScormPackages.Remove(existing);
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var scormModule = course.Modules
+            .OrderBy(m => m.SortOrder)
+            .FirstOrDefault(m => string.Equals(m.ContentType, "scorm", StringComparison.OrdinalIgnoreCase));
+
+        if (scormModule is null)
+        {
+            scormModule = new UniLioCourseModule
+            {
+                Id = Guid.NewGuid(),
+                CourseId = courseId,
+                SortOrder = 1,
+                Title = string.IsNullOrWhiteSpace(manifestTitle) ? "Conteúdo SCORM" : manifestTitle,
+                ContentType = "scorm",
+                ContentUrl = UniLioScormPackageStorage.BuildPublicLaunchUrl(packageId, launchPath),
+                DurationMinutes = course.DurationMinutes,
+                CreatedAt = now,
+                UpdatedAt = now,
+            };
+            db.UniLioCourseModules.Add(scormModule);
+            course.Modules.Add(scormModule);
+        }
+        else
+        {
+            scormModule.Title = string.IsNullOrWhiteSpace(manifestTitle) ? scormModule.Title : manifestTitle;
+            scormModule.ContentType = "scorm";
+            scormModule.ContentUrl = UniLioScormPackageStorage.BuildPublicLaunchUrl(packageId, launchPath);
+            scormModule.UpdatedAt = now;
+        }
+
+        // Drop non-scorm modules for course-as-package model.
+        foreach (var extra in course.Modules.Where(m => m.Id != scormModule.Id).ToList())
+        {
+            foreach (var attachment in extra.Attachments.ToList())
+            {
+                UniLioModuleAttachmentStorage.DeleteIfExists(attachment.StorageFileName, hostEnvironment);
+            }
+
+            db.UniLioCourseModules.Remove(extra);
+        }
+
+        course.ContentType = "scorm";
+        course.ScormPassingScore = NormalizePassingScore(passingScore ?? course.ScormPassingScore);
+        course.UpdatedAt = now;
+
+        var package = new UniLioScormPackage
+        {
+            Id = packageId,
+            CourseId = courseId,
+            ModuleId = scormModule.Id,
+            Version = "1.2",
+            ManifestTitle = manifestTitle,
+            LaunchPath = launchPath,
+            StorageRoot = storageRoot,
+            ScoCount = scoCount,
+            OriginalFileName = fileName.Trim(),
+            SizeBytes = sizeBytes,
+            UploadedAt = now,
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+
+        db.UniLioScormPackages.Add(package);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return MapScormPackage(package);
+    }
+
     public async Task<UniLioAuthoringAssessmentDto> UpsertCourseAssessmentAsync(
         Guid courseId,
         UniLioUpsertAssessmentRequest request,
@@ -571,6 +715,7 @@ public sealed class UniLioAuthoringService(
         return await db.UniLioCourses
             .Include(c => c.Modules).ThenInclude(m => m.Attachments)
             .Include(c => c.Assessments)
+            .Include(c => c.ScormPackages)
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken)
             ?? throw new KeyNotFoundException($"Curso {id} não encontrado.");
     }
@@ -748,7 +893,30 @@ public sealed class UniLioAuthoringService(
                 .OrderBy(m => m.SortOrder)
                 .Select(m => MapModule(m, false))
                 .ToList(),
-            assessmentDto);
+            assessmentDto,
+            course.ScormPassingScore,
+            course.ScormPackages
+                .OrderByDescending(p => p.UploadedAt)
+                .Select(MapScormPackage)
+                .FirstOrDefault());
+    }
+
+    private static UniLioScormPackageDto MapScormPackage(UniLioScormPackage package) =>
+        new(
+            package.Id,
+            package.ModuleId,
+            package.Version,
+            package.ManifestTitle,
+            UniLioScormPackageStorage.BuildPublicLaunchUrl(package.Id, package.LaunchPath),
+            package.ScoCount,
+            package.OriginalFileName,
+            package.SizeBytes,
+            package.UploadedAt);
+
+    private static int NormalizePassingScore(int? score)
+    {
+        var value = score ?? 70;
+        return Math.Clamp(value, 0, 100);
     }
 
     private static UniLioModuleDto MapModule(UniLioCourseModule module, bool isCompleted) =>

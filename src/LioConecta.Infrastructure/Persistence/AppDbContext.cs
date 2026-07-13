@@ -92,6 +92,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<UniLioModuleQuestion> UniLioModuleQuestions => Set<UniLioModuleQuestion>();
     public DbSet<UniLioModuleQuestionReply> UniLioModuleQuestionReplies => Set<UniLioModuleQuestionReply>();
     public DbSet<UniLioModuleAttachment> UniLioModuleAttachments => Set<UniLioModuleAttachment>();
+    public DbSet<UniLioScormPackage> UniLioScormPackages => Set<UniLioScormPackage>();
+    public DbSet<UniLioScormAttempt> UniLioScormAttempts => Set<UniLioScormAttempt>();
     public DbSet<PhoneExtension> PhoneExtensions => Set<PhoneExtension>();
     public DbSet<PortalSystem> PortalSystems => Set<PortalSystem>();
     public DbSet<Permission> Permissions => Set<Permission>();
@@ -1208,6 +1210,45 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                 .WithMany()
                 .HasForeignKey(c => c.InstructorPersonId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<UniLioScormPackage>(entity =>
+        {
+            entity.ToTable("uni_lio_scorm_packages");
+            entity.HasIndex(p => p.CourseId);
+            entity.HasIndex(p => p.ModuleId);
+            entity.Property(p => p.Version).HasMaxLength(16);
+            entity.Property(p => p.ManifestTitle).HasMaxLength(512);
+            entity.Property(p => p.LaunchPath).HasMaxLength(1024);
+            entity.Property(p => p.StorageRoot).HasMaxLength(64);
+            entity.Property(p => p.OriginalFileName).HasMaxLength(512);
+            entity.HasOne(p => p.Course)
+                .WithMany(c => c.ScormPackages)
+                .HasForeignKey(p => p.CourseId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(p => p.Module)
+                .WithMany()
+                .HasForeignKey(p => p.ModuleId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UniLioScormAttempt>(entity =>
+        {
+            entity.ToTable("uni_lio_scorm_attempts");
+            entity.HasIndex(a => a.CourseId);
+            entity.HasIndex(a => a.PackageId);
+            entity.HasIndex(a => new { a.EnrollmentId, a.PackageId }).IsUnique();
+            entity.Property(a => a.LessonStatus).HasMaxLength(32);
+            entity.Property(a => a.SessionTime).HasMaxLength(64);
+            entity.Property(a => a.LessonLocation).HasMaxLength(512);
+            entity.HasOne(a => a.Enrollment)
+                .WithMany()
+                .HasForeignKey(a => a.EnrollmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(a => a.Package)
+                .WithMany()
+                .HasForeignKey(a => a.PackageId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<UniLioCourseModule>(entity =>

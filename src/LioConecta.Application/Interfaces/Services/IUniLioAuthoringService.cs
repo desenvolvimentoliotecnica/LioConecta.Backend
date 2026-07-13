@@ -23,6 +23,8 @@ public interface IUniLioAuthoringService
 
     Task<UniLioAuthoringCourseDto> SubmitCourseAsync(Guid id, CancellationToken cancellationToken = default);
 
+    Task<UniLioAuthoringCourseDto> WithdrawCourseAsync(Guid id, CancellationToken cancellationToken = default);
+
     Task<UniLioAuthoringCourseDto> ApproveCourseAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<UniLioAuthoringCourseDto> RejectCourseAsync(
@@ -58,6 +60,14 @@ public interface IUniLioAuthoringService
         Guid courseId,
         Guid moduleId,
         Guid attachmentId,
+        CancellationToken cancellationToken = default);
+
+    Task<UniLioScormPackageDto> UploadScormPackageAsync(
+        Guid courseId,
+        Stream content,
+        string fileName,
+        long sizeBytes,
+        int? passingScore,
         CancellationToken cancellationToken = default);
 
     Task<UniLioAuthoringAssessmentDto> UpsertCourseAssessmentAsync(

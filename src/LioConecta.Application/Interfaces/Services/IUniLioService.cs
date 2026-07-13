@@ -90,4 +90,11 @@ public interface IUniLioService
     Task MarkInstructorQuestionReadAsync(Guid questionId, CancellationToken cancellationToken = default);
 
     Task MarkLearnerQuestionReadAsync(Guid questionId, CancellationToken cancellationToken = default);
+
+    Task<UniLioScormRuntimeDto> GetScormRuntimeAsync(Guid courseId, CancellationToken cancellationToken = default);
+
+    Task<UniLioScormRuntimeDto> UpdateScormRuntimeAsync(
+        Guid courseId,
+        UniLioScormRuntimeUpdateRequest request,
+        CancellationToken cancellationToken = default);
 }

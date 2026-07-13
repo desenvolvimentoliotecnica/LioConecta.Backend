@@ -53,6 +53,11 @@ public sealed class UniLioAuthoringController(IUniLioAuthoringService authoringS
     public async Task<ActionResult<UniLioAuthoringCourseDto>> SubmitCourse(Guid id, CancellationToken cancellationToken)
         => Ok(await authoringService.SubmitCourseAsync(id, cancellationToken));
 
+    [HttpPost("courses/{id:guid}/withdraw")]
+    [ProducesResponseType(typeof(UniLioAuthoringCourseDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UniLioAuthoringCourseDto>> WithdrawCourse(Guid id, CancellationToken cancellationToken)
+        => Ok(await authoringService.WithdrawCourseAsync(id, cancellationToken));
+
     [HttpPost("courses/{id:guid}/approve")]
     [ProducesResponseType(typeof(UniLioAuthoringCourseDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<UniLioAuthoringCourseDto>> ApproveCourse(Guid id, CancellationToken cancellationToken)
@@ -135,6 +140,32 @@ public sealed class UniLioAuthoringController(IUniLioAuthoringService authoringS
     {
         await authoringService.DeleteModuleAttachmentAsync(courseId, moduleId, attachmentId, cancellationToken);
         return NoContent();
+    }
+
+    [HttpPost("courses/{courseId:guid}/scorm-package")]
+    [RequestSizeLimit(209_715_200)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 209_715_200)]
+    [ProducesResponseType(typeof(UniLioScormPackageDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UniLioScormPackageDto>> UploadScormPackage(
+        Guid courseId,
+        IFormFile file,
+        [FromForm] int? passingScore,
+        CancellationToken cancellationToken)
+    {
+        if (file is null || file.Length == 0)
+        {
+            return BadRequest(new { message = "Arquivo ZIP SCORM obrigatório." });
+        }
+
+        await using var stream = file.OpenReadStream();
+        var result = await authoringService.UploadScormPackageAsync(
+            courseId,
+            stream,
+            file.FileName,
+            file.Length,
+            passingScore,
+            cancellationToken);
+        return Ok(result);
     }
 
     [HttpPut("courses/{courseId:guid}/assessment")]

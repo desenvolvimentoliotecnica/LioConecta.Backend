@@ -218,4 +218,19 @@ public sealed class UniLioController(IUniLioService uniLioService) : ControllerB
         await uniLioService.MarkLearnerQuestionReadAsync(id, cancellationToken);
         return NoContent();
     }
+
+    [HttpGet("courses/{courseId:guid}/scorm/runtime")]
+    [ProducesResponseType(typeof(UniLioScormRuntimeDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UniLioScormRuntimeDto>> GetScormRuntime(
+        Guid courseId,
+        CancellationToken cancellationToken)
+        => Ok(await uniLioService.GetScormRuntimeAsync(courseId, cancellationToken));
+
+    [HttpPut("courses/{courseId:guid}/scorm/runtime")]
+    [ProducesResponseType(typeof(UniLioScormRuntimeDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UniLioScormRuntimeDto>> UpdateScormRuntime(
+        Guid courseId,
+        [FromBody] UniLioScormRuntimeUpdateRequest request,
+        CancellationToken cancellationToken)
+        => Ok(await uniLioService.UpdateScormRuntimeAsync(courseId, request, cancellationToken));
 }

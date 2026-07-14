@@ -25,13 +25,13 @@ public sealed class HelpDeskService(
 
     public async Task<HelpDeskSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default)
     {
-        var email = await GetCurrentUserEmailAsync(cancellationToken);
-        var tickets = await glpiAdapter.SearchTicketsByRequesterAsync(
-            email,
-            GlpiTicketScope.Open,
-            cancellationToken);
+        // Contagem da fila geral (chamados abertos / pendentes no GLPI), não só do solicitante.
+        var tickets = await glpiAdapter.SearchAllTicketsAsync(GlpiTicketScope.Open, cancellationToken);
 
-        return new HelpDeskSummaryDto(tickets.Count, "2h críticos · 8h solicitações", await CanViewAllGlpiTicketsAsync(cancellationToken));
+        return new HelpDeskSummaryDto(
+            tickets.Count,
+            "2h críticos · 8h solicitações",
+            await CanViewAllGlpiTicketsAsync(cancellationToken));
     }
 
     public IReadOnlyList<HelpDeskServiceDto> GetServices()

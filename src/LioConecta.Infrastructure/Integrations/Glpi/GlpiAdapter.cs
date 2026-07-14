@@ -408,10 +408,22 @@ public sealed class GlpiAdapter(
         };
     }
 
-    private static string ReadJsonString(JsonElement item, string property) =>
-        item.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String
-            ? value.GetString()?.Trim() ?? string.Empty
-            : string.Empty;
+    private static string ReadJsonString(JsonElement item, string property)
+    {
+        if (!item.TryGetProperty(property, out var value))
+        {
+            return string.Empty;
+        }
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.String => value.GetString()?.Trim() ?? string.Empty,
+            JsonValueKind.Number => value.ToString(),
+            JsonValueKind.True => "true",
+            JsonValueKind.False => "false",
+            _ => string.Empty,
+        };
+    }
 
     public async Task<GlpiTicketResult> GetTicketStatusAsync(
         string ticketId,
@@ -512,6 +524,7 @@ public sealed class GlpiAdapter(
         var priority = ReadElement(payload.GetValueOrDefault("priority")).Trim('"');
         var createdAt = ParseGlpiDate(ReadElement(payload.GetValueOrDefault("date")).Trim('"'));
         var updatedAt = ParseGlpiDate(ReadElement(payload.GetValueOrDefault("date_mod")).Trim('"'));
+        var solvedAt = ParseGlpiDateNullable(ReadElement(payload.GetValueOrDefault("solvedate")).Trim('"'));
 
         var summary = new GlpiTicketSummary
         {
@@ -525,13 +538,21 @@ public sealed class GlpiAdapter(
             Url = BuildTicketUrl(credentials, ticketId),
         };
 
+        var assigneeTask = LoadTicketAssigneeAsync(credentials, sessionToken, ticketId, cancellationToken);
+        var followupsTask = LoadTicketFollowupsAsync(credentials, sessionToken, ticketId, cancellationToken);
+        var solutionTask = LoadTicketSolutionAsync(credentials, sessionToken, ticketId, solvedAt, cancellationToken);
+        var attachmentsTask = LoadTicketAttachmentsAsync(credentials, sessionToken, ticketId, cancellationToken);
+
+        await Task.WhenAll(assigneeTask, followupsTask, solutionTask, attachmentsTask);
+
         return new GlpiTicketDetail
         {
             Summary = summary,
             Description = ReadElement(payload.GetValueOrDefault("content")).Trim('"'),
-            Assignee = "TI — Service Desk",
-            Followups = [],
-            Attachments = await LoadTicketAttachmentsAsync(credentials, sessionToken, ticketId, cancellationToken),
+            Assignee = await assigneeTask,
+            Solution = await solutionTask,
+            Followups = await followupsTask,
+            Attachments = await attachmentsTask,
         };
     }
 
@@ -603,6 +624,334 @@ public sealed class GlpiAdapter(
             ContentType = contentType,
             Content = bytes,
         };
+    }
+
+    private async Task<string?> LoadTicketAssigneeAsync(
+        GlpiRuntimeCredentials credentials,
+        string sessionToken,
+        string ticketId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var labels = new List<string>();
+
+            var userActors = await GetTicketSubItemsAsync(
+                credentials,
+                sessionToken,
+                ticketId,
+                "Ticket_User",
+                cancellationToken);
+            foreach (var item in userActors)
+            {
+                if (!IsAssignActor(item))
+                {
+                    continue;
+                }
+
+                var userId = ReadJsonInt(item, "users_id");
+                if (userId is null or <= 0)
+                {
+                    continue;
+                }
+
+                var name = await userNameResolver.ResolveDisplayNameAsync(
+                    httpClient,
+                    credentials,
+                    sessionToken,
+                    userId.Value.ToString(),
+                    cancellationToken);
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    labels.Add(name);
+                }
+            }
+
+            var groupActors = await GetTicketSubItemsAsync(
+                credentials,
+                sessionToken,
+                ticketId,
+                "Ticket_Group",
+                cancellationToken);
+            foreach (var item in groupActors)
+            {
+                if (!IsAssignActor(item))
+                {
+                    continue;
+                }
+
+                var groupId = ReadJsonInt(item, "groups_id");
+                if (groupId is null or <= 0)
+                {
+                    continue;
+                }
+
+                var groupName = await ResolveGroupNameAsync(
+                    credentials,
+                    sessionToken,
+                    groupId.Value.ToString(),
+                    cancellationToken);
+                if (!string.IsNullOrWhiteSpace(groupName))
+                {
+                    labels.Add(groupName);
+                }
+            }
+
+            if (labels.Count == 0)
+            {
+                return null;
+            }
+
+            return string.Join(", ", labels.Distinct(StringComparer.OrdinalIgnoreCase));
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "Failed to load GLPI assignees for ticket {TicketId}", ticketId);
+            return null;
+        }
+    }
+
+    private async Task<IReadOnlyList<GlpiTicketFollowup>> LoadTicketFollowupsAsync(
+        GlpiRuntimeCredentials credentials,
+        string sessionToken,
+        string ticketId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var items = await GetTicketSubItemsAsync(
+                credentials,
+                sessionToken,
+                ticketId,
+                "ITILFollowup",
+                cancellationToken);
+            var results = new List<GlpiTicketFollowup>();
+
+            foreach (var item in items)
+            {
+                if (IsPrivateItem(item))
+                {
+                    continue;
+                }
+
+                var content = ReadJsonString(item, "content");
+                if (string.IsNullOrWhiteSpace(content))
+                {
+                    continue;
+                }
+
+                var createdRaw = FirstNonEmpty(
+                    ReadJsonString(item, "date_creation"),
+                    ReadJsonString(item, "date"));
+                var createdAt = ParseGlpiDate(createdRaw);
+                var authorId = ReadJsonInt(item, "users_id");
+                string? author = null;
+                if (authorId is > 0)
+                {
+                    author = await userNameResolver.ResolveDisplayNameAsync(
+                        httpClient,
+                        credentials,
+                        sessionToken,
+                        authorId.Value.ToString(),
+                        cancellationToken);
+                }
+
+                results.Add(new GlpiTicketFollowup
+                {
+                    Kind = "followup",
+                    Content = content,
+                    CreatedAt = createdAt,
+                    Author = author,
+                });
+            }
+
+            return results
+                .OrderBy(f => f.CreatedAt)
+                .ToList();
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "Failed to load GLPI followups for ticket {TicketId}", ticketId);
+            return [];
+        }
+    }
+
+    private async Task<GlpiTicketSolution?> LoadTicketSolutionAsync(
+        GlpiRuntimeCredentials credentials,
+        string sessionToken,
+        string ticketId,
+        DateTimeOffset? ticketSolvedAt,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var items = await GetTicketSubItemsAsync(
+                credentials,
+                sessionToken,
+                ticketId,
+                "ITILSolution",
+                cancellationToken);
+            if (items.Count == 0)
+            {
+                return null;
+            }
+
+            var candidates = items
+                .Select(item =>
+                {
+                    var content = ReadJsonString(item, "content");
+                    if (string.IsNullOrWhiteSpace(content))
+                    {
+                        return null;
+                    }
+
+                    var at = ParseGlpiDateNullable(
+                        FirstNonEmpty(
+                            ReadJsonString(item, "date_creation"),
+                            ReadJsonString(item, "date")));
+                    var status = ReadJsonInt(item, "status") ?? 0;
+                    return new { Item = item, Content = content, At = at, Status = status };
+                })
+                .Where(x => x is not null)
+                .Select(x => x!)
+                .OrderByDescending(x => x.Status == 2) // accepted first when present
+                .ThenByDescending(x => x.At ?? DateTimeOffset.MinValue)
+                .ToList();
+
+            if (candidates.Count == 0)
+            {
+                return null;
+            }
+
+            var preferred = candidates[0];
+            var authorId = ReadJsonInt(preferred.Item, "users_id");
+            string? author = null;
+            if (authorId is > 0)
+            {
+                author = await userNameResolver.ResolveDisplayNameAsync(
+                    httpClient,
+                    credentials,
+                    sessionToken,
+                    authorId.Value.ToString(),
+                    cancellationToken);
+            }
+
+            return new GlpiTicketSolution
+            {
+                Content = preferred.Content,
+                ResolvedAt = preferred.At ?? ticketSolvedAt,
+                Author = author,
+            };
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "Failed to load GLPI solution for ticket {TicketId}", ticketId);
+            return null;
+        }
+    }
+
+    private async Task<string?> ResolveGroupNameAsync(
+        GlpiRuntimeCredentials credentials,
+        string sessionToken,
+        string groupId,
+        CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, BuildUrl(credentials.BaseUrl, $"Group/{groupId}"));
+        ApplySessionHeaders(request, credentials, sessionToken);
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+        var name = FirstNonEmpty(
+            ReadJsonString(document.RootElement, "completename"),
+            ReadJsonString(document.RootElement, "name"));
+        return string.IsNullOrWhiteSpace(name) ? null : name;
+    }
+
+    private async Task<IReadOnlyList<JsonElement>> GetTicketSubItemsAsync(
+        GlpiRuntimeCredentials credentials,
+        string sessionToken,
+        string ticketId,
+        string resource,
+        CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            BuildUrl(credentials.BaseUrl, $"Ticket/{ticketId}/{resource}"));
+        ApplySessionHeaders(request, credentials, sessionToken);
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            logger.LogWarning(
+                "GLPI Ticket/{TicketId}/{Resource} failed: {Status}",
+                ticketId,
+                resource,
+                (int)response.StatusCode);
+            return [];
+        }
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+        var root = document.RootElement;
+        if (root.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        // Clone elements: JsonDocument disposed after return.
+        return root.EnumerateArray()
+            .Select(item => item.Clone())
+            .ToList();
+    }
+
+    private static bool IsAssignActor(JsonElement item)
+    {
+        var type = ReadJsonInt(item, "type");
+        // CommonITILActor::ASSIGN = 2
+        return type is 2;
+    }
+
+    private static bool IsPrivateItem(JsonElement item)
+    {
+        if (!item.TryGetProperty("is_private", out var value))
+        {
+            return false;
+        }
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.Number => value.TryGetInt32(out var number) && number == 1,
+            JsonValueKind.String => value.GetString() is "1" or "true",
+            _ => false,
+        };
+    }
+
+    private static string FirstNonEmpty(params string[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private static DateTimeOffset? ParseGlpiDateNullable(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value is "null" or "0000-00-00 00:00:00")
+        {
+            return null;
+        }
+
+        return ParseGlpiDate(value);
     }
 
     private async Task<IReadOnlyList<GlpiTicketAttachment>> LoadTicketAttachmentsAsync(

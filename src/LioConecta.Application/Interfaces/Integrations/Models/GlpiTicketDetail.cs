@@ -8,13 +8,26 @@ public sealed class GlpiTicketDetail
 
     public string? Assignee { get; set; }
 
+    public GlpiTicketSolution? Solution { get; set; }
+
     public IReadOnlyList<GlpiTicketFollowup> Followups { get; set; } = [];
 
     public IReadOnlyList<GlpiTicketAttachment> Attachments { get; set; } = [];
 }
 
+public sealed class GlpiTicketSolution
+{
+    public string Content { get; set; } = string.Empty;
+
+    public DateTimeOffset? ResolvedAt { get; set; }
+
+    public string? Author { get; set; }
+}
+
 public sealed class GlpiTicketFollowup
 {
+    public string Kind { get; set; } = "followup";
+
     public string Content { get; set; } = string.Empty;
 
     public DateTimeOffset CreatedAt { get; set; }

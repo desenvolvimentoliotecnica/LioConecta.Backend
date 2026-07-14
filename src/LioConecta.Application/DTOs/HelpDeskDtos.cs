@@ -72,8 +72,14 @@ public sealed record HelpDeskTicketListItemDto(
     string? RequesterLabel = null);
 
 public sealed record HelpDeskTicketEventDto(
-    string EventType,
+    string Kind,
+    string Content,
     DateTimeOffset CreatedAt,
+    string? Author);
+
+public sealed record HelpDeskTicketResolutionDto(
+    string Content,
+    DateTimeOffset? ResolvedAt,
     string? Author);
 
 public sealed record HelpDeskTicketAttachmentDto(
@@ -86,5 +92,6 @@ public sealed record HelpDeskTicketDetailDto(
     HelpDeskTicketListItemDto Summary,
     string Description,
     string? Assignee,
+    HelpDeskTicketResolutionDto? Resolution,
     IReadOnlyList<HelpDeskTicketEventDto> Events,
     IReadOnlyList<HelpDeskTicketAttachmentDto> Attachments);

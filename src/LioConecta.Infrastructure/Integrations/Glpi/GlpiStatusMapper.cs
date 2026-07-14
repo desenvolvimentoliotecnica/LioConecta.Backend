@@ -28,8 +28,8 @@ internal static class GlpiStatusMapper
     private static readonly Dictionary<string, string> Labels = new(StringComparer.Ordinal)
     {
         ["1"] = "Novo",
-        ["2"] = "Em atendimento (atribuído)",
-        ["3"] = "Em atendimento (planejado)",
+        ["2"] = "Em atendimento",
+        ["3"] = "Em atendimento",
         ["4"] = "Pendente",
         ["5"] = "Resolvido",
         ["6"] = "Fechado",

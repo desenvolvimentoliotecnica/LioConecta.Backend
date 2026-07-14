@@ -19,6 +19,8 @@ public sealed class GlpiTicketSummary
     public string? Url { get; set; }
 
     public string? RequesterLabel { get; set; }
+
+    public string? AssigneeLabel { get; set; }
 }
 
 public sealed class GlpiOpenQueueCounts

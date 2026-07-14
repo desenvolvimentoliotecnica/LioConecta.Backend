@@ -1477,6 +1477,16 @@ public sealed partial class GlpiAdapter(
                 cancellationToken);
         }
 
+        if (results.Count > 0)
+        {
+            await userNameResolver.EnrichAssigneeLabelsAsync(
+                httpClient,
+                credentials,
+                sessionToken,
+                results,
+                cancellationToken);
+        }
+
         return results
             .OrderByDescending(t => GlpiStatusMapper.IsOpenStatus(t.Status))
             .ThenByDescending(t => t.CreatedAt)
@@ -1801,11 +1811,12 @@ public sealed partial class GlpiAdapter(
             $"&forcedisplay[1]={GlpiSearchFields.TicketTitle}" +
             $"&forcedisplay[2]={GlpiSearchFields.TicketStatus}" +
             $"&forcedisplay[3]={GlpiSearchFields.TicketPriority}" +
-            $"&forcedisplay[4]={GlpiSearchFields.TicketDateOpening}");
+            $"&forcedisplay[4]={GlpiSearchFields.TicketDateOpening}" +
+            $"&forcedisplay[5]={GlpiSearchFields.TicketTechnician}");
 
         if (includeRequester)
         {
-            query.Append($"&forcedisplay[5]={GlpiSearchFields.TicketRequester}");
+            query.Append($"&forcedisplay[6]={GlpiSearchFields.TicketRequester}");
         }
 
         query.Append("&sort=15&order=DESC");
@@ -1821,6 +1832,7 @@ public sealed partial class GlpiAdapter(
         var status = GlpiStatusMapper.NormalizeStatusCode(ReadRowField(row, GlpiSearchFields.TicketStatus));
         var priority = ReadRowField(row, GlpiSearchFields.TicketPriority);
         var createdRaw = ReadRowField(row, GlpiSearchFields.TicketDateOpening);
+        var assigneeRaw = ReadRowField(row, GlpiSearchFields.TicketTechnician);
 
         return new GlpiTicketSummary
         {
@@ -1832,6 +1844,7 @@ public sealed partial class GlpiAdapter(
             CreatedAt = ParseGlpiDate(createdRaw),
             Url = BuildTicketUrl(credentials, ticketId),
             RequesterLabel = includeRequester ? ReadRowField(row, GlpiSearchFields.TicketRequester) : null,
+            AssigneeLabel = string.IsNullOrWhiteSpace(assigneeRaw) ? null : assigneeRaw.Trim(),
         };
     }
 

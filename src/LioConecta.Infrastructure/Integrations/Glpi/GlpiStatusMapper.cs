@@ -10,6 +10,8 @@ internal static class GlpiSearchFields
     public const int TicketDateMod = 19;
     public const int TicketContent = 21;
     public const int TicketRequester = 4;
+    /// <summary>Técnico atribuído (Ticket_User type=2).</summary>
+    public const int TicketTechnician = 5;
 
     public const int UserId = 2;
     public const int UserEmail = 5;

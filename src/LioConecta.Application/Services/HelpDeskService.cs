@@ -485,7 +485,8 @@ public sealed class HelpDeskService(
             ticket.PriorityLabel,
             ticket.CreatedAt,
             ticket.Url,
-            ticket.RequesterLabel);
+            ticket.RequesterLabel,
+            ticket.AssigneeLabel);
 
     private static readonly HashSet<string> AllTicketsViewerEmails = new(StringComparer.OrdinalIgnoreCase)
     {

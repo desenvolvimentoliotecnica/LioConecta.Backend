@@ -60,6 +60,75 @@ public sealed class GlpiUserNameResolver(ILogger<GlpiUserNameResolver> logger)
         }
     }
 
+    public async Task EnrichAssigneeLabelsAsync(
+        HttpClient httpClient,
+        GlpiRuntimeCredentials credentials,
+        string sessionToken,
+        IList<GlpiTicketSummary> tickets,
+        CancellationToken cancellationToken)
+    {
+        var ids = tickets
+            .Select(t => t.AssigneeLabel)
+            .SelectMany(SplitIds)
+            .Where(IsNumericUserId)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        if (ids.Count == 0)
+        {
+            return;
+        }
+
+        const int maxParallel = 8;
+        using var gate = new SemaphoreSlim(maxParallel, maxParallel);
+        var tasks = ids.Select(async userId =>
+        {
+            await gate.WaitAsync(cancellationToken);
+            try
+            {
+                await ResolveDisplayNameAsync(httpClient, credentials, sessionToken, userId, cancellationToken);
+            }
+            finally
+            {
+                gate.Release();
+            }
+        });
+
+        await Task.WhenAll(tasks);
+
+        foreach (var ticket in tickets)
+        {
+            if (string.IsNullOrWhiteSpace(ticket.AssigneeLabel))
+            {
+                continue;
+            }
+
+            var parts = SplitIds(ticket.AssigneeLabel)
+                .Select(part =>
+                    IsNumericUserId(part) && _cache.TryGetValue(part, out var name) && !string.IsNullOrWhiteSpace(name)
+                        ? name
+                        : part)
+                .Where(part => !string.IsNullOrWhiteSpace(part))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            ticket.AssigneeLabel = parts.Count > 0 ? string.Join(", ", parts) : null;
+        }
+    }
+
+    private static IEnumerable<string> SplitIds(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            yield break;
+        }
+
+        foreach (var part in raw.Split([',', ';', '|', '/', '\\'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            yield return part;
+        }
+    }
+
     public async Task<string?> ResolveDisplayNameAsync(
         HttpClient httpClient,
         GlpiRuntimeCredentials credentials,

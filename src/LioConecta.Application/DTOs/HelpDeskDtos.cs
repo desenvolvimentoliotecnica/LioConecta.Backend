@@ -122,7 +122,8 @@ public sealed record HelpDeskTicketListItemDto(
     string PriorityLabel,
     DateTimeOffset CreatedAt,
     string? ExternalUrl,
-    string? RequesterLabel = null);
+    string? RequesterLabel = null,
+    string? AssigneeLabel = null);
 
 public sealed record HelpDeskTicketEventDto(
     string Kind,

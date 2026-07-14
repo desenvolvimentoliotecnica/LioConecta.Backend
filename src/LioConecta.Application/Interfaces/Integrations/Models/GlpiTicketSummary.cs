@@ -20,3 +20,12 @@ public sealed class GlpiTicketSummary
 
     public string? RequesterLabel { get; set; }
 }
+
+public sealed class GlpiOpenQueueCounts
+{
+    public int Pending { get; set; }
+
+    public int InProgress { get; set; }
+
+    public int Open => Pending + InProgress;
+}

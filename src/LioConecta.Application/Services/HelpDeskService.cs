@@ -25,13 +25,15 @@ public sealed class HelpDeskService(
 
     public async Task<HelpDeskSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default)
     {
-        // Contagem da fila geral (chamados abertos / pendentes no GLPI), não só do solicitante.
-        var tickets = await glpiAdapter.SearchAllTicketsAsync(GlpiTicketScope.Open, cancellationToken);
+        // Contagens da fila geral no GLPI (totalcount por status), não só do solicitante.
+        var counts = await glpiAdapter.CountOpenQueueAsync(cancellationToken);
 
         return new HelpDeskSummaryDto(
-            tickets.Count,
+            counts.Open,
             "2h críticos · 8h solicitações",
-            await CanViewAllGlpiTicketsAsync(cancellationToken));
+            await CanViewAllGlpiTicketsAsync(cancellationToken),
+            counts.Pending,
+            counts.InProgress);
     }
 
     public IReadOnlyList<HelpDeskServiceDto> GetServices()
@@ -204,7 +206,90 @@ public sealed class HelpDeskService(
         CancellationToken cancellationToken = default)
     {
         var schema = await glpiAdapter.GetFormSchemaAsync(formId, cancellationToken);
-        return schema is null ? null : HelpDeskFormMapper.ToDto(schema);
+        if (schema is null)
+        {
+            return null;
+        }
+
+        var dto = HelpDeskFormMapper.ToDto(schema);
+        return await EnrichItilCategoryOptionsAsync(dto, cancellationToken);
+    }
+
+    private async Task<HelpDeskFormSchemaDto> EnrichItilCategoryOptionsAsync(
+        HelpDeskFormSchemaDto schema,
+        CancellationToken cancellationToken)
+    {
+        var needsCategories = schema.Sections
+            .SelectMany(s => s.Questions)
+            .Any(q => q.FieldKind == "itilcategory" && q.Options.Count == 0);
+        if (!needsCategories)
+        {
+            return schema;
+        }
+
+        var allCategories = await glpiAdapter.GetAllItilCategoriesAsync(cancellationToken);
+        var sections = schema.Sections.Select(section =>
+        {
+            var questions = section.Questions.Select(question =>
+            {
+                if (question.FieldKind != "itilcategory" || question.Options.Count > 0)
+                {
+                    return question;
+                }
+
+                var options = FilterItilCategoryOptions(allCategories, question.RootItemsId)
+                    .Select(c => new HelpDeskFormOptionDto(
+                        c.Id.ToString(CultureInfo.InvariantCulture),
+                        string.IsNullOrWhiteSpace(c.FullName) ? c.Name : c.FullName!))
+                    .ToList();
+
+                return question with { Options = options };
+            }).ToList();
+
+            return section with { Questions = questions };
+        }).ToList();
+
+        return schema with { Sections = sections };
+    }
+
+    private static IEnumerable<GlpiItilCategory> FilterItilCategoryOptions(
+        IReadOnlyList<GlpiItilCategory> all,
+        int? rootItemsId)
+    {
+        if (rootItemsId is null or <= 0)
+        {
+            return all
+                .Where(c => !c.HasChildren)
+                .OrderBy(c => c.FullName ?? c.Name, StringComparer.OrdinalIgnoreCase);
+        }
+
+        var byId = all.ToDictionary(c => c.Id);
+        if (!byId.TryGetValue(rootItemsId.Value, out var root))
+        {
+            return all
+                .Where(c => c.ParentId == rootItemsId)
+                .OrderBy(c => c.FullName ?? c.Name, StringComparer.OrdinalIgnoreCase);
+        }
+
+        var rootPrefix = (root.FullName ?? root.Name).Trim();
+        return all
+            .Where(c =>
+            {
+                if (c.Id == root.Id)
+                {
+                    return false;
+                }
+
+                if (c.ParentId == root.Id)
+                {
+                    return true;
+                }
+
+                var full = (c.FullName ?? c.Name).Trim();
+                return full.StartsWith(rootPrefix + " >", StringComparison.OrdinalIgnoreCase)
+                    || full.StartsWith(rootPrefix + ">", StringComparison.OrdinalIgnoreCase);
+            })
+            .OrderBy(c => c.FullName ?? c.Name, StringComparer.OrdinalIgnoreCase);
     }
 
     public async Task<IReadOnlyList<HelpDeskAreaDto>> GetAreasAsync(
@@ -336,6 +421,25 @@ public sealed class HelpDeskService(
         }
 
         return (file.Content, file.ContentType, file.FileName);
+    }
+
+    public async Task UploadTicketAttachmentAsync(
+        string ticketId,
+        string fileName,
+        string contentType,
+        Stream content,
+        CancellationToken cancellationToken = default)
+    {
+        var email = await GetCurrentUserEmailAsync(cancellationToken);
+        var canViewAll = await CanViewAllGlpiTicketsAsync(cancellationToken);
+        await glpiAdapter.UploadTicketDocumentAsync(
+            ticketId,
+            fileName,
+            contentType,
+            content,
+            email,
+            canViewAll,
+            cancellationToken);
     }
 
     private async Task<string> GetCurrentUserEmailAsync(CancellationToken cancellationToken)

@@ -36,6 +36,9 @@ public interface IGlpiAdapter
         GlpiTicketScope scope,
         CancellationToken cancellationToken = default);
 
+    Task<GlpiOpenQueueCounts> CountOpenQueueAsync(
+        CancellationToken cancellationToken = default);
+
     Task<GlpiTicketDetail?> GetTicketDetailAsync(
         string ticketId,
         string requesterEmail,
@@ -45,6 +48,15 @@ public interface IGlpiAdapter
     Task<GlpiTicketAttachmentContent?> GetTicketAttachmentAsync(
         string ticketId,
         string documentId,
+        string requesterEmail,
+        bool skipOwnershipCheck = false,
+        CancellationToken cancellationToken = default);
+
+    Task UploadTicketDocumentAsync(
+        string ticketId,
+        string fileName,
+        string contentType,
+        Stream content,
         string requesterEmail,
         bool skipOwnershipCheck = false,
         CancellationToken cancellationToken = default);

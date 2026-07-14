@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using LioConecta.Application.Common;
 using LioConecta.Application.Common.Integrations;
@@ -485,6 +486,38 @@ public sealed partial class GlpiAdapter(
         return SearchTicketsAsync(credentials, scope, requesterId: null, includeRequester: true, cancellationToken);
     }
 
+    public async Task<GlpiOpenQueueCounts> CountOpenQueueAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var credentials = credentialsResolver.Resolve();
+        if (string.IsNullOrWhiteSpace(credentials.BaseUrl))
+        {
+            logger.LogWarning("GLPI BaseUrl is not configured.");
+            return new GlpiOpenQueueCounts();
+        }
+
+        var sessionToken = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
+
+        // Pendentes = Novo (1) + Pendente (4) + Aprovação (10)
+        // Em atendimento = Atribuído (2) + Planejado (3)
+        var pending = await CountTicketsByStatusesAsync(
+            credentials,
+            sessionToken,
+            [1, 4, 10],
+            cancellationToken);
+        var inProgress = await CountTicketsByStatusesAsync(
+            credentials,
+            sessionToken,
+            [2, 3],
+            cancellationToken);
+
+        return new GlpiOpenQueueCounts
+        {
+            Pending = pending,
+            InProgress = inProgress,
+        };
+    }
+
     public async Task<GlpiTicketDetail?> GetTicketDetailAsync(
         string ticketId,
         string requesterEmail,
@@ -520,7 +553,8 @@ public sealed partial class GlpiAdapter(
             return null;
         }
 
-        var status = ReadElement(payload.GetValueOrDefault("status")).Trim('"');
+        var status = GlpiStatusMapper.NormalizeStatusCode(
+            ReadElement(payload.GetValueOrDefault("status")).Trim('"'));
         var priority = ReadElement(payload.GetValueOrDefault("priority")).Trim('"');
         var createdAt = ParseGlpiDate(ReadElement(payload.GetValueOrDefault("date")).Trim('"'));
         var updatedAt = ParseGlpiDate(ReadElement(payload.GetValueOrDefault("date_mod")).Trim('"'));
@@ -627,6 +661,174 @@ public sealed partial class GlpiAdapter(
             ContentType = contentType,
             Content = bytes,
         };
+    }
+
+    public async Task UploadTicketDocumentAsync(
+        string ticketId,
+        string fileName,
+        string contentType,
+        Stream content,
+        string requesterEmail,
+        bool skipOwnershipCheck = false,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(ticketId) || string.IsNullOrWhiteSpace(fileName))
+        {
+            throw new ArgumentException("Ticket e nome do arquivo são obrigatórios.");
+        }
+
+        var credentials = credentialsResolver.Resolve();
+        var requesterId = await ResolveUserIdAsync(credentials, requesterEmail, cancellationToken);
+        if (!skipOwnershipCheck)
+        {
+            var ownsTicket = await VerifyTicketOwnershipAsync(credentials, ticketId, requesterId, cancellationToken);
+            if (!ownsTicket)
+            {
+                throw new UnauthorizedAccessException("Você não tem permissão para anexar arquivos neste chamado.");
+            }
+        }
+
+        var sessionToken = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
+        var restBase = BuildLegacyRestBaseUrl(credentials.BaseUrl);
+        var safeName = Path.GetFileName(fileName.Trim());
+        if (string.IsNullOrWhiteSpace(safeName))
+        {
+            safeName = "anexo.bin";
+        }
+
+        await using var buffer = new MemoryStream();
+        await content.CopyToAsync(buffer, cancellationToken);
+        buffer.Position = 0;
+
+        var documentId = await UploadDocumentBinaryAsync(
+            credentials,
+            sessionToken,
+            restBase,
+            safeName,
+            contentType,
+            buffer,
+            cancellationToken);
+
+        using var linkRequest = new HttpRequestMessage(HttpMethod.Post, BuildUrl(credentials.BaseUrl, "Document_Item"));
+        ApplySessionHeaders(linkRequest, credentials, sessionToken);
+        linkRequest.Content = JsonContent.Create(new
+        {
+            input = new
+            {
+                items_id = ticketId,
+                itemtype = "Ticket",
+                documents_id = documentId,
+            },
+        });
+
+        using var linkResponse = await httpClient.SendAsync(linkRequest, cancellationToken);
+        if (!linkResponse.IsSuccessStatusCode)
+        {
+            var body = await linkResponse.Content.ReadAsStringAsync(cancellationToken);
+            logger.LogError(
+                "GLPI Document_Item link failed for ticket {TicketId} document {DocumentId}: {Status} {Body}",
+                ticketId,
+                documentId,
+                (int)linkResponse.StatusCode,
+                body);
+            throw new GlpiIntegrationException("Anexo enviado, mas não foi possível vincular ao chamado no GLPI.");
+        }
+    }
+
+    private async Task<string> UploadDocumentBinaryAsync(
+        GlpiRuntimeCredentials credentials,
+        string sessionToken,
+        string restBase,
+        string safeName,
+        string contentType,
+        MemoryStream buffer,
+        CancellationToken cancellationToken,
+        bool retried = false)
+    {
+        var manifest = JsonSerializer.Serialize(new
+        {
+            input = new
+            {
+                name = safeName,
+                _filename = new[] { safeName },
+            },
+        });
+
+        buffer.Position = 0;
+        using var form = new MultipartFormDataContent();
+        form.Add(new StringContent(manifest, Encoding.UTF8, "application/json"), "uploadManifest");
+        var streamContent = new StreamContent(buffer);
+        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+            string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType);
+        form.Add(streamContent, "filename[0]", safeName);
+
+        using var uploadRequest = new HttpRequestMessage(HttpMethod.Post, $"{restBase}/Document");
+        ApplySessionHeaders(uploadRequest, credentials, sessionToken);
+        uploadRequest.Content = form;
+
+        using var uploadResponse = await httpClient.SendAsync(uploadRequest, cancellationToken);
+        if (uploadResponse.StatusCode == System.Net.HttpStatusCode.Unauthorized && !retried)
+        {
+            await sessionManager.InvalidateSessionAsync(httpClient, credentials, cancellationToken);
+            var renewed = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
+            return await UploadDocumentBinaryAsync(
+                credentials,
+                renewed,
+                restBase,
+                safeName,
+                contentType,
+                buffer,
+                cancellationToken,
+                retried: true);
+        }
+
+        if (!uploadResponse.IsSuccessStatusCode)
+        {
+            var body = await uploadResponse.Content.ReadAsStringAsync(cancellationToken);
+            logger.LogError(
+                "GLPI Document upload failed: {Status} {Body}",
+                (int)uploadResponse.StatusCode,
+                body);
+            throw new GlpiIntegrationException("Não foi possível enviar o anexo ao GLPI.");
+        }
+
+        var payload = await uploadResponse.Content.ReadFromJsonAsync<Dictionary<string, JsonElement>>(
+            JsonOptions,
+            cancellationToken);
+        var documentId = ReadElement(payload?.GetValueOrDefault("id")).Trim('"');
+        if (string.IsNullOrWhiteSpace(documentId) &&
+            payload is not null &&
+            payload.TryGetValue("0", out var nested) &&
+            nested.ValueKind == JsonValueKind.Object &&
+            nested.TryGetProperty("id", out var nestedId))
+        {
+            documentId = nestedId.ToString().Trim('"');
+        }
+
+        if (string.IsNullOrWhiteSpace(documentId))
+        {
+            throw new GlpiIntegrationException("O GLPI não retornou o identificador do documento anexado.");
+        }
+
+        return documentId;
+    }
+
+    private static string BuildLegacyRestBaseUrl(string apiBaseUrl)
+    {
+        var trimmed = apiBaseUrl.TrimEnd('/');
+        const string v1Suffix = "/api.php/v1";
+        if (trimmed.EndsWith(v1Suffix, StringComparison.OrdinalIgnoreCase))
+        {
+            return trimmed[..^v1Suffix.Length] + "/apirest.php";
+        }
+
+        if (trimmed.Contains("/apirest.php", StringComparison.OrdinalIgnoreCase))
+        {
+            return trimmed;
+        }
+
+        var uri = new Uri(trimmed);
+        return $"{uri.Scheme}://{uri.Authority}/apirest.php";
     }
 
     private async Task<string?> LoadTicketRequesterAsync(
@@ -1148,6 +1350,74 @@ public sealed partial class GlpiAdapter(
         return null;
     }
 
+    private async Task<int> CountTicketsByStatusesAsync(
+        GlpiRuntimeCredentials credentials,
+        string sessionToken,
+        IReadOnlyList<int> statuses,
+        CancellationToken cancellationToken)
+    {
+        if (statuses.Count == 0)
+        {
+            return 0;
+        }
+
+        var query = new StringBuilder(BuildUrl(credentials.BaseUrl, "search/Ticket"));
+        query.Append('?');
+        for (var i = 0; i < statuses.Count; i++)
+        {
+            if (i > 0)
+            {
+                query.Append($"&criteria[{i}][link]=OR");
+            }
+
+            query.Append(
+                $"&criteria[{i}][field]={GlpiSearchFields.TicketStatus}" +
+                $"&criteria[{i}][searchtype]=equals" +
+                $"&criteria[{i}][value]={statuses[i]}");
+        }
+
+        query.Append(
+            $"&forcedisplay[0]={GlpiSearchFields.TicketId}" +
+            "&range=0-0");
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, query.ToString());
+        ApplySessionHeaders(request, credentials, sessionToken);
+        request.Headers.TryAddWithoutValidation("Range", "0-0");
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            await sessionManager.InvalidateSessionAsync(httpClient, credentials, cancellationToken);
+            var renewed = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
+            return await CountTicketsByStatusesAsync(credentials, renewed, statuses, cancellationToken);
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            logger.LogWarning(
+                "GLPI ticket count by status failed ({Statuses}): {Status} {Body}",
+                string.Join(',', statuses),
+                (int)response.StatusCode,
+                body);
+            return 0;
+        }
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+        var root = document.RootElement;
+        if (root.TryGetProperty("totalcount", out var total) && total.TryGetInt32(out var totalCount))
+        {
+            return totalCount;
+        }
+
+        if (root.TryGetProperty("count", out var count) && count.TryGetInt32(out var pageCount))
+        {
+            return pageCount;
+        }
+
+        return 0;
+    }
+
     private async Task<IReadOnlyList<GlpiTicketSummary>> SearchTicketsAsync(
         GlpiRuntimeCredentials credentials,
         GlpiTicketScope scope,
@@ -1477,7 +1747,7 @@ public sealed partial class GlpiAdapter(
         bool includeRequester)
     {
         var ticketId = ReadRowField(row, GlpiSearchFields.TicketId);
-        var status = ReadRowField(row, GlpiSearchFields.TicketStatus);
+        var status = GlpiStatusMapper.NormalizeStatusCode(ReadRowField(row, GlpiSearchFields.TicketStatus));
         var priority = ReadRowField(row, GlpiSearchFields.TicketPriority);
         var createdRaw = ReadRowField(row, GlpiSearchFields.TicketDateOpening);
 

@@ -53,4 +53,11 @@ public interface IHelpDeskService
         string ticketId,
         string documentId,
         CancellationToken cancellationToken = default);
+
+    Task UploadTicketAttachmentAsync(
+        string ticketId,
+        string fileName,
+        string contentType,
+        Stream content,
+        CancellationToken cancellationToken = default);
 }

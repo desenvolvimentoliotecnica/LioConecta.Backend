@@ -3,7 +3,9 @@ namespace LioConecta.Application.DTOs;
 public sealed record HelpDeskSummaryDto(
     int OpenTickets,
     string AvgResponseLabel,
-    bool CanViewAllTickets = false);
+    bool CanViewAllTickets = false,
+    int PendingTickets = 0,
+    int InProgressTickets = 0);
 
 public sealed record HelpDeskServiceDto(
     string Id,
@@ -66,7 +68,10 @@ public sealed record HelpDeskFormQuestionDto(
     string? Description,
     string? DefaultValue,
     int? HorizontalRank,
-    IReadOnlyList<HelpDeskFormOptionDto> Options);
+    IReadOnlyList<HelpDeskFormOptionDto> Options,
+    string? ItemType = null,
+    int? RootItemsId = null,
+    bool IsMultiple = false);
 
 public sealed record HelpDeskFormSectionDto(
     int Id,

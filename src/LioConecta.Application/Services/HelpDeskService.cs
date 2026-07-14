@@ -226,12 +226,20 @@ public sealed class HelpDeskService(
             return null;
         }
 
+        HelpDeskTicketResolutionDto? resolution = detail.Solution is null
+            ? null
+            : new HelpDeskTicketResolutionDto(
+                detail.Solution.Content,
+                detail.Solution.ResolvedAt,
+                detail.Solution.Author);
+
         return new HelpDeskTicketDetailDto(
             MapListItem(detail.Summary),
             detail.Description,
             detail.Assignee,
+            resolution,
             detail.Followups
-                .Select(f => new HelpDeskTicketEventDto(f.Content, f.CreatedAt, f.Author))
+                .Select(f => new HelpDeskTicketEventDto(f.Kind, f.Content, f.CreatedAt, f.Author))
                 .ToList(),
             detail.Attachments
                 .Select(a => new HelpDeskTicketAttachmentDto(a.DocumentId, a.FileName, a.ContentType, a.SizeBytes))

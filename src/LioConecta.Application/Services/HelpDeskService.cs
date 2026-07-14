@@ -55,13 +55,13 @@ public sealed class HelpDeskService(
             new(
                 "acompanhar-ticket",
                 "Acompanhar ticket",
-                "Consulte status, histórico e mensagens dos seus chamados abertos nos últimos 90 dias.",
+                "Consulte status, histórico e mensagens dos seus chamados abertos e fechados.",
                 "solicitacao",
                 "Service Desk",
                 "disponivel",
                 false,
                 "Consultar",
-                "Chamados abertos nos últimos 90 dias aparecem aqui. Para histórico completo, acesse o portal GLPI.",
+                "Chamados abertos e fechados aparecem aqui. Para o portal completo, acesse o GLPI.",
                 $"{portalBase}/front/ticket.php"),
             new(
                 "base-conhecimento",

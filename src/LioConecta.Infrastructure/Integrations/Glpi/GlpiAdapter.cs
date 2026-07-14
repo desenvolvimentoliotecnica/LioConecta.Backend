@@ -19,7 +19,9 @@ public sealed partial class GlpiAdapter(
     ILogger<GlpiAdapter> logger) : IGlpiAdapter
 {
     private const int PageSize = 50;
-    private const int MaxTickets = 100;
+    private const int MaxTickets = 500;
+    private static readonly int[] OpenTicketStatuses = [1, 2, 3, 4, 10];
+    private static readonly int[] ClosedTicketStatuses = [5, 6];
     private static readonly TimeSpan CategoryCacheDuration = TimeSpan.FromMinutes(5);
 
     private IReadOnlyList<GlpiEntity>? _cachedEntities;
@@ -1425,61 +1427,44 @@ public sealed partial class GlpiAdapter(
         bool includeRequester,
         CancellationToken cancellationToken)
     {
-        var query = BuildTicketSearchQuery(credentials.BaseUrl, requesterId, scope, includeRequester);
         var sessionToken = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
+        List<GlpiTicketSummary> results;
 
-        var results = new List<GlpiTicketSummary>();
-        var start = 0;
-
-        while (results.Count < MaxTickets)
+        // Fila completa: todos os abertos (sem recorte de data) + fechados para completar a lista.
+        // Assim o header (CountOpenQueueAsync) bate com os chips Pendente/Em atendimento da grid.
+        if (scope is GlpiTicketScope.All or GlpiTicketScope.Last90Days)
         {
-            var pageUrl = $"{query}&range={start}-{start + PageSize - 1}";
-            using var request = new HttpRequestMessage(HttpMethod.Get, pageUrl);
-            ApplySessionHeaders(request, credentials, sessionToken);
-
-            using var response = await httpClient.SendAsync(request, cancellationToken);
-            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-            {
-                await sessionManager.InvalidateSessionAsync(httpClient, credentials, cancellationToken);
-                return await SearchTicketsAsync(credentials, scope, requesterId, includeRequester, cancellationToken);
-            }
-
-            if (!response.IsSuccessStatusCode)
-            {
-                var body = await response.Content.ReadAsStringAsync(cancellationToken);
-                logger.LogWarning("GLPI ticket search failed: {Status} {Body}", (int)response.StatusCode, body);
-                break;
-            }
-
-            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
-            var root = document.RootElement;
-            if (!root.TryGetProperty("data", out var dataElement) || dataElement.GetArrayLength() == 0)
-            {
-                break;
-            }
-
-            foreach (var row in dataElement.EnumerateArray())
-            {
-                var summary = MapSearchRow(row, credentials, includeRequester);
-                if (scope == GlpiTicketScope.Open && !GlpiStatusMapper.IsOpenStatus(summary.Status))
-                {
-                    continue;
-                }
-
-                results.Add(summary);
-                if (results.Count >= MaxTickets)
-                {
-                    break;
-                }
-            }
-
-            var count = root.TryGetProperty("count", out var countElement) ? countElement.GetInt32() : 0;
-            if (count < PageSize)
-            {
-                break;
-            }
-
-            start += PageSize;
+            var open = await SearchTicketsByStatusesAsync(
+                credentials,
+                sessionToken,
+                requesterId,
+                includeRequester,
+                OpenTicketStatuses,
+                maxResults: MaxTickets,
+                cancellationToken);
+            var remaining = Math.Max(0, MaxTickets - open.Count);
+            var closed = remaining > 0
+                ? await SearchTicketsByStatusesAsync(
+                    credentials,
+                    sessionToken,
+                    requesterId,
+                    includeRequester,
+                    ClosedTicketStatuses,
+                    maxResults: remaining,
+                    cancellationToken)
+                : [];
+            results = open.Concat(closed).ToList();
+        }
+        else
+        {
+            results = (await SearchTicketsByStatusesAsync(
+                credentials,
+                sessionToken,
+                requesterId,
+                includeRequester,
+                OpenTicketStatuses,
+                maxResults: MaxTickets,
+                cancellationToken)).ToList();
         }
 
         if (includeRequester && results.Count > 0)
@@ -1493,8 +1478,94 @@ public sealed partial class GlpiAdapter(
         }
 
         return results
-            .OrderByDescending(t => t.CreatedAt)
+            .OrderByDescending(t => GlpiStatusMapper.IsOpenStatus(t.Status))
+            .ThenByDescending(t => t.CreatedAt)
             .ToList();
+    }
+
+    private async Task<IReadOnlyList<GlpiTicketSummary>> SearchTicketsByStatusesAsync(
+        GlpiRuntimeCredentials credentials,
+        string sessionToken,
+        string? requesterId,
+        bool includeRequester,
+        IReadOnlyList<int> statuses,
+        int maxResults,
+        CancellationToken cancellationToken)
+    {
+        if (statuses.Count == 0 || maxResults <= 0)
+        {
+            return [];
+        }
+
+        var query = BuildTicketSearchQueryByStatuses(
+            credentials.BaseUrl,
+            requesterId,
+            statuses,
+            includeRequester);
+        var results = new List<GlpiTicketSummary>();
+        var start = 0;
+        var allowed = statuses.Select(s => s.ToString()).ToHashSet(StringComparer.Ordinal);
+
+        while (results.Count < maxResults)
+        {
+            var pageUrl = $"{query}&range={start}-{start + PageSize - 1}";
+            using var request = new HttpRequestMessage(HttpMethod.Get, pageUrl);
+            ApplySessionHeaders(request, credentials, sessionToken);
+
+            using var response = await httpClient.SendAsync(request, cancellationToken);
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                await sessionManager.InvalidateSessionAsync(httpClient, credentials, cancellationToken);
+                var renewed = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
+                return await SearchTicketsByStatusesAsync(
+                    credentials,
+                    renewed,
+                    requesterId,
+                    includeRequester,
+                    statuses,
+                    maxResults,
+                    cancellationToken);
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(cancellationToken);
+                logger.LogWarning("GLPI ticket search by status failed: {Status} {Body}", (int)response.StatusCode, body);
+                break;
+            }
+
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+            var root = document.RootElement;
+            if (!root.TryGetProperty("data", out var dataElement) || dataElement.GetArrayLength() == 0)
+            {
+                break;
+            }
+
+            foreach (var row in dataElement.EnumerateArray())
+            {
+                var summary = MapSearchRow(row, credentials, includeRequester);
+                if (!allowed.Contains(summary.Status))
+                {
+                    continue;
+                }
+
+                results.Add(summary);
+                if (results.Count >= maxResults)
+                {
+                    break;
+                }
+            }
+
+            var pageCount = root.TryGetProperty("count", out var countElement) ? countElement.GetInt32() : 0;
+            if (pageCount < PageSize)
+            {
+                break;
+            }
+
+            start += PageSize;
+        }
+
+        return results;
     }
 
     private async Task<bool> VerifyTicketOwnershipAsync(
@@ -1679,66 +1750,66 @@ public sealed partial class GlpiAdapter(
         return null;
     }
 
-    private static string BuildTicketSearchQuery(
+    private static string BuildTicketSearchQueryByStatuses(
         string baseUrl,
         string? requesterId,
-        GlpiTicketScope scope,
+        IReadOnlyList<int> statuses,
         bool includeRequester)
     {
-        var query = $"{BuildUrl(baseUrl, "search/Ticket")}?";
-        var criteriaIndex = 0;
+        var query = new StringBuilder($"{BuildUrl(baseUrl, "search/Ticket")}?");
+        var hasRequester = !string.IsNullOrWhiteSpace(requesterId);
 
-        if (!string.IsNullOrWhiteSpace(requesterId))
+        if (hasRequester)
         {
-            query +=
-                $"criteria[{criteriaIndex}][field]={GlpiSearchFields.TicketRequester}" +
-                $"&criteria[{criteriaIndex}][searchtype]=equals" +
-                $"&criteria[{criteriaIndex}][value]={Uri.EscapeDataString(requesterId)}";
-            criteriaIndex++;
-        }
+            query.Append(
+                $"criteria[0][field]={GlpiSearchFields.TicketRequester}" +
+                $"&criteria[0][searchtype]=equals" +
+                $"&criteria[0][value]={Uri.EscapeDataString(requesterId!)}" +
+                "&criteria[1][link]=AND");
 
-        if (scope == GlpiTicketScope.Open)
-        {
-            if (criteriaIndex > 0)
+            for (var i = 0; i < statuses.Count; i++)
             {
-                query += $"&criteria[{criteriaIndex}][link]=AND";
-            }
+                if (i > 0)
+                {
+                    query.Append($"&criteria[1][criteria][{i}][link]=OR");
+                }
 
-            query +=
-                $"&criteria[{criteriaIndex}][field]={GlpiSearchFields.TicketStatus}" +
-                $"&criteria[{criteriaIndex}][searchtype]=lessthan" +
-                $"&criteria[{criteriaIndex}][value]=5";
-            criteriaIndex++;
+                query.Append(
+                    $"&criteria[1][criteria][{i}][field]={GlpiSearchFields.TicketStatus}" +
+                    $"&criteria[1][criteria][{i}][searchtype]=equals" +
+                    $"&criteria[1][criteria][{i}][value]={statuses[i]}");
+            }
         }
-        else if (scope == GlpiTicketScope.Last90Days)
+        else
         {
-            var since = DateTime.UtcNow.AddDays(-90).ToString("yyyy-MM-dd HH:mm:ss");
-            if (criteriaIndex > 0)
+            for (var i = 0; i < statuses.Count; i++)
             {
-                query += $"&criteria[{criteriaIndex}][link]=AND";
-            }
+                if (i > 0)
+                {
+                    query.Append($"&criteria[{i}][link]=OR");
+                }
 
-            query +=
-                $"&criteria[{criteriaIndex}][field]={GlpiSearchFields.TicketDateOpening}" +
-                $"&criteria[{criteriaIndex}][searchtype]=morethan" +
-                $"&criteria[{criteriaIndex}][value]={Uri.EscapeDataString(since)}";
-            criteriaIndex++;
+                query.Append(
+                    $"&criteria[{i}][field]={GlpiSearchFields.TicketStatus}" +
+                    $"&criteria[{i}][searchtype]=equals" +
+                    $"&criteria[{i}][value]={statuses[i]}");
+            }
         }
 
-        query +=
+        query.Append(
             $"&forcedisplay[0]={GlpiSearchFields.TicketId}" +
             $"&forcedisplay[1]={GlpiSearchFields.TicketTitle}" +
             $"&forcedisplay[2]={GlpiSearchFields.TicketStatus}" +
             $"&forcedisplay[3]={GlpiSearchFields.TicketPriority}" +
-            $"&forcedisplay[4]={GlpiSearchFields.TicketDateOpening}";
+            $"&forcedisplay[4]={GlpiSearchFields.TicketDateOpening}");
 
         if (includeRequester)
         {
-            query += $"&forcedisplay[5]={GlpiSearchFields.TicketRequester}";
+            query.Append($"&forcedisplay[5]={GlpiSearchFields.TicketRequester}");
         }
 
-        query += "&sort=19&order=DESC";
-        return query;
+        query.Append("&sort=15&order=DESC");
+        return query.ToString();
     }
 
     private static GlpiTicketSummary MapSearchRow(

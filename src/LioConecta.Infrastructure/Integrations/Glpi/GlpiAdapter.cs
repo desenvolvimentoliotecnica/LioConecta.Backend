@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace LioConecta.Infrastructure.Integrations.Glpi;
 
-public sealed class GlpiAdapter(
+public sealed partial class GlpiAdapter(
     HttpClient httpClient,
     GlpiCredentialsResolver credentialsResolver,
     GlpiSessionManager sessionManager,
@@ -538,12 +538,15 @@ public sealed class GlpiAdapter(
             Url = BuildTicketUrl(credentials, ticketId),
         };
 
+        var requesterTask = LoadTicketRequesterAsync(credentials, sessionToken, ticketId, cancellationToken);
         var assigneeTask = LoadTicketAssigneeAsync(credentials, sessionToken, ticketId, cancellationToken);
         var followupsTask = LoadTicketFollowupsAsync(credentials, sessionToken, ticketId, cancellationToken);
         var solutionTask = LoadTicketSolutionAsync(credentials, sessionToken, ticketId, solvedAt, cancellationToken);
         var attachmentsTask = LoadTicketAttachmentsAsync(credentials, sessionToken, ticketId, cancellationToken);
 
-        await Task.WhenAll(assigneeTask, followupsTask, solutionTask, attachmentsTask);
+        await Task.WhenAll(requesterTask, assigneeTask, followupsTask, solutionTask, attachmentsTask);
+
+        summary.RequesterLabel = await requesterTask;
 
         return new GlpiTicketDetail
         {
@@ -624,6 +627,61 @@ public sealed class GlpiAdapter(
             ContentType = contentType,
             Content = bytes,
         };
+    }
+
+    private async Task<string?> LoadTicketRequesterAsync(
+        GlpiRuntimeCredentials credentials,
+        string sessionToken,
+        string ticketId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var labels = new List<string>();
+            var userActors = await GetTicketSubItemsAsync(
+                credentials,
+                sessionToken,
+                ticketId,
+                "Ticket_User",
+                cancellationToken);
+
+            foreach (var item in userActors)
+            {
+                if (!IsRequesterActor(item))
+                {
+                    continue;
+                }
+
+                var userId = ReadJsonInt(item, "users_id");
+                if (userId is null or <= 0)
+                {
+                    continue;
+                }
+
+                var name = await userNameResolver.ResolveDisplayNameAsync(
+                    httpClient,
+                    credentials,
+                    sessionToken,
+                    userId.Value.ToString(),
+                    cancellationToken);
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    labels.Add(name);
+                }
+            }
+
+            if (labels.Count == 0)
+            {
+                return null;
+            }
+
+            return string.Join(", ", labels.Distinct(StringComparer.OrdinalIgnoreCase));
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "Failed to load GLPI requester for ticket {TicketId}", ticketId);
+            return null;
+        }
     }
 
     private async Task<string?> LoadTicketAssigneeAsync(
@@ -906,6 +964,13 @@ public sealed class GlpiAdapter(
         return root.EnumerateArray()
             .Select(item => item.Clone())
             .ToList();
+    }
+
+    private static bool IsRequesterActor(JsonElement item)
+    {
+        var type = ReadJsonInt(item, "type");
+        // CommonITILActor::REQUESTER = 1
+        return type is 1;
     }
 
     private static bool IsAssignActor(JsonElement item)

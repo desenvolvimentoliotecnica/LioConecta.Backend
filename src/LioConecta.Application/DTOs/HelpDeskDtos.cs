@@ -26,11 +26,59 @@ public sealed record HelpDeskKnowledgeArticleDto(
     string Url);
 
 public sealed record CreateHelpDeskTicketRequestDto(
-    string Subject,
-    string Priority,
+    string? Subject,
+    string? Priority,
     int EntityId,
     int CategoryId,
-    string Description);
+    string? Description,
+    int? FormId = null,
+    IReadOnlyList<HelpDeskFormAnswerDto>? Answers = null);
+
+public sealed record HelpDeskFormAnswerDto(
+    int QuestionId,
+    string Value);
+
+public sealed record HelpDeskFormCategoryDto(
+    int Id,
+    string Name,
+    string? CompleteName,
+    int? ParentId,
+    int Level,
+    int FormCount);
+
+public sealed record HelpDeskFormSummaryDto(
+    int Id,
+    string Name,
+    string? Description,
+    string? Illustration,
+    int CategoryId);
+
+public sealed record HelpDeskFormOptionDto(
+    string Value,
+    string Label);
+
+public sealed record HelpDeskFormQuestionDto(
+    int Id,
+    string Name,
+    string Type,
+    string FieldKind,
+    bool IsMandatory,
+    string? Description,
+    string? DefaultValue,
+    int? HorizontalRank,
+    IReadOnlyList<HelpDeskFormOptionDto> Options);
+
+public sealed record HelpDeskFormSectionDto(
+    int Id,
+    string Name,
+    IReadOnlyList<HelpDeskFormQuestionDto> Questions);
+
+public sealed record HelpDeskFormSchemaDto(
+    int Id,
+    string Name,
+    string? Description,
+    int CategoryId,
+    IReadOnlyList<HelpDeskFormSectionDto> Sections);
 
 public sealed record HelpDeskAreaDto(
     string Id,

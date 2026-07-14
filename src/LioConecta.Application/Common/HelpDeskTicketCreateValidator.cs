@@ -11,6 +11,21 @@ public static class HelpDeskTicketCreateValidator
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        if (request.FormId is > 0)
+        {
+            if (request.EntityId <= 0)
+            {
+                throw new ArgumentException("Entidade inválida.");
+            }
+
+            if (request.Answers is null || request.Answers.Count == 0)
+            {
+                throw new ArgumentException("Informe as respostas do formulário GLPI.");
+            }
+
+            return;
+        }
+
         var subject = request.Subject?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(subject))
         {

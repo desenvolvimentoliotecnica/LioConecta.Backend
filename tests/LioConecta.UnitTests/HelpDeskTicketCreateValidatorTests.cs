@@ -62,4 +62,34 @@ public class HelpDeskTicketCreateValidatorTests
         var request = ValidRequest() with { Priority = "desconhecida" };
         Assert.Throws<ArgumentException>(() => HelpDeskTicketCreateValidator.Validate(request));
     }
+
+    [Fact]
+    public void Validate_AcceptsFormPathWithAnswers()
+    {
+        HelpDeskTicketCreateValidator.Validate(
+            new CreateHelpDeskTicketRequestDto(
+                Subject: null,
+                Priority: null,
+                EntityId: 1,
+                CategoryId: 0,
+                Description: null,
+                FormId: 20,
+                Answers: [new HelpDeskFormAnswerDto(101, "Notebook lento")]));
+    }
+
+    [Fact]
+    public void Validate_RejectsFormPathWithoutAnswers()
+    {
+        var exception = Assert.Throws<ArgumentException>(() =>
+            HelpDeskTicketCreateValidator.Validate(
+                new CreateHelpDeskTicketRequestDto(
+                    Subject: null,
+                    Priority: null,
+                    EntityId: 1,
+                    CategoryId: 0,
+                    Description: null,
+                    FormId: 20,
+                    Answers: [])));
+        Assert.Contains("respostas", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
 }

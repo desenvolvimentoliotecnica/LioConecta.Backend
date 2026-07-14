@@ -90,33 +90,66 @@ public sealed class HelpDeskService(
         var person = await personRepository.GetByIdAsync(personId, cancellationToken)
             ?? throw new InvalidOperationException("Person profile not found.");
 
-        var subject = request.Subject.Trim();
-        var description = request.Description.Trim();
-        var priority = request.Priority.Trim();
+        GlpiTicketResult glpiResult;
+        Dictionary<string, object?> payload;
 
-        var glpiResult = await glpiAdapter.CreateTicketAsync(
-            subject,
-            description,
-            priority,
-            request.EntityId,
-            request.CategoryId,
-            person.Email,
-            cancellationToken);
+        if (request.FormId is > 0)
+        {
+            var answers = (request.Answers ?? [])
+                .Select(a => new GlpiFormAnswerInput { QuestionId = a.QuestionId, Value = a.Value ?? string.Empty })
+                .ToList();
+
+            glpiResult = await glpiAdapter.CreateTicketFromFormAnswersAsync(
+                request.FormId.Value,
+                request.EntityId,
+                answers,
+                string.IsNullOrWhiteSpace(request.Subject) ? null : request.Subject.Trim(),
+                person.Email,
+                cancellationToken);
+
+            payload = new Dictionary<string, object?>
+            {
+                ["formId"] = request.FormId.Value,
+                ["entityId"] = request.EntityId,
+                ["answers"] = answers
+                    .Select(a => new Dictionary<string, object?>
+                    {
+                        ["questionId"] = a.QuestionId,
+                        ["value"] = a.Value,
+                    })
+                    .ToList(),
+            };
+        }
+        else
+        {
+            var subject = (request.Subject ?? string.Empty).Trim();
+            var description = (request.Description ?? string.Empty).Trim();
+            var priority = (request.Priority ?? string.Empty).Trim();
+
+            glpiResult = await glpiAdapter.CreateTicketAsync(
+                subject,
+                description,
+                priority,
+                request.EntityId,
+                request.CategoryId,
+                person.Email,
+                cancellationToken);
+
+            payload = new Dictionary<string, object?>
+            {
+                ["subject"] = subject,
+                ["priority"] = priority,
+                ["entityId"] = request.EntityId,
+                ["categoryId"] = request.CategoryId,
+                ["description"] = description,
+            };
+        }
 
         if (string.IsNullOrWhiteSpace(glpiResult.TicketId) ||
             string.Equals(glpiResult.Status, "Error", StringComparison.OrdinalIgnoreCase))
         {
             throw new GlpiIntegrationException("Não foi possível registrar o chamado no GLPI.");
         }
-
-        var payload = new Dictionary<string, object?>
-        {
-            ["subject"] = subject,
-            ["priority"] = priority,
-            ["entityId"] = request.EntityId,
-            ["categoryId"] = request.CategoryId,
-            ["description"] = description,
-        };
 
         var created = await serviceRequestService.CreateAsync(
             new CreateServiceRequestRequest(HelpDeskType, ServiceCategory.TI, payload),
@@ -134,6 +167,44 @@ public sealed class HelpDeskService(
             $"Chamado registrado com sucesso. Protocolo GLPI #{glpiResult.TicketId}.",
             glpiResult.TicketId,
             glpiResult.Url);
+    }
+
+    public async Task<IReadOnlyList<HelpDeskFormCategoryDto>> GetFormCategoriesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var categories = await glpiAdapter.GetFormCategoriesAsync(cancellationToken);
+        var forms = await glpiAdapter.GetFormsAsync(cancellationToken: cancellationToken);
+        var counts = forms
+            .GroupBy(f => f.CategoryId)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        return categories
+            .Select(c => new HelpDeskFormCategoryDto(
+                c.Id,
+                c.Name,
+                c.CompleteName,
+                c.ParentId,
+                c.Level,
+                counts.GetValueOrDefault(c.Id)))
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<HelpDeskFormSummaryDto>> GetFormsAsync(
+        int? categoryId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var forms = await glpiAdapter.GetFormsAsync(categoryId, cancellationToken);
+        return forms
+            .Select(f => new HelpDeskFormSummaryDto(f.Id, f.Name, f.Description, f.Illustration, f.CategoryId))
+            .ToList();
+    }
+
+    public async Task<HelpDeskFormSchemaDto?> GetFormSchemaAsync(
+        int formId,
+        CancellationToken cancellationToken = default)
+    {
+        var schema = await glpiAdapter.GetFormSchemaAsync(formId, cancellationToken);
+        return schema is null ? null : HelpDeskFormMapper.ToDto(schema);
     }
 
     public async Task<IReadOnlyList<HelpDeskAreaDto>> GetAreasAsync(

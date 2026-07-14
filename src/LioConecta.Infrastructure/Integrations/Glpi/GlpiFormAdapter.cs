@@ -396,11 +396,33 @@ public sealed partial class GlpiAdapter
             VerticalRank = ReadJsonInt(element, "vertical_rank") ?? 0,
             HorizontalRank = ReadJsonInt(element, "horizontal_rank"),
             Description = NullIfEmpty(StripTags(ReadJsonString(element, "description"))),
-            DefaultValue = NullIfEmpty(ReadJsonString(element, "default_value")),
-            ExtraDataJson = NullIfEmpty(ReadJsonString(element, "extra_data")),
+            DefaultValue = NullIfEmpty(ReadJsonFlexible(element, "default_value")),
+            ExtraDataJson = NullIfEmpty(ReadJsonFlexible(element, "extra_data")),
             VisibilityStrategy = ReadJsonString(element, "visibility_strategy"),
-            ConditionsJson = NullIfEmpty(ReadJsonString(element, "conditions")) ?? "[]",
+            ConditionsJson = NullIfEmpty(ReadJsonFlexible(element, "conditions")) ?? "[]",
         };
+
+    /// <summary>
+    /// GLPI Forms often returns default_value/extra_data as JSON objects (e.g. {"items_id":0}),
+    /// not as strings. ReadJsonString alone would drop them and break field-kind detection.
+    /// </summary>
+    private static string ReadJsonFlexible(JsonElement item, string property)
+    {
+        if (!item.TryGetProperty(property, out var value))
+        {
+            return string.Empty;
+        }
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.String => value.GetString()?.Trim() ?? string.Empty,
+            JsonValueKind.Number => value.ToString(),
+            JsonValueKind.True => "true",
+            JsonValueKind.False => "false",
+            JsonValueKind.Object or JsonValueKind.Array => value.GetRawText(),
+            _ => string.Empty,
+        };
+    }
 
     private static void ValidateMandatoryAnswers(
         GlpiFormSchema schema,
@@ -416,15 +438,52 @@ public sealed partial class GlpiAdapter
 
             if (question.Type.Contains("QuestionTypeFile", StringComparison.Ordinal))
             {
-                // Anexos ainda não entram no POST; não bloqueia abertura.
+                // Anexos sobem em endpoint separado após criar o ticket.
                 continue;
             }
 
-            if (!map.TryGetValue(question.Id, out var value) || string.IsNullOrWhiteSpace(value))
+            if (!map.TryGetValue(question.Id, out var value) || IsEmptyAnswer(value))
             {
                 throw new ArgumentException($"Resposta obrigatória: {question.Name}");
             }
         }
+    }
+
+    private static bool IsEmptyAnswer(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return true;
+        }
+
+        var trimmed = value.Trim();
+        if (trimmed is "0" or "-1")
+        {
+            return true;
+        }
+
+        if (!trimmed.StartsWith('{'))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(trimmed);
+            if (document.RootElement.TryGetProperty("items_id", out var itemsId))
+            {
+                var id = itemsId.ValueKind == JsonValueKind.Number
+                    ? itemsId.GetInt32()
+                    : int.TryParse(itemsId.GetString(), out var parsed) ? parsed : 0;
+                return id <= 0;
+            }
+        }
+        catch (JsonException)
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private static string BuildFormContentHtml(

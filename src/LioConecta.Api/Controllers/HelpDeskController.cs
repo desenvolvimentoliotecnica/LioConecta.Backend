@@ -173,4 +173,41 @@ public sealed class HelpDeskController(IHelpDeskService helpDeskService) : Contr
 
         return File(file.Value.Content, file.Value.ContentType, file.Value.FileName);
     }
+
+    [HttpPost("tickets/{ticketId}/attachments")]
+    [RequestSizeLimit(25 * 1024 * 1024)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status502BadGateway)]
+    public async Task<IActionResult> UploadTicketAttachment(
+        string ticketId,
+        IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        if (file is null || file.Length <= 0)
+        {
+            return BadRequest(new { detail = "Selecione um arquivo válido." });
+        }
+
+        try
+        {
+            await using var stream = file.OpenReadStream();
+            await helpDeskService.UploadTicketAttachmentAsync(
+                ticketId,
+                file.FileName,
+                file.ContentType ?? "application/octet-stream",
+                stream,
+                cancellationToken);
+            return NoContent();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (ArgumentException exception)
+        {
+            return BadRequest(new { detail = exception.Message });
+        }
+    }
 }

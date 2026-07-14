@@ -144,7 +144,18 @@ public static class HelpDeskFormMapper
                     var id = itemsId.ValueKind == JsonValueKind.Number
                         ? itemsId.GetInt32()
                         : int.TryParse(itemsId.GetString(), out var parsed) ? parsed : 0;
-                    return id > 0 ? id.ToString() : null;
+                    if (id <= 0)
+                    {
+                        return null;
+                    }
+
+                    // User/observer defaults are GLPI ids — never show bare codes in the portal.
+                    if (fieldKind is "user" or "users")
+                    {
+                        return null;
+                    }
+
+                    return id.ToString();
                 }
             }
             catch (JsonException)
@@ -155,6 +166,12 @@ public static class HelpDeskFormMapper
 
         // Avoid leaking JSON placeholders into any input (even if kind fell back to text).
         if (value.Contains("items_id", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        if ((fieldKind is "user" or "users") &&
+            long.TryParse(value, out _))
         {
             return null;
         }

@@ -88,6 +88,36 @@ public sealed class HelpDeskController(IHelpDeskService helpDeskService) : Contr
         }
     }
 
+    [HttpGet("form-categories")]
+    [ProducesResponseType(typeof(IReadOnlyList<HelpDeskFormCategoryDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<HelpDeskFormCategoryDto>>> GetFormCategories(
+        CancellationToken cancellationToken)
+    {
+        var categories = await helpDeskService.GetFormCategoriesAsync(cancellationToken);
+        return Ok(categories);
+    }
+
+    [HttpGet("forms")]
+    [ProducesResponseType(typeof(IReadOnlyList<HelpDeskFormSummaryDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<HelpDeskFormSummaryDto>>> GetForms(
+        [FromQuery] int? categoryId,
+        CancellationToken cancellationToken)
+    {
+        var forms = await helpDeskService.GetFormsAsync(categoryId, cancellationToken);
+        return Ok(forms);
+    }
+
+    [HttpGet("forms/{formId:int}")]
+    [ProducesResponseType(typeof(HelpDeskFormSchemaDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<HelpDeskFormSchemaDto>> GetFormSchema(
+        int formId,
+        CancellationToken cancellationToken)
+    {
+        var schema = await helpDeskService.GetFormSchemaAsync(formId, cancellationToken);
+        return schema is null ? NotFound() : Ok(schema);
+    }
+
     [HttpGet("tickets/mine")]
     [ProducesResponseType(typeof(IReadOnlyList<HelpDeskTicketListItemDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<HelpDeskTicketListItemDto>>> GetMyTickets(

@@ -48,4 +48,23 @@ public interface IGlpiAdapter
         string requesterEmail,
         bool skipOwnershipCheck = false,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<GlpiFormCategory>> GetFormCategoriesAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<GlpiFormSummary>> GetFormsAsync(
+        int? categoryId = null,
+        CancellationToken cancellationToken = default);
+
+    Task<GlpiFormSchema?> GetFormSchemaAsync(
+        int formId,
+        CancellationToken cancellationToken = default);
+
+    Task<GlpiTicketResult> CreateTicketFromFormAnswersAsync(
+        int formId,
+        int entityId,
+        IReadOnlyList<GlpiFormAnswerInput> answers,
+        string? subjectOverride,
+        string requesterEmail,
+        CancellationToken cancellationToken = default);
 }

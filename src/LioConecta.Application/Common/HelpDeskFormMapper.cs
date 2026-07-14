@@ -26,7 +26,7 @@ public static class HelpDeskFormMapper
     public static HelpDeskFormQuestionDto ToQuestionDto(GlpiFormQuestion question)
     {
         var meta = ParseExtraData(question.ExtraDataJson);
-        var kind = ResolveFieldKind(question.Type, meta.ItemType);
+        var kind = ResolveFieldKind(question.Type, meta.ItemType, question.Name);
         var options = ParseOptions(question.ExtraDataJson)
             .Select(pair => new HelpDeskFormOptionDto(pair.Key, pair.Value))
             .ToList();
@@ -48,37 +48,77 @@ public static class HelpDeskFormMapper
             meta.IsMultiple);
     }
 
-    public static string ResolveFieldKind(string type, string? itemType = null)
+    public static string ResolveFieldKind(string type, string? itemType = null, string? questionName = null)
     {
-        if (type.Contains("QuestionTypeLongText", StringComparison.Ordinal)) return "longtext";
-        if (type.Contains("QuestionTypeShortText", StringComparison.Ordinal)) return "text";
-        if (type.Contains("QuestionTypeEmail", StringComparison.Ordinal)) return "email";
-        if (type.Contains("QuestionTypeNumber", StringComparison.Ordinal)) return "number";
-        if (type.Contains("QuestionTypeDate", StringComparison.Ordinal)) return "date";
-        if (type.Contains("QuestionTypeRadio", StringComparison.Ordinal)) return "radio";
-        if (type.Contains("QuestionTypeCheckbox", StringComparison.Ordinal)) return "checkbox";
-        if (type.Contains("QuestionTypeDropdown", StringComparison.Ordinal) &&
+        string kind;
+        if (type.Contains("QuestionTypeLongText", StringComparison.Ordinal)) kind = "longtext";
+        else if (type.Contains("QuestionTypeShortText", StringComparison.Ordinal)) kind = "text";
+        else if (type.Contains("QuestionTypeEmail", StringComparison.Ordinal)) kind = "email";
+        else if (type.Contains("QuestionTypeNumber", StringComparison.Ordinal)) kind = "number";
+        else if (type.Contains("QuestionTypeDate", StringComparison.Ordinal)) kind = "date";
+        else if (type.Contains("QuestionTypeRadio", StringComparison.Ordinal)) kind = "radio";
+        else if (type.Contains("QuestionTypeCheckbox", StringComparison.Ordinal)) kind = "checkbox";
+        else if (type.Contains("QuestionTypeDropdown", StringComparison.Ordinal) &&
             !type.Contains("QuestionTypeItemDropdown", StringComparison.Ordinal))
         {
-            return "dropdown";
+            kind = "dropdown";
+        }
+        else if (type.Contains("QuestionTypeUrgency", StringComparison.Ordinal)) kind = "urgency";
+        else if (type.Contains("QuestionTypeFile", StringComparison.Ordinal)) kind = "file";
+        else if (type.Contains("QuestionTypeObserver", StringComparison.Ordinal) ||
+            type.Contains("QuestionTypeRequester", StringComparison.Ordinal))
+        {
+            kind = "users";
+        }
+        else if (type.Contains("QuestionTypeItemDropdown", StringComparison.Ordinal) ||
+            type.Contains("QuestionTypeItem", StringComparison.Ordinal))
+        {
+            kind = ResolveItemFieldKind(itemType);
+        }
+        else if (type.Contains("QuestionTypeUserDevice", StringComparison.Ordinal)) kind = "text";
+        else kind = "text";
+
+        return InferKindFromLabel(questionName, type, kind);
+    }
+
+    private static string InferKindFromLabel(string? questionName, string type, string kind)
+    {
+        if (kind is "user" or "users" or "file" or "itilcategory" or "urgency" or "radio" or "checkbox" or "dropdown" or "longtext")
+        {
+            return kind;
         }
 
-        if (type.Contains("QuestionTypeUrgency", StringComparison.Ordinal)) return "urgency";
-        if (type.Contains("QuestionTypeFile", StringComparison.Ordinal)) return "file";
-        if (type.Contains("QuestionTypeObserver", StringComparison.Ordinal) ||
-            type.Contains("QuestionTypeRequester", StringComparison.Ordinal))
+        var name = (questionName ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(name))
+        {
+            return kind;
+        }
+
+        if (name.Contains("anex", StringComparison.Ordinal) ||
+            name.Contains("evidên", StringComparison.Ordinal) ||
+            name.Contains("evidenc", StringComparison.Ordinal) ||
+            type.Contains("QuestionTypeFile", StringComparison.Ordinal))
+        {
+            return "file";
+        }
+
+        if (name.Contains("cópia", StringComparison.Ordinal) ||
+            name.Contains("copia", StringComparison.Ordinal) ||
+            name.Contains("observador", StringComparison.Ordinal) ||
+            name.Contains("observer", StringComparison.Ordinal))
         {
             return "users";
         }
 
-        if (type.Contains("QuestionTypeItemDropdown", StringComparison.Ordinal) ||
-            type.Contains("QuestionTypeItem", StringComparison.Ordinal))
+        if (name.Contains("colaborador", StringComparison.Ordinal) ||
+            name.Contains("usuário", StringComparison.Ordinal) ||
+            name.Contains("usuario", StringComparison.Ordinal) ||
+            name.Contains("solicitante", StringComparison.Ordinal))
         {
-            return ResolveItemFieldKind(itemType);
+            return "user";
         }
 
-        if (type.Contains("QuestionTypeUserDevice", StringComparison.Ordinal)) return "text";
-        return "text";
+        return kind;
     }
 
     public static string? SanitizeDefaultValue(string? raw, string fieldKind)

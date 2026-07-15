@@ -200,6 +200,29 @@ public sealed class FeedService(
             ["celebratedPersonSlug"] = celebrated.Slug,
         };
 
+        // Optional birthday card / media attached by the client.
+        if (request.Metadata is not null)
+        {
+            foreach (var key in new[] { "mediaUrl", "mediaType", "mediaItems", "heroImageUrl", "birthdayCardId" })
+            {
+                if (request.Metadata.TryGetValue(key, out var value) && value is not null)
+                {
+                    metadata[key] = value;
+                }
+            }
+        }
+
+        var normalizedMedia = FeedPostMediaHelper.NormalizeMetadataForCreate(metadata);
+        if (normalizedMedia is not null)
+        {
+            metadata = new Dictionary<string, object?>(normalizedMedia, StringComparer.OrdinalIgnoreCase);
+            // Re-assert celebration identity fields after media normalize.
+            metadata["kind"] = "birthday";
+            metadata["celebratedPersonId"] = celebrated.Id.ToString();
+            metadata["celebratedPersonName"] = celebrated.Name;
+            metadata["celebratedPersonSlug"] = celebrated.Slug;
+        }
+
         var postId = Guid.NewGuid();
         var post = new FeedPost
         {

@@ -33,6 +33,24 @@ public sealed class EmailAttachmentService(
         "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     };
 
+    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".pdf",
+        ".txt",
+        ".csv",
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".webp",
+        ".gif",
+        ".doc",
+        ".docx",
+        ".xls",
+        ".xlsx",
+        ".ppt",
+        ".pptx",
+    };
+
     public async Task<EmailAttachmentUploadDto> UploadAsync(
         Stream content,
         string fileName,
@@ -51,8 +69,13 @@ public sealed class EmailAttachmentService(
             throw new InvalidOperationException("Arquivo excede o limite de 10 MB.");
         }
 
-        var safeName = Path.GetFileName(string.IsNullOrWhiteSpace(fileName) ? "anexo" : fileName);
-        var detectedType = DetectContentType(content, contentType, safeName);
+        var (safeName, extension) = SanitizeFileName(fileName);
+        if (string.IsNullOrWhiteSpace(extension) || !AllowedExtensions.Contains(extension))
+        {
+            throw new InvalidOperationException("Tipo de arquivo nao permitido.");
+        }
+
+        var detectedType = ResolveContentType(extension, contentType);
         if (!AllowedContentTypes.Contains(detectedType))
         {
             throw new InvalidOperationException("Tipo de arquivo nao permitido.");
@@ -61,7 +84,7 @@ public sealed class EmailAttachmentService(
         var storageRoot = ResolveStorageRoot();
         Directory.CreateDirectory(storageRoot);
 
-        var storedName = $"{Guid.NewGuid():N}{Path.GetExtension(safeName)}";
+        var storedName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
         var absolutePath = Path.Combine(storageRoot, storedName);
 
         await using (var output = File.Create(absolutePath))
@@ -137,15 +160,77 @@ public sealed class EmailAttachmentService(
         return Path.Combine(hostEnvironment.ContentRootPath, "App_Data", "email", "attachments");
     }
 
-    private static string DetectContentType(Stream content, string? declaredType, string fileName)
+    /// <summary>
+    /// Normalizes filenames like "ChatGPT Image 15 de jul. de 2026, 12_09_44.png"
+    /// that break multipart parsing / Path.GetExtension when commas or intermediate dots appear.
+    /// </summary>
+    private static (string SafeName, string Extension) SanitizeFileName(string? fileName)
     {
-        if (!string.IsNullOrWhiteSpace(declaredType) && AllowedContentTypes.Contains(declaredType))
+        var raw = Path.GetFileName(string.IsNullOrWhiteSpace(fileName) ? "anexo" : fileName.Trim());
+        var extension = ResolveAllowedExtension(raw);
+        var stemSource = string.IsNullOrEmpty(extension)
+            ? raw
+            : raw[..^extension.Length];
+
+        var stem = string.Join(
+            "_",
+            stemSource
+                .Replace(',', ' ')
+                .Split([' ', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries));
+
+        if (string.IsNullOrWhiteSpace(stem))
         {
-            return declaredType;
+            stem = "anexo";
         }
 
-        var extension = Path.GetExtension(fileName).ToLowerInvariant();
-        return extension switch
+        foreach (var invalid in Path.GetInvalidFileNameChars())
+        {
+            stem = stem.Replace(invalid, '_');
+        }
+
+        stem = stem.Trim('.', '_', ' ');
+        if (string.IsNullOrWhiteSpace(stem))
+        {
+            stem = "anexo";
+        }
+
+        if (stem.Length > 180)
+        {
+            stem = stem[..180];
+        }
+
+        var safeName = string.IsNullOrEmpty(extension) ? stem : $"{stem}{extension.ToLowerInvariant()}";
+        return (safeName, extension.ToLowerInvariant());
+    }
+
+    private static string ResolveAllowedExtension(string fileName)
+    {
+        var byPath = Path.GetExtension(fileName);
+        if (!string.IsNullOrWhiteSpace(byPath) && AllowedExtensions.Contains(byPath))
+        {
+            return byPath.ToLowerInvariant();
+        }
+
+        // Last known-good extension even when commas truncate or intermediate dots confuse GetExtension.
+        var lower = fileName.ToLowerInvariant();
+        string? best = null;
+        var bestIndex = -1;
+        foreach (var candidate in AllowedExtensions)
+        {
+            var idx = lower.LastIndexOf(candidate, StringComparison.Ordinal);
+            if (idx > bestIndex && idx + candidate.Length == lower.Length)
+            {
+                best = candidate;
+                bestIndex = idx;
+            }
+        }
+
+        return best ?? string.Empty;
+    }
+
+    private static string ResolveContentType(string extension, string? declaredType)
+    {
+        var fromExtension = extension.ToLowerInvariant() switch
         {
             ".pdf" => "application/pdf",
             ".txt" => "text/plain",
@@ -160,7 +245,20 @@ public sealed class EmailAttachmentService(
             ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             ".ppt" => "application/vnd.ms-powerpoint",
             ".pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-            _ => declaredType ?? "application/octet-stream",
+            _ => string.Empty,
         };
+
+        if (!string.IsNullOrWhiteSpace(fromExtension))
+        {
+            return fromExtension;
+        }
+
+        var normalized = declaredType?.Split(';', 2)[0].Trim();
+        if (!string.IsNullOrWhiteSpace(normalized) && AllowedContentTypes.Contains(normalized))
+        {
+            return normalized;
+        }
+
+        return "application/octet-stream";
     }
 }

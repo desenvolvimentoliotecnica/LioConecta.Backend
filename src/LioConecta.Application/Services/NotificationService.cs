@@ -166,6 +166,52 @@ public sealed class NotificationService(
             cancellationToken);
     }
 
+    public async Task NotifyLeaveRequestDecisionAsync(
+        Guid requesterPersonId,
+        Guid leaveRecordId,
+        string serviceKey,
+        string periodLabel,
+        bool approved,
+        string? reason,
+        CancellationToken cancellationToken = default)
+    {
+        var requester = await personRepository.GetByIdAsync(requesterPersonId, cancellationToken);
+        if (requester is null)
+        {
+            return;
+        }
+
+        var isMedical = string.Equals(serviceKey, "atestado", StringComparison.OrdinalIgnoreCase);
+        var period = string.IsNullOrWhiteSpace(periodLabel) ? "sem período" : periodLabel.Trim();
+        string title;
+        string body;
+        if (isMedical)
+        {
+            title = approved ? "Atestado médico aprovado" : "Atestado médico rejeitado";
+            body = approved
+                ? $"Seu atestado médico ({period}) foi aprovado."
+                : $"Seu atestado médico ({period}) foi rejeitado."
+                  + (string.IsNullOrWhiteSpace(reason) ? "" : $" Motivo: {reason.Trim()}");
+        }
+        else
+        {
+            title = approved ? "Solicitação de férias aprovada" : "Solicitação de férias rejeitada";
+            body = approved
+                ? $"Sua solicitação de férias ({period}) foi aprovada."
+                : $"Sua solicitação de férias ({period}) foi rejeitada."
+                  + (string.IsNullOrWhiteSpace(reason) ? "" : $" Motivo: {reason.Trim()}");
+        }
+
+        var href = $"/servicos/ferias-ausencias?requestId={leaveRecordId}";
+        await BroadcastAsync(
+            () => Task.FromResult<IReadOnlyList<Person>>([requester]),
+            NotificationType.ServiceRequest,
+            title,
+            body,
+            href,
+            cancellationToken);
+    }
+
     public async Task NotifyPontoAdjustmentCreatedAsync(
         IReadOnlyList<Guid> recipientPersonIds,
         Guid adjustmentRecordId,

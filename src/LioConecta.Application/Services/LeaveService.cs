@@ -494,6 +494,12 @@ public sealed class LeaveService(
             await TryImmediateWriteBackAsync(record, cancellationToken);
         }
 
+        await NotifyLeaveRequestDecisionInternalAsync(
+            record,
+            approved: true,
+            decisionNote: string.IsNullOrWhiteSpace(request.Comment) ? null : request.Comment.Trim(),
+            cancellationToken);
+
         return await ToManagementDetailAsync(record, cancellationToken);
     }
 
@@ -518,6 +524,12 @@ public sealed class LeaveService(
         }
 
         await leaveRepository.UpdateRecordAsync(record, cancellationToken);
+
+        await NotifyLeaveRequestDecisionInternalAsync(
+            record,
+            approved: false,
+            decisionNote: string.IsNullOrWhiteSpace(request.Reason) ? null : request.Reason.Trim(),
+            cancellationToken);
 
         return await ToManagementDetailAsync(record, cancellationToken);
     }
@@ -657,6 +669,50 @@ public sealed class LeaveService(
         catch
         {
             // Notifications are best-effort; request creation must not fail.
+        }
+    }
+
+    private async Task NotifyLeaveRequestDecisionInternalAsync(
+        LeaveRecord record,
+        bool approved,
+        string? decisionNote,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var period = FormatPeriodLabel(record.StartDate, record.EndDate);
+            await notificationService.NotifyLeaveRequestDecisionAsync(
+                record.PersonId,
+                record.Id,
+                record.ServiceKey,
+                period,
+                approved,
+                decisionNote,
+                cancellationToken);
+
+            var requester = record.Person
+                ?? await personRepository.GetByIdAsync(record.PersonId, cancellationToken);
+            if (requester is null)
+            {
+                return;
+            }
+
+            var serviceTitle = ServiceCatalog
+                .FirstOrDefault(s => string.Equals(s.Id, record.ServiceKey, StringComparison.OrdinalIgnoreCase))
+                ?.Title
+                ?? record.Title;
+
+            await leaveEmailNotifier.NotifyDecisionAsync(
+                record,
+                requester,
+                approved,
+                decisionNote,
+                serviceTitle,
+                cancellationToken);
+        }
+        catch
+        {
+            // Notifications are best-effort; approve/reject must not fail.
         }
     }
 

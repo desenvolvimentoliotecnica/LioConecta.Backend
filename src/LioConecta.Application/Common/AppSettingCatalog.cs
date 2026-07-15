@@ -174,7 +174,7 @@ public static class AppSettingCatalog
         new(AppSettingKeys.LeaveNotifyEmails, "leave", "E-mails notificados em solicitação de férias",
             "JSON array de e-mails adicionais (além do gestor e das roles) para notificação e e-mail.", "json", false, "[]", 3),
         new(AppSettingKeys.LeaveEmailEnabled, "leave", "E-mail de férias habilitado",
-            "Quando true, enfileira e-mail SMTP ao criar solicitação de férias.", "boolean", false, "true", 4),
+            "Quando true, enfileira e-mail SMTP ao criar solicitação de férias e ao aprovar/recusar.", "boolean", false, "true", 4),
         new(AppSettingKeys.LeaveEmailDevOverrideEnabled, "leave", "Override de destinatário de e-mail (dev)",
             "Quando true, todos os e-mails de férias vão apenas para leave.email.dev_override_to. Em produção, desligar.", "boolean", false, "true", 5),
         new(AppSettingKeys.LeaveEmailDevOverrideTo, "leave", "E-mail override (destinatário único)",

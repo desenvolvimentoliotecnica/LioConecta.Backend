@@ -25,15 +25,17 @@ public sealed class HelpDeskService(
 
     public async Task<HelpDeskSummaryDto> GetSummaryAsync(CancellationToken cancellationToken = default)
     {
-        // Contagens da fila geral no GLPI (totalcount por status), não só do solicitante.
-        var counts = await glpiAdapter.CountOpenQueueAsync(cancellationToken);
+        // Header alinhado à grid "Meus chamados": conta só o solicitante atual.
+        var myTickets = await GetMyTicketsAsync("all", cancellationToken);
+        var pending = myTickets.Count(static t => IsMyPendingStatus(t.Status));
+        var inProgress = myTickets.Count(static t => IsMyInProgressStatus(t.Status));
 
         return new HelpDeskSummaryDto(
-            counts.Open,
+            pending + inProgress,
             "2h críticos · 8h solicitações",
             await CanViewAllGlpiTicketsAsync(cancellationToken),
-            counts.Pending,
-            counts.InProgress);
+            pending,
+            inProgress);
     }
 
     public IReadOnlyList<HelpDeskServiceDto> GetServices()
@@ -475,6 +477,14 @@ public sealed class HelpDeskService(
             "90d" => GlpiTicketScope.Last90Days,
             _ => GlpiTicketScope.Open,
         };
+
+    /// <summary>Novo / Pendente / Aprovação — mesma regra do header da fila.</summary>
+    private static bool IsMyPendingStatus(string? status) =>
+        status is "1" or "4" or "10";
+
+    /// <summary>Em atendimento (atribuído ou planejado).</summary>
+    private static bool IsMyInProgressStatus(string? status) =>
+        status is "2" or "3";
 
     private static HelpDeskTicketListItemDto MapListItem(GlpiTicketSummary ticket) =>
         new(

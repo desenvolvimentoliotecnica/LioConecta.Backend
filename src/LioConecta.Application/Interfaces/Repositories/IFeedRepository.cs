@@ -51,6 +51,17 @@ public interface IFeedRepository
 
     Task<Celebration?> GetCelebrationByPostIdAsync(Guid postId, CancellationToken cancellationToken = default);
 
+    Task<bool> HasCelebrationFromAuthorInYearAsync(
+        Guid authorId,
+        Guid celebratedPersonId,
+        int year,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlySet<Guid>> GetCelebratedPersonIdsByAuthorInYearAsync(
+        Guid authorId,
+        int year,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<FeedPost>> GetNewsPostsAsync(int limit, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<FeedPost>> GetScheduledNewsDueAsync(

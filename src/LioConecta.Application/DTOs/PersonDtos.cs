@@ -28,6 +28,19 @@ public sealed record PersonSummaryDto(
     DateOnly? BirthDate = null,
     DateOnly? HireDate = null);
 
+public sealed record BirthdayPersonDto(
+    Guid Id,
+    string Slug,
+    string Name,
+    string? Title,
+    string? PhotoUrl,
+    string? DepartmentName,
+    string? Location,
+    string? ManagerSlug,
+    bool IsActive,
+    DateOnly? BirthDate,
+    bool AlreadyCongratulatedByMe);
+
 public sealed record PersonDirectoryEntryDto(
     Guid Id,
     string Slug,

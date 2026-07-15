@@ -1,5 +1,6 @@
 using LioConecta.Application.Common;
 using LioConecta.Application.DTOs;
+using LioConecta.Application.Interfaces.Repositories;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Application.Mapping;
 using LioConecta.Api.Authorization;
@@ -16,6 +17,8 @@ namespace LioConecta.Api.Controllers;
 public sealed class PeopleController(
     IPersonService personService,
     IFeedService feedService,
+    IFeedRepository feedRepository,
+    ICurrentUserService currentUserService,
     AppDbContext dbContext) : ControllerBase
 {
     [HttpGet]
@@ -67,7 +70,7 @@ public sealed class PeopleController(
 
     [HttpGet("birthdays")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<PersonSummaryDto>>> GetBirthdays(
+    public async Task<ActionResult<IReadOnlyList<BirthdayPersonDto>>> GetBirthdays(
         [FromQuery] int days = 30,
         CancellationToken cancellationToken = default)
     {
@@ -101,10 +104,34 @@ public sealed class PeopleController(
                 // Ordena pelo aniversário deste ano (passados do mês primeiro, depois futuros).
                 return new DateOnly(today.Year, birthDate.Month, birthDate.Day);
             })
-            .Select(p => PersonMapper.ToSummary(p))
             .ToList();
 
-        return Ok(upcoming);
+        var currentPersonId = await currentUserService.GetPersonIdAsync(cancellationToken);
+        var congratulatedIds = await feedRepository.GetCelebratedPersonIdsByAuthorInYearAsync(
+            currentPersonId,
+            today.Year,
+            cancellationToken);
+
+        var result = upcoming
+            .Select(p =>
+            {
+                var summary = PersonMapper.ToSummary(p);
+                return new BirthdayPersonDto(
+                    summary.Id,
+                    summary.Slug,
+                    summary.Name,
+                    summary.Title,
+                    summary.PhotoUrl,
+                    summary.DepartmentName,
+                    summary.Location,
+                    summary.ManagerSlug,
+                    summary.IsActive,
+                    summary.BirthDate,
+                    congratulatedIds.Contains(p.Id));
+            })
+            .ToList();
+
+        return Ok(result);
     }
 
     [HttpGet("{slug}/hierarchy")]

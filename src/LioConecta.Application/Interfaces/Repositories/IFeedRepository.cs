@@ -7,6 +7,11 @@ public interface IFeedRepository
 {
     Task<PagedResult<FeedPost>> GetFeedPageAsync(CursorPageRequest request, CancellationToken cancellationToken = default);
 
+    Task<PagedResult<FeedPost>> GetAuthorPostsPageAsync(
+        Guid authorId,
+        CursorPageRequest request,
+        CancellationToken cancellationToken = default);
+
     Task<FeedPost?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<bool> SoftDeleteAsync(Guid id, CancellationToken cancellationToken = default);

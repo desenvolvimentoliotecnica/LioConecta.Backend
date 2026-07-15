@@ -50,6 +50,52 @@ public sealed class FeedRepository(AppDbContext db) : IFeedRepository
         return PagedResult<FeedPost>.FromItems(items, nextCursor, hasMore);
     }
 
+    public async Task<PagedResult<FeedPost>> GetAuthorPostsPageAsync(
+        Guid authorId,
+        CursorPageRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var (cursorCreatedAt, cursorId) = CursorHelper.Parse(request.Cursor);
+        var limit = Math.Clamp(request.Limit, 1, 100);
+        var now = DateTimeOffset.UtcNow;
+
+        var query = db.FeedPosts
+            .AsNoTracking()
+            .Where(p =>
+                p.AuthorId == authorId &&
+                !p.IsDeleted &&
+                (p.ScheduledAt == null || p.ScheduledAt <= now) &&
+                (p.MetadataJson.Contains("mediaItems") ||
+                 p.MetadataJson.Contains("mediaUrl") ||
+                 p.MetadataJson.Contains("heroImageUrl")))
+            .AsQueryable();
+
+        if (cursorCreatedAt.HasValue && cursorId.HasValue)
+        {
+            query = query.Where(p =>
+                p.CreatedAt < cursorCreatedAt.Value ||
+                (p.CreatedAt == cursorCreatedAt.Value && p.Id.CompareTo(cursorId.Value) < 0));
+        }
+
+        var items = await query
+            .OrderByDescending(p => p.CreatedAt)
+            .ThenByDescending(p => p.Id)
+            .Take(limit + 1)
+            .ToListAsync(cancellationToken);
+
+        var hasMore = items.Count > limit;
+        if (hasMore)
+        {
+            items = items.Take(limit).ToList();
+        }
+
+        var nextCursor = hasMore && items.Count > 0
+            ? CursorHelper.Encode(items[^1].CreatedAt, items[^1].Id)
+            : null;
+
+        return PagedResult<FeedPost>.FromItems(items, nextCursor, hasMore);
+    }
+
     public Task<FeedPost?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         db.FeedPosts
             .Include(p => p.Author)

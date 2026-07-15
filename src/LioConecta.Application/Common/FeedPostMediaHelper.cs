@@ -3,6 +3,8 @@ using LioConecta.Application.Mapping;
 
 namespace LioConecta.Application.Common;
 
+public readonly record struct FeedMediaItemInfo(string Url, string MediaType);
+
 public static class FeedPostMediaHelper
 {
     public static string NormalizeMediaUrl(string? url)
@@ -21,36 +23,78 @@ public static class FeedPostMediaHelper
         return trimmed.StartsWith('/') ? trimmed : $"/{trimmed}";
     }
 
-    public static IReadOnlyList<string> ExtractMediaUrls(IReadOnlyDictionary<string, object?> metadata)
+    public static string InferMediaType(string? mediaType, string url)
     {
-        var urls = new List<string>();
+        if (!string.IsNullOrWhiteSpace(mediaType))
+        {
+            var normalized = mediaType.Trim().ToLowerInvariant();
+            if (normalized is "image" or "video")
+            {
+                return normalized;
+            }
+
+            if (normalized.StartsWith("video/", StringComparison.Ordinal))
+            {
+                return "video";
+            }
+
+            if (normalized.StartsWith("image/", StringComparison.Ordinal))
+            {
+                return "image";
+            }
+        }
+
+        var path = url.ToLowerInvariant();
+        if (path.EndsWith(".mp4") || path.EndsWith(".webm") || path.EndsWith(".mov"))
+        {
+            return "video";
+        }
+
+        return "image";
+    }
+
+    public static IReadOnlyList<FeedMediaItemInfo> ExtractMediaItems(IReadOnlyDictionary<string, object?> metadata)
+    {
+        var items = new List<FeedMediaItemInfo>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        void TryAdd(string? rawUrl, string? mediaType)
+        {
+            var normalized = NormalizeMediaUrl(rawUrl);
+            if (string.IsNullOrWhiteSpace(normalized) || !seen.Add(normalized))
+            {
+                return;
+            }
+
+            items.Add(new FeedMediaItemInfo(normalized, InferMediaType(mediaType, normalized)));
+        }
 
         if (metadata.TryGetValue("mediaItems", out var rawItems))
         {
             foreach (var item in EnumerateDictionaryItems(rawItems))
             {
-                if (item.TryGetValue("url", out var rawUrl))
-                {
-                    var normalized = NormalizeMediaUrl(rawUrl?.ToString());
-                    if (!string.IsNullOrWhiteSpace(normalized))
-                    {
-                        urls.Add(normalized);
-                    }
-                }
+                item.TryGetValue("url", out var rawUrl);
+                item.TryGetValue("mediaType", out var rawType);
+                TryAdd(rawUrl?.ToString(), rawType?.ToString());
             }
         }
 
         if (metadata.TryGetValue("mediaUrl", out var singleUrl))
         {
-            var normalized = NormalizeMediaUrl(singleUrl?.ToString());
-            if (!string.IsNullOrWhiteSpace(normalized) && !urls.Contains(normalized, StringComparer.OrdinalIgnoreCase))
-            {
-                urls.Add(normalized);
-            }
+            metadata.TryGetValue("mediaType", out var singleType);
+            TryAdd(singleUrl?.ToString(), singleType?.ToString());
         }
 
-        return urls;
+        if (metadata.TryGetValue("heroImageUrl", out var heroUrl))
+        {
+            TryAdd(heroUrl?.ToString(), "image");
+        }
+
+        return items;
     }
+
+    public static IReadOnlyList<string> ExtractMediaUrls(IReadOnlyDictionary<string, object?> metadata)
+        => ExtractMediaItems(metadata).Select(x => x.Url).ToList();
 
     public static bool TryResolveMediaUrl(
         IReadOnlyDictionary<string, object?> metadata,

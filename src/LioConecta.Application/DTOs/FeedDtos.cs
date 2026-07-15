@@ -37,3 +37,9 @@ public sealed record CreatePostMediaCommentRequest(string Text, string MediaUrl)
 public sealed record PostMediaCommentsResponse(IReadOnlyList<CommentDto> Items);
 
 public sealed record ReactionRequest(string ReactionType);
+
+public sealed record PersonPostMediaItemDto(
+    string Url,
+    string MediaType,
+    Guid PostId,
+    DateTimeOffset CreatedAt);

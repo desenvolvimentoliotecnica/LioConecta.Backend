@@ -146,9 +146,9 @@ public sealed class FeedService(
             ?? throw new UnauthorizedAccessException("Authenticated person was not found.");
 
         var message = CelebrationCreateParser.NormalizeMessage(request.Content);
-        var content = string.IsNullOrWhiteSpace(message)
-            ? $"ParabÃƒÆ’Ã‚Â©ns, {celebrated.Name}! ÃƒÂ°Ã…Â¸Ã…Â½Ã¢â‚¬Å¡"
-            : $"ParabÃƒÆ’Ã‚Â©ns, {celebrated.Name}! {message}";
+        var content = string.IsNullOrWhiteSpace(request.Content)
+            ? $"Parabéns, {celebrated.Name}! 🎉"
+            : message;
 
         var metadata = new Dictionary<string, object?>
         {

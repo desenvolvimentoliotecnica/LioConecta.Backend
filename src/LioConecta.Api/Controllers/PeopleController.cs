@@ -1,6 +1,8 @@
+using LioConecta.Application.Common;
 using LioConecta.Application.DTOs;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Application.Mapping;
+using LioConecta.Api.Authorization;
 using LioConecta.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +15,7 @@ namespace LioConecta.Api.Controllers;
 [Authorize]
 public sealed class PeopleController(
     IPersonService personService,
+    IFeedService feedService,
     AppDbContext dbContext) : ControllerBase
 {
     [HttpGet]
@@ -120,6 +123,24 @@ public sealed class PeopleController(
     {
         var profile = await personService.GetProfileAsync(slug, cancellationToken);
         return profile is null ? NotFound() : Ok(profile);
+    }
+
+    [HttpGet("{slug}/post-media")]
+    [RequirePermission("feed.read")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PagedResult<PersonPostMediaItemDto>>> GetPostMedia(
+        string slug,
+        [FromQuery] string? cursor,
+        [FromQuery] int limit = 40,
+        CancellationToken cancellationToken = default)
+    {
+        var page = await feedService.GetAuthorPostMediaAsync(
+            slug,
+            new CursorPageRequest { Cursor = cursor, Limit = limit },
+            cancellationToken);
+
+        return page is null ? NotFound() : Ok(page);
     }
 
     [HttpPatch("{personKey}/profile/avatar")]

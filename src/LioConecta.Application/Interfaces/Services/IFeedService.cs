@@ -7,6 +7,11 @@ public interface IFeedService
 {
     Task<PagedResult<FeedPostDto>> GetFeedAsync(CursorPageRequest request, CancellationToken cancellationToken = default);
 
+    Task<PagedResult<PersonPostMediaItemDto>?> GetAuthorPostMediaAsync(
+        string authorSlug,
+        CursorPageRequest request,
+        CancellationToken cancellationToken = default);
+
     Task<FeedPostDto?> GetPostAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<FeedPostDto> CreatePostAsync(CreatePostRequest request, CancellationToken cancellationToken = default);

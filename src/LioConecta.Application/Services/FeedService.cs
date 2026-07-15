@@ -46,6 +46,48 @@ public sealed class FeedService(
         return PagedResult<FeedPostDto>.FromItems(items, page.NextCursor, page.HasMore);
     }
 
+    public async Task<PagedResult<PersonPostMediaItemDto>?> GetAuthorPostMediaAsync(
+        string authorSlug,
+        CursorPageRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(authorSlug))
+        {
+            return null;
+        }
+
+        var person = await personRepository.GetBySlugAsync(authorSlug.Trim(), cancellationToken);
+        if (person is null)
+        {
+            return null;
+        }
+
+        var page = await feedRepository.GetAuthorPostsPageAsync(
+            person.Id,
+            new CursorPageRequest
+            {
+                Cursor = request.Cursor,
+                Limit = Math.Clamp(request.Limit, 1, 100),
+            },
+            cancellationToken);
+
+        var mediaItems = new List<PersonPostMediaItemDto>();
+        foreach (var post in page.Items)
+        {
+            var metadata = FeedPostMediaHelper.DeserializeMetadata(post.MetadataJson);
+            foreach (var media in FeedPostMediaHelper.ExtractMediaItems(metadata))
+            {
+                mediaItems.Add(new PersonPostMediaItemDto(
+                    media.Url,
+                    media.MediaType,
+                    post.Id,
+                    post.CreatedAt));
+            }
+        }
+
+        return PagedResult<PersonPostMediaItemDto>.FromItems(mediaItems, page.NextCursor, page.HasMore);
+    }
+
     public async Task<FeedPostDto?> GetPostAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var viewerId = await currentUserService.GetPersonIdAsync(cancellationToken);

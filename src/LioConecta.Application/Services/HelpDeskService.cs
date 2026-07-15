@@ -29,13 +29,15 @@ public sealed class HelpDeskService(
         var myTickets = await GetMyTicketsAsync("all", cancellationToken);
         var pending = myTickets.Count(static t => IsMyPendingStatus(t.Status));
         var inProgress = myTickets.Count(static t => IsMyInProgressStatus(t.Status));
+        var isTechnician = await IsGlpiTechnicianAsync(cancellationToken);
 
         return new HelpDeskSummaryDto(
             pending + inProgress,
             "2h críticos · 8h solicitações",
-            await CanViewAllGlpiTicketsAsync(cancellationToken),
+            isTechnician,
             pending,
-            inProgress);
+            inProgress,
+            isTechnician);
     }
 
     public IReadOnlyList<HelpDeskServiceDto> GetServices()
@@ -358,11 +360,26 @@ public sealed class HelpDeskService(
         return tickets.Select(MapListItem).ToList();
     }
 
+    public async Task<IReadOnlyList<HelpDeskTicketListItemDto>> GetAssignedTicketsAsync(
+        string scope,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await IsGlpiTechnicianAsync(cancellationToken))
+        {
+            throw new UnauthorizedAccessException("User is not allowed to view assigned GLPI tickets.");
+        }
+
+        var email = await GetCurrentUserEmailAsync(cancellationToken);
+        var glpiScope = ParseScope(scope);
+        var tickets = await glpiAdapter.SearchTicketsByAssigneeAsync(email, glpiScope, cancellationToken);
+        return tickets.Select(MapListItem).ToList();
+    }
+
     public async Task<IReadOnlyList<HelpDeskTicketListItemDto>> GetAllTicketsAsync(
         string scope,
         CancellationToken cancellationToken = default)
     {
-        if (!await CanViewAllGlpiTicketsAsync(cancellationToken))
+        if (!await IsGlpiTechnicianAsync(cancellationToken))
         {
             throw new UnauthorizedAccessException("User is not allowed to view all GLPI tickets.");
         }
@@ -377,7 +394,7 @@ public sealed class HelpDeskService(
         CancellationToken cancellationToken = default)
     {
         var email = await GetCurrentUserEmailAsync(cancellationToken);
-        var canViewAll = await CanViewAllGlpiTicketsAsync(cancellationToken);
+        var canViewAll = await IsGlpiTechnicianAsync(cancellationToken);
         var detail = await glpiAdapter.GetTicketDetailAsync(ticketId, email, canViewAll, cancellationToken);
         if (detail is null)
         {
@@ -410,7 +427,7 @@ public sealed class HelpDeskService(
         CancellationToken cancellationToken = default)
     {
         var email = await GetCurrentUserEmailAsync(cancellationToken);
-        var canViewAll = await CanViewAllGlpiTicketsAsync(cancellationToken);
+        var canViewAll = await IsGlpiTechnicianAsync(cancellationToken);
         var file = await glpiAdapter.GetTicketAttachmentAsync(
             ticketId,
             documentId,
@@ -433,7 +450,7 @@ public sealed class HelpDeskService(
         CancellationToken cancellationToken = default)
     {
         var email = await GetCurrentUserEmailAsync(cancellationToken);
-        var canViewAll = await CanViewAllGlpiTicketsAsync(cancellationToken);
+        var canViewAll = await IsGlpiTechnicianAsync(cancellationToken);
         await glpiAdapter.UploadTicketDocumentAsync(
             ticketId,
             fileName,
@@ -498,20 +515,9 @@ public sealed class HelpDeskService(
             ticket.RequesterLabel,
             ticket.AssigneeLabel);
 
-    private static readonly HashSet<string> AllTicketsViewerEmails = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "leonardo.mendes@liotecnica.com.br",
-    };
-
-    private async Task<bool> CanViewAllGlpiTicketsAsync(CancellationToken cancellationToken)
+    private async Task<bool> IsGlpiTechnicianAsync(CancellationToken cancellationToken)
     {
         var email = await GetCurrentUserEmailAsync(cancellationToken);
-        if (AllTicketsViewerEmails.Contains(email))
-        {
-            return true;
-        }
-
-        var roles = await currentUserService.GetRolesAsync(cancellationToken);
-        return roles.Contains(UserRole.TI) || roles.Contains(UserRole.Admin);
+        return await glpiAdapter.IsTechnicianAsync(email, cancellationToken);
     }
 }

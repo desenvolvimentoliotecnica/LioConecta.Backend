@@ -23,10 +23,12 @@ public sealed partial class GlpiAdapter(
     private static readonly int[] OpenTicketStatuses = [1, 2, 3, 4, 10];
     private static readonly int[] ClosedTicketStatuses = [5, 6];
     private static readonly TimeSpan CategoryCacheDuration = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan TechnicianCacheDuration = TimeSpan.FromMinutes(5);
 
     private IReadOnlyList<GlpiEntity>? _cachedEntities;
     private DateTimeOffset _entitiesCachedAt = DateTimeOffset.MinValue;
     private readonly Dictionary<int, (IReadOnlyList<GlpiItilCategory> Categories, DateTimeOffset CachedAt)> _categoriesByEntity = new();
+    private readonly Dictionary<string, (bool IsTechnician, DateTimeOffset CachedAt)> _technicianByEmail = new(StringComparer.OrdinalIgnoreCase);
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -471,7 +473,70 @@ public sealed partial class GlpiAdapter(
             return [];
         }
 
-        return await SearchTicketsAsync(credentials, scope, requesterId, includeRequester: false, cancellationToken);
+        return await SearchTicketsAsync(
+            credentials,
+            scope,
+            actorUserId: requesterId,
+            actorField: GlpiSearchFields.TicketRequester,
+            includeRequester: false,
+            cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<GlpiTicketSummary>> SearchTicketsByAssigneeAsync(
+        string assigneeEmail,
+        GlpiTicketScope scope,
+        CancellationToken cancellationToken = default)
+    {
+        var credentials = credentialsResolver.Resolve();
+        if (string.IsNullOrWhiteSpace(credentials.BaseUrl))
+        {
+            logger.LogWarning("GLPI BaseUrl is not configured.");
+            return [];
+        }
+
+        var assigneeId = await ResolveUserIdAsync(credentials, assigneeEmail, cancellationToken);
+        if (assigneeId is null)
+        {
+            logger.LogWarning("GLPI user not found for email {Email}", assigneeEmail);
+            return [];
+        }
+
+        return await SearchTicketsAsync(
+            credentials,
+            scope,
+            actorUserId: assigneeId,
+            actorField: GlpiSearchFields.TicketTechnician,
+            includeRequester: true,
+            cancellationToken);
+    }
+
+    public async Task<bool> IsTechnicianAsync(
+        string email,
+        CancellationToken cancellationToken = default)
+    {
+        var key = email.Trim();
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return false;
+        }
+
+        lock (_technicianByEmail)
+        {
+            if (_technicianByEmail.TryGetValue(key, out var cached) &&
+                DateTimeOffset.UtcNow - cached.CachedAt < TechnicianCacheDuration)
+            {
+                return cached.IsTechnician;
+            }
+        }
+
+        var isTechnician = await ResolveIsTechnicianAsync(key, cancellationToken);
+
+        lock (_technicianByEmail)
+        {
+            _technicianByEmail[key] = (isTechnician, DateTimeOffset.UtcNow);
+        }
+
+        return isTechnician;
     }
 
     public Task<IReadOnlyList<GlpiTicketSummary>> SearchAllTicketsAsync(
@@ -485,7 +550,13 @@ public sealed partial class GlpiAdapter(
             return Task.FromResult<IReadOnlyList<GlpiTicketSummary>>([]);
         }
 
-        return SearchTicketsAsync(credentials, scope, requesterId: null, includeRequester: true, cancellationToken);
+        return SearchTicketsAsync(
+            credentials,
+            scope,
+            actorUserId: null,
+            actorField: GlpiSearchFields.TicketRequester,
+            includeRequester: true,
+            cancellationToken);
     }
 
     public async Task<GlpiOpenQueueCounts> CountOpenQueueAsync(
@@ -1423,7 +1494,8 @@ public sealed partial class GlpiAdapter(
     private async Task<IReadOnlyList<GlpiTicketSummary>> SearchTicketsAsync(
         GlpiRuntimeCredentials credentials,
         GlpiTicketScope scope,
-        string? requesterId,
+        string? actorUserId,
+        int actorField,
         bool includeRequester,
         CancellationToken cancellationToken)
     {
@@ -1437,7 +1509,8 @@ public sealed partial class GlpiAdapter(
             var open = await SearchTicketsByStatusesAsync(
                 credentials,
                 sessionToken,
-                requesterId,
+                actorUserId,
+                actorField,
                 includeRequester,
                 OpenTicketStatuses,
                 maxResults: MaxTickets,
@@ -1447,7 +1520,8 @@ public sealed partial class GlpiAdapter(
                 ? await SearchTicketsByStatusesAsync(
                     credentials,
                     sessionToken,
-                    requesterId,
+                    actorUserId,
+                    actorField,
                     includeRequester,
                     ClosedTicketStatuses,
                     maxResults: remaining,
@@ -1460,7 +1534,8 @@ public sealed partial class GlpiAdapter(
             results = (await SearchTicketsByStatusesAsync(
                 credentials,
                 sessionToken,
-                requesterId,
+                actorUserId,
+                actorField,
                 includeRequester,
                 OpenTicketStatuses,
                 maxResults: MaxTickets,
@@ -1496,7 +1571,8 @@ public sealed partial class GlpiAdapter(
     private async Task<IReadOnlyList<GlpiTicketSummary>> SearchTicketsByStatusesAsync(
         GlpiRuntimeCredentials credentials,
         string sessionToken,
-        string? requesterId,
+        string? actorUserId,
+        int actorField,
         bool includeRequester,
         IReadOnlyList<int> statuses,
         int maxResults,
@@ -1509,7 +1585,8 @@ public sealed partial class GlpiAdapter(
 
         var query = BuildTicketSearchQueryByStatuses(
             credentials.BaseUrl,
-            requesterId,
+            actorUserId,
+            actorField,
             statuses,
             includeRequester);
         var results = new List<GlpiTicketSummary>();
@@ -1530,7 +1607,8 @@ public sealed partial class GlpiAdapter(
                 return await SearchTicketsByStatusesAsync(
                     credentials,
                     renewed,
-                    requesterId,
+                    actorUserId,
+                    actorField,
                     includeRequester,
                     statuses,
                     maxResults,
@@ -1576,6 +1654,186 @@ public sealed partial class GlpiAdapter(
         }
 
         return results;
+    }
+
+    private async Task<bool> ResolveIsTechnicianAsync(
+        string email,
+        CancellationToken cancellationToken)
+    {
+        var credentials = credentialsResolver.Resolve();
+        if (string.IsNullOrWhiteSpace(credentials.BaseUrl))
+        {
+            logger.LogWarning("GLPI BaseUrl is not configured; IsTechnician=false.");
+            return false;
+        }
+
+        var userId = await ResolveUserIdAsync(credentials, email, cancellationToken);
+        if (userId is null)
+        {
+            logger.LogDebug("GLPI user not found for technician check: {Email}", email);
+            return false;
+        }
+
+        var sessionToken = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
+        var groups = await GetUserGroupsAsync(credentials, sessionToken, userId, cancellationToken);
+        if (groups.Count == 0)
+        {
+            return false;
+        }
+
+        foreach (var group in groups)
+        {
+            if (group.TryGetProperty("is_tech", out _))
+            {
+                if (IsTruthyGlpiFlag(group, "is_tech"))
+                {
+                    return true;
+                }
+
+                continue;
+            }
+
+            // Nested User/Group may omit is_tech — fetch Group/{id}.
+            var groupId = ReadJsonInt(group, "id")?.ToString()
+                ?? ReadJsonString(group, "id");
+            if (string.IsNullOrWhiteSpace(groupId))
+            {
+                continue;
+            }
+
+            if (await GroupHasIsTechAsync(credentials, sessionToken, groupId, cancellationToken))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private async Task<IReadOnlyList<JsonElement>> GetUserGroupsAsync(
+        GlpiRuntimeCredentials credentials,
+        string sessionToken,
+        string userId,
+        CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            BuildUrl(credentials.BaseUrl, $"User/{userId}/Group"));
+        ApplySessionHeaders(request, credentials, sessionToken);
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            await sessionManager.InvalidateSessionAsync(httpClient, credentials, cancellationToken);
+            var renewed = await sessionManager.GetSessionTokenAsync(httpClient, credentials, cancellationToken);
+            return await GetUserGroupsAsync(credentials, renewed, userId, cancellationToken);
+        }
+
+        if (response.IsSuccessStatusCode)
+        {
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+            if (document.RootElement.ValueKind == JsonValueKind.Array)
+            {
+                return document.RootElement.EnumerateArray().Select(item => item.Clone()).ToList();
+            }
+        }
+        else
+        {
+            logger.LogWarning(
+                "GLPI User/{UserId}/Group failed: {Status}; trying Group_User fallback",
+                userId,
+                (int)response.StatusCode);
+        }
+
+        return await GetUserGroupsViaGroupUserAsync(credentials, sessionToken, userId, cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<JsonElement>> GetUserGroupsViaGroupUserAsync(
+        GlpiRuntimeCredentials credentials,
+        string sessionToken,
+        string userId,
+        CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            BuildUrl(credentials.BaseUrl, $"User/{userId}/Group_User"));
+        ApplySessionHeaders(request, credentials, sessionToken);
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            logger.LogWarning(
+                "GLPI User/{UserId}/Group_User failed: {Status}",
+                userId,
+                (int)response.StatusCode);
+            return [];
+        }
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+        if (document.RootElement.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var results = new List<JsonElement>();
+        foreach (var link in document.RootElement.EnumerateArray())
+        {
+            var groupId = ReadJsonInt(link, "groups_id")?.ToString();
+            if (string.IsNullOrWhiteSpace(groupId))
+            {
+                continue;
+            }
+
+            using var groupRequest = new HttpRequestMessage(
+                HttpMethod.Get,
+                BuildUrl(credentials.BaseUrl, $"Group/{groupId}"));
+            ApplySessionHeaders(groupRequest, credentials, sessionToken);
+            using var groupResponse = await httpClient.SendAsync(groupRequest, cancellationToken);
+            if (!groupResponse.IsSuccessStatusCode)
+            {
+                continue;
+            }
+
+            using var groupDocument = JsonDocument.Parse(await groupResponse.Content.ReadAsStringAsync(cancellationToken));
+            results.Add(groupDocument.RootElement.Clone());
+        }
+
+        return results;
+    }
+
+    private async Task<bool> GroupHasIsTechAsync(
+        GlpiRuntimeCredentials credentials,
+        string sessionToken,
+        string groupId,
+        CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, BuildUrl(credentials.BaseUrl, $"Group/{groupId}"));
+        ApplySessionHeaders(request, credentials, sessionToken);
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return false;
+        }
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+        return IsTruthyGlpiFlag(document.RootElement, "is_tech");
+    }
+
+    private static bool IsTruthyGlpiFlag(JsonElement element, string propertyName)
+    {
+        if (!element.TryGetProperty(propertyName, out var value))
+        {
+            return false;
+        }
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.Number => value.TryGetInt32(out var number) && number != 0,
+            JsonValueKind.String => value.GetString() is "1" or "true" or "True" or "TRUE",
+            _ => false,
+        };
     }
 
     private async Task<bool> VerifyTicketOwnershipAsync(
@@ -1762,19 +2020,20 @@ public sealed partial class GlpiAdapter(
 
     private static string BuildTicketSearchQueryByStatuses(
         string baseUrl,
-        string? requesterId,
+        string? actorUserId,
+        int actorField,
         IReadOnlyList<int> statuses,
         bool includeRequester)
     {
         var query = new StringBuilder($"{BuildUrl(baseUrl, "search/Ticket")}?");
-        var hasRequester = !string.IsNullOrWhiteSpace(requesterId);
+        var hasActor = !string.IsNullOrWhiteSpace(actorUserId);
 
-        if (hasRequester)
+        if (hasActor)
         {
             query.Append(
-                $"criteria[0][field]={GlpiSearchFields.TicketRequester}" +
+                $"criteria[0][field]={actorField}" +
                 $"&criteria[0][searchtype]=equals" +
-                $"&criteria[0][value]={Uri.EscapeDataString(requesterId!)}" +
+                $"&criteria[0][value]={Uri.EscapeDataString(actorUserId!)}" +
                 "&criteria[1][link]=AND");
 
             for (var i = 0; i < statuses.Count; i++)

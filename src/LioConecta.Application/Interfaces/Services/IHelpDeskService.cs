@@ -41,6 +41,10 @@ public interface IHelpDeskService
         string scope,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<HelpDeskTicketListItemDto>> GetAssignedTicketsAsync(
+        string scope,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<HelpDeskTicketListItemDto>> GetAllTicketsAsync(
         string scope,
         CancellationToken cancellationToken = default);

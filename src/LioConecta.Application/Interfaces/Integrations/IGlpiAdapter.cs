@@ -32,8 +32,23 @@ public interface IGlpiAdapter
         GlpiTicketScope scope,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Tickets onde o usuário é técnico atribuído (Ticket_User type=2 / search field 5).
+    /// </summary>
+    Task<IReadOnlyList<GlpiTicketSummary>> SearchTicketsByAssigneeAsync(
+        string assigneeEmail,
+        GlpiTicketScope scope,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<GlpiTicketSummary>> SearchAllTicketsAsync(
         GlpiTicketScope scope,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// True se o usuário GLPI (resolvido por e-mail) pertence a algum grupo com is_tech.
+    /// </summary>
+    Task<bool> IsTechnicianAsync(
+        string email,
         CancellationToken cancellationToken = default);
 
     Task<GlpiOpenQueueCounts> CountOpenQueueAsync(

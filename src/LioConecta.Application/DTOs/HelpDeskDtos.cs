@@ -5,7 +5,8 @@ public sealed record HelpDeskSummaryDto(
     string AvgResponseLabel,
     bool CanViewAllTickets = false,
     int PendingTickets = 0,
-    int InProgressTickets = 0);
+    int InProgressTickets = 0,
+    bool IsTechnician = false);
 
 public sealed record HelpDeskServiceDto(
     string Id,

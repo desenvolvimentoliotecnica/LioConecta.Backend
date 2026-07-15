@@ -128,6 +128,24 @@ public sealed class HelpDeskController(IHelpDeskService helpDeskService) : Contr
         return Ok(tickets);
     }
 
+    [HttpGet("tickets/assigned")]
+    [ProducesResponseType(typeof(IReadOnlyList<HelpDeskTicketListItemDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<IReadOnlyList<HelpDeskTicketListItemDto>>> GetAssignedTickets(
+        [FromQuery] string scope = "open",
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var tickets = await helpDeskService.GetAssignedTicketsAsync(scope, cancellationToken);
+            return Ok(tickets);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
     [HttpGet("tickets/all")]
     [ProducesResponseType(typeof(IReadOnlyList<HelpDeskTicketListItemDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

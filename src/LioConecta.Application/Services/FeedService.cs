@@ -187,6 +187,17 @@ public sealed class FeedService(
         var author = await personRepository.GetByIdAsync(authorId, cancellationToken)
             ?? throw new UnauthorizedAccessException("Authenticated person was not found.");
 
+        var alreadyCongratulated = await feedRepository.HasCelebrationFromAuthorInYearAsync(
+            authorId,
+            celebrated.Id,
+            now.Year,
+            cancellationToken);
+        if (alreadyCongratulated)
+        {
+            throw new InvalidOperationException(
+                "Você já parabenizou esta pessoa neste ano.");
+        }
+
         var message = CelebrationCreateParser.NormalizeMessage(request.Content);
         var content = string.IsNullOrWhiteSpace(request.Content)
             ? $"Parabéns, {celebrated.Name}! 🎉"

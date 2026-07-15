@@ -233,6 +233,53 @@ public sealed class FeedRepository(AppDbContext db) : IFeedRepository
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.PostId == postId, cancellationToken);
 
+    public Task<bool> HasCelebrationFromAuthorInYearAsync(
+        Guid authorId,
+        Guid celebratedPersonId,
+        int year,
+        CancellationToken cancellationToken = default)
+    {
+        var yearStart = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var yearEnd = yearStart.AddYears(1);
+
+        return db.Celebrations
+            .AsNoTracking()
+            .AnyAsync(
+                c =>
+                    c.CelebratedPersonId == celebratedPersonId &&
+                    c.CreatedAt >= yearStart &&
+                    c.CreatedAt < yearEnd &&
+                    db.FeedPosts.Any(p =>
+                        p.Id == c.PostId &&
+                        p.AuthorId == authorId &&
+                        !p.IsDeleted),
+                cancellationToken);
+    }
+
+    public async Task<IReadOnlySet<Guid>> GetCelebratedPersonIdsByAuthorInYearAsync(
+        Guid authorId,
+        int year,
+        CancellationToken cancellationToken = default)
+    {
+        var yearStart = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var yearEnd = yearStart.AddYears(1);
+
+        var ids = await db.Celebrations
+            .AsNoTracking()
+            .Where(c =>
+                c.CreatedAt >= yearStart &&
+                c.CreatedAt < yearEnd &&
+                db.FeedPosts.Any(p =>
+                    p.Id == c.PostId &&
+                    p.AuthorId == authorId &&
+                    !p.IsDeleted))
+            .Select(c => c.CelebratedPersonId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        return ids.ToHashSet();
+    }
+
     public Task<IReadOnlyList<FeedPost>> GetNewsPostsAsync(
         int limit,
         CancellationToken cancellationToken = default) =>

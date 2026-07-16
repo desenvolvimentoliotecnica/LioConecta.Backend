@@ -188,6 +188,7 @@ public static class DependencyInjection
         services.AddScoped<IUniLioAuthoringService, UniLioAuthoringService>();
         services.AddScoped<UniLioCompletionService>();
         services.AddScoped<IEmailQueueService, EmailQueueService>();
+        services.AddScoped<IPortalIntegrationService, PortalIntegrationService>();
         services.AddScoped<IEmailDispatchService, EmailDispatchService>();
         services.AddScoped<IEmailAdminService, EmailAdminService>();
         services.AddScoped<IEmailAttachmentService, EmailAttachmentService>();

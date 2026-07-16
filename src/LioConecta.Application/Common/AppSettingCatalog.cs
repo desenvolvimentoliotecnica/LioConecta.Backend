@@ -72,6 +72,9 @@ public static class AppSettingCatalog
         new(AppSettingKeys.TotvsApiKey, "totvs", "TOTVS — API key",
             "Chave de autenticação TOTVS.", "secret", true, "", 2),
 
+        new(AppSettingKeys.IntegrationApiKey, "integrations", "Integration API key",
+            "Chave X-API-Key para apps irmãos (UniLio, Compass) chamarem /api/v1/integration.", "secret", true, "", 10),
+
         new(AppSettingKeys.GlpiBaseUrl, "glpi", "GLPI — base URL",
             "URL base da API REST GLPI (ex.: https://servicedesk.liotecnica.com.br/api.php/v1).", "url", false, "", 1),
         new(AppSettingKeys.GlpiPortalUrl, "glpi", "GLPI — portal URL",

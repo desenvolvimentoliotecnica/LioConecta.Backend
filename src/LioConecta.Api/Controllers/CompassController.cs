@@ -8,6 +8,8 @@ namespace LioConecta.Api.Controllers;
 [ApiController]
 [Route("api/v1/compass")]
 [Authorize]
+// Deprecated for new deployments: prefer LioConecta.Compass.Api (standalone).
+// Kept during cutover so the portal can still serve IBP data until data is migrated.
 public sealed class CompassController(ICompassService compassService) : ControllerBase
 {
     [HttpGet("bootstrap")]

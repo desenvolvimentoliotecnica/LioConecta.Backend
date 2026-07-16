@@ -223,4 +223,13 @@ public interface INotificationService
         bool approved,
         string? reason,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Generic system notify for sibling apps (UniLio Integration API).</summary>
+    Task<int> NotifySystemRecipientsAsync(
+        IReadOnlyList<Guid>? recipientPersonIds,
+        bool allActive,
+        string title,
+        string body,
+        string href,
+        CancellationToken cancellationToken = default);
 }

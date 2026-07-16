@@ -188,6 +188,10 @@ try
         });
     }
 
+    authenticationBuilder.AddScheme<AuthenticationSchemeOptions, IntegrationApiKeyAuthenticationHandler>(
+        IntegrationApiKeyDefaults.SchemeName,
+        _ => { });
+
     builder.Services.AddAuthorization(options =>
     {
         options.AddPolicy(AuthPolicies.RequireHR, policy =>
@@ -220,7 +224,7 @@ try
     var allowedOrigins = settingsProvider.GetStringArray(AppSettingKeys.CorsAllowedOrigins);
     if (allowedOrigins.Count == 0)
     {
-        allowedOrigins = ["http://localhost:5173", "http://localhost:5174"];
+        allowedOrigins = ["http://localhost:5173", "http://localhost:5174", "http://localhost:5176"];
     }
 
     builder.Services.AddCors(options =>
@@ -229,7 +233,7 @@ try
         {
             if (builder.Environment.IsDevelopment())
             {
-                // DEV remoto: portal (:8092), Compass (:8094) e Vite locais.
+                // DEV remoto: portal (:8092), Compass (:8094), UniLio (:8096; 8095=GLPI) e Vite locais.
                 // Prefer allow-list from app_settings; always permit localhost + same LAN host.
                 policy.SetIsOriginAllowed(origin =>
                     {

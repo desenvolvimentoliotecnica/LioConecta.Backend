@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LioConecta.Api.Controllers;
 
+// LMS migrando para a app standalone LioConecta.UniLio (Frontend + Backend próprios).
+// Endpoints mantidos aqui até o cutover (VITE_UNILIO_APP_URL) — não remover ainda.
 [ApiController]
 [Route("api/v1/unilio/authoring")]
 [Authorize]

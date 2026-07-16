@@ -108,6 +108,7 @@ public static class RoleTemplateCatalog
             EmployeeBase.Concat(PermissionCatalog.All()
                 .Where(p => p.Key.StartsWith("admin.", StringComparison.Ordinal)
                     || p.Key.StartsWith("rbac.", StringComparison.Ordinal)
+                    || p.Key.StartsWith("portal.integration.", StringComparison.Ordinal)
                     || p.Key is "groups.approve" or "org_chart.govern" or "org_chart.edit")
                 .Select(p => (PermissionKey: p.Key, Scope: DataScope.Global)).ToArray())
                 .Concat([

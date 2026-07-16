@@ -171,6 +171,9 @@ public static class AppSettingKeys
     public const string UniLioEmailDevOverrideEnabled = "unilio.email.dev_override_enabled";
     public const string UniLioEmailDevOverrideTo = "unilio.email.dev_override_to";
 
+    /// <summary>API key for sibling apps (UniLio/Compass) calling /api/v1/integration.</summary>
+    public const string IntegrationApiKey = "integration.api_key";
+
     public const string PortalUiMaturityBadgesEnabled = "portal.ui.maturity_badges_enabled";
     public const string PortalUiMaturityRoadmap = "portal.ui.maturity_roadmap";
 }

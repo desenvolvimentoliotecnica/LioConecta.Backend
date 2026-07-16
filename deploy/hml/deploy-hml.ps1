@@ -35,6 +35,7 @@ $env:VITE_OBSERVABILITY_ENABLED = "true"
 $env:VITE_AZURE_CLIENT_ID = ""
 $env:VITE_AZURE_TENANT_ID = ""
 $env:VITE_COMPASS_APP_URL = "http://10.0.0.80:8094"
+$env:VITE_UNILIO_APP_URL = "http://10.0.0.80:8096"
 npm ci --silent 2>$null; if ($LASTEXITCODE -ne 0) { npm install --silent }
 npm run build
 if ($LASTEXITCODE -ne 0) { throw "Frontend build failed" }

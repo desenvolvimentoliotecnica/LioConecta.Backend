@@ -509,6 +509,24 @@ public static class PermissionCatalog
             "Executar testes de conexão e autenticação LDAP.",
             GlobalOnly, "/admin/configuracoes-backend"),
 
+        // ── Portal Integration (sibling apps: UniLio, Compass, …) ───────────
+        P("portal.integration.feed.write", BusinessArea.Plataforma,
+            "Integration — publicar feed",
+            "Permitir que apps irmãos publiquem posts no feed via API de integração.",
+            GlobalOnly),
+        P("portal.integration.notification.write", BusinessArea.Plataforma,
+            "Integration — notificar",
+            "Permitir que apps irmãos enviem notificações via API de integração.",
+            GlobalOnly),
+        P("portal.integration.email.enqueue", BusinessArea.Plataforma,
+            "Integration — enfileirar e-mail",
+            "Permitir que apps irmãos enfileirem e-mails via API de integração.",
+            GlobalOnly),
+        P("portal.integration.people.resolve", BusinessArea.Plataforma,
+            "Integration — resolver pessoas",
+            "Permitir que apps irmãos resolvam pessoas por role, e-mail ou permissão.",
+            GlobalOnly),
+
         // ── Analytics & Auditoria ────────────────────────────────────────────
         P("analytics.view", BusinessArea.Analytics,
             "Analytics",

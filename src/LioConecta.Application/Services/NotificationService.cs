@@ -929,6 +929,48 @@ public sealed class NotificationService(
             cancellationToken);
     }
 
+    public async Task<int> NotifySystemRecipientsAsync(
+        IReadOnlyList<Guid>? recipientPersonIds,
+        bool allActive,
+        string title,
+        string body,
+        string href,
+        CancellationToken cancellationToken = default)
+    {
+        if (allActive)
+        {
+            var active = await notificationRepository.GetActivePersonsAsync(cancellationToken);
+            await BroadcastAsync(
+                () => Task.FromResult(active),
+                NotificationType.System,
+                title,
+                body,
+                string.IsNullOrWhiteSpace(href) ? "/" : href.Trim(),
+                cancellationToken);
+            return active.Count;
+        }
+
+        if (recipientPersonIds is null || recipientPersonIds.Count == 0)
+        {
+            return 0;
+        }
+
+        var recipients = await personRepository.GetByIdsAsync(recipientPersonIds, cancellationToken);
+        if (recipients.Count == 0)
+        {
+            return 0;
+        }
+
+        await BroadcastAsync(
+            () => Task.FromResult(recipients),
+            NotificationType.System,
+            title,
+            body,
+            string.IsNullOrWhiteSpace(href) ? "/" : href.Trim(),
+            cancellationToken);
+        return recipients.Count;
+    }
+
     private Task BroadcastToAllActivePersonsAsync(
         NotificationType type,
         string title,

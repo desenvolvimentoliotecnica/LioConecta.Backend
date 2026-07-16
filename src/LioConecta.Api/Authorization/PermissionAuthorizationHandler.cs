@@ -1,3 +1,4 @@
+using LioConecta.Api.Auth;
 using LioConecta.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 
@@ -23,6 +24,12 @@ public sealed class PermissionAuthorizationHandler(IPermissionService permission
         AuthorizationHandlerContext context,
         PermissionRequirement requirement)
     {
+        if (context.User.HasClaim(IntegrationApiKeyDefaults.ServiceClaimType, "true"))
+        {
+            context.Succeed(requirement);
+            return;
+        }
+
         if (await permissionService.HasPermissionAsync(requirement.PermissionKey))
         {
             context.Succeed(requirement);

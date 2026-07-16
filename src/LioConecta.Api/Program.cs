@@ -229,9 +229,30 @@ try
         {
             if (builder.Environment.IsDevelopment())
             {
+                // DEV remoto: portal (:8092), Compass (:8094) e Vite locais.
+                // Prefer allow-list from app_settings; always permit localhost + same LAN host.
                 policy.SetIsOriginAllowed(origin =>
-                        Uri.TryCreate(origin, UriKind.Absolute, out var uri) &&
-                        uri.Host is "localhost" or "127.0.0.1")
+                    {
+                        if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                        {
+                            return false;
+                        }
+
+                        if (uri.Host is "localhost" or "127.0.0.1")
+                        {
+                            return true;
+                        }
+
+                        if (allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase))
+                        {
+                            return true;
+                        }
+
+                        // Same private host as the portal (e.g. http://10.0.0.79:8094).
+                        return uri.Host.StartsWith("10.", StringComparison.Ordinal)
+                               || uri.Host.StartsWith("192.168.", StringComparison.Ordinal)
+                               || uri.Host.StartsWith("172.", StringComparison.Ordinal);
+                    })
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();

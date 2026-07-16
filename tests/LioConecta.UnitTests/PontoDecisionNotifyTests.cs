@@ -1,6 +1,5 @@
 using LioConecta.Application.Common;
 using LioConecta.Application.DTOs;
-using LioConecta.Application.Interfaces.Integrations;
 using LioConecta.Application.Interfaces.Repositories;
 using LioConecta.Application.Interfaces.Services;
 using LioConecta.Application.Services;
@@ -9,21 +8,20 @@ using LioConecta.Domain.Enums;
 
 namespace LioConecta.UnitTests;
 
-public sealed class LeaveEmailNotifierDecisionTests
+public sealed class PontoEmailNotifierDecisionTests
 {
     [Fact]
     public async Task NotifyDecisionAsync_RespectsEmailDisabledFlag()
     {
         var queue = new FakeEmailQueue();
         var settings = new FakeSettings(emailEnabled: false, overrideEnabled: false);
-        var notifier = new LeaveEmailNotifier(queue, settings);
+        var notifier = new PontoEmailNotifier(queue, settings);
 
         await notifier.NotifyDecisionAsync(
             CreateRecord(),
             CreateRequester(),
             approved: true,
-            decisionNote: null,
-            serviceTitle: "Solicitar Férias");
+            decisionNote: null);
 
         Assert.Empty(queue.Requests);
     }
@@ -33,7 +31,7 @@ public sealed class LeaveEmailNotifierDecisionTests
     {
         var queue = new FakeEmailQueue();
         var settings = new FakeSettings(emailEnabled: true, overrideEnabled: false);
-        var notifier = new LeaveEmailNotifier(queue, settings);
+        var notifier = new PontoEmailNotifier(queue, settings);
         var record = CreateRecord();
         var requester = CreateRequester();
 
@@ -41,15 +39,14 @@ public sealed class LeaveEmailNotifierDecisionTests
             record,
             requester,
             approved: true,
-            decisionNote: "OK",
-            serviceTitle: "Solicitar Férias");
+            decisionNote: "OK");
 
         var msg = Assert.Single(queue.Requests);
         Assert.Equal(requester.Email, Assert.Single(msg.To));
-        Assert.Contains("aprovada", msg.Subject, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("aprovado", msg.Subject, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Comentário", msg.BodyText ?? "", StringComparison.OrdinalIgnoreCase);
-        Assert.Contains($"/servicos/ferias-ausencias?requestId={record.Id}", msg.BodyText ?? "");
-        Assert.Contains("leave.request.approved", msg.MetadataJson ?? "");
+        Assert.Contains($"/servicos/ponto-eletronico?requestId={record.Id}", msg.BodyText ?? "");
+        Assert.Contains("ponto.adjustment.approved", msg.MetadataJson ?? "");
     }
 
     [Fact]
@@ -57,41 +54,64 @@ public sealed class LeaveEmailNotifierDecisionTests
     {
         var queue = new FakeEmailQueue();
         var settings = new FakeSettings(emailEnabled: true, overrideEnabled: false);
-        var notifier = new LeaveEmailNotifier(queue, settings);
+        var notifier = new PontoEmailNotifier(queue, settings);
 
         await notifier.NotifyDecisionAsync(
             CreateRecord(),
             CreateRequester(),
             approved: false,
-            decisionNote: "Sem cobertura",
-            serviceTitle: "Solicitar Férias");
+            decisionNote: "Horário inconsistente");
 
         var msg = Assert.Single(queue.Requests);
-        Assert.Contains("rejeitada", msg.Subject, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Motivo: Sem cobertura", msg.BodyText ?? "");
-        Assert.Contains("leave.request.rejected", msg.MetadataJson ?? "");
+        Assert.Contains("rejeitado", msg.Subject, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Motivo: Horário inconsistente", msg.BodyText ?? "");
+        Assert.Contains("ponto.adjustment.rejected", msg.MetadataJson ?? "");
     }
 
-    private static LeaveRecord CreateRecord() =>
+    [Fact]
+    public async Task NotifyRequestCreatedAsync_EnqueuesEmailForManagers()
+    {
+        var queue = new FakeEmailQueue();
+        var settings = new FakeSettings(emailEnabled: true, overrideEnabled: false);
+        var notifier = new PontoEmailNotifier(queue, settings);
+        var record = CreateRecord();
+        var requester = CreateRequester();
+        var manager = new Person
+        {
+            Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+            Name = "Gestor",
+            Email = "gestor@liotecnica.com.br",
+            IsActive = true,
+        };
+
+        await notifier.NotifyRequestCreatedAsync(record, requester, [manager]);
+
+        var msg = Assert.Single(queue.Requests);
+        Assert.Equal(manager.Email, Assert.Single(msg.To));
+        Assert.Contains("Nova solicitação", msg.Subject, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains($"/servicos/ponto-eletronico/gestao?requestId={record.Id}", msg.BodyText ?? "");
+        Assert.Contains("ponto.adjustment.created", msg.MetadataJson ?? "");
+    }
+
+    private static PontoAdjustmentRecord CreateRecord() =>
         new()
         {
             Id = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"),
             PersonId = Guid.Parse("11111111-2222-3333-4444-555555555555"),
-            ServiceKey = "solicitar-ferias",
-            Title = "Solicitação de férias",
-            Status = "approved",
-            StartDate = new DateOnly(2026, 8, 1),
-            EndDate = new DateOnly(2026, 8, 15),
-            Days = 15,
+            Title = "Ajuste de ponto",
+            Status = "pending",
+            Reason = "Esqueci de bater ponto",
+            DayCount = 2,
+            DetailsJson = "{}",
         };
 
     private static Person CreateRequester() =>
         new()
         {
             Id = Guid.Parse("11111111-2222-3333-4444-555555555555"),
-            Name = "Maria Silva",
-            Email = "maria.silva@liotecnica.com.br",
-            EmployeeId = "12345",
+            Name = "Colaborador Teste",
+            Email = "colab@liotecnica.com.br",
+            EmployeeId = "1234",
             IsActive = true,
         };
 
@@ -133,7 +153,7 @@ public sealed class LeaveEmailNotifierDecisionTests
     private sealed class FakeSettings(bool emailEnabled, bool overrideEnabled) : IAppSettingsProvider
     {
         public string GetString(string key, string defaultValue = "") =>
-            key == AppSettingKeys.LeaveEmailDevOverrideTo
+            key == AppSettingKeys.PontoEmailDevOverrideTo
                 ? "override@liotecnica.com.br"
                 : defaultValue;
 
@@ -146,8 +166,8 @@ public sealed class LeaveEmailNotifierDecisionTests
         public bool GetBool(string key, bool defaultValue = false) =>
             key switch
             {
-                AppSettingKeys.LeaveEmailEnabled => emailEnabled,
-                AppSettingKeys.LeaveEmailDevOverrideEnabled => overrideEnabled,
+                AppSettingKeys.PontoEmailEnabled => emailEnabled,
+                AppSettingKeys.PontoEmailDevOverrideEnabled => overrideEnabled,
                 _ => defaultValue,
             };
 
@@ -165,15 +185,15 @@ public sealed class LeaveEmailNotifierDecisionTests
     }
 }
 
-public sealed class LeaveServiceDecisionNotifyTests
+public sealed class PontoServiceDecisionNotifyTests
 {
     [Fact]
     public async Task ApproveAsync_NotifiesCollaboratorInAppAndEmail()
     {
-        var harness = LeaveDecisionHarness.Create();
+        var harness = PontoDecisionHarness.Create();
         var result = await harness.Service.ApproveAsync(
             harness.RecordId,
-            new ApproveLeaveRequestDto("Aprovado", TriggerWriteBack: false));
+            new ApprovePontoAdjustmentRequestDto("Aprovado"));
 
         Assert.NotNull(result);
         Assert.Equal("approved", result!.Status);
@@ -187,42 +207,42 @@ public sealed class LeaveServiceDecisionNotifyTests
     [Fact]
     public async Task RejectAsync_NotifiesCollaboratorWithReason()
     {
-        var harness = LeaveDecisionHarness.Create();
+        var harness = PontoDecisionHarness.Create();
         var result = await harness.Service.RejectAsync(
             harness.RecordId,
-            new RejectLeaveRequestDto("Sem cobertura"));
+            new RejectPontoAdjustmentRequestDto("Horário inconsistente"));
 
         Assert.NotNull(result);
         Assert.Equal("rejected", result!.Status);
         Assert.Equal(1, harness.Notifications.DecisionCalls);
         Assert.False(harness.Notifications.LastApproved);
-        Assert.Equal("Sem cobertura", harness.Notifications.LastReason);
+        Assert.Equal("Horário inconsistente", harness.Notifications.LastReason);
         Assert.Equal(1, harness.Emails.DecisionCalls);
         Assert.False(harness.Emails.LastApproved);
-        Assert.Equal("Sem cobertura", harness.Emails.LastNote);
+        Assert.Equal("Horário inconsistente", harness.Emails.LastNote);
     }
 
     [Fact]
     public async Task ApproveAsync_DoesNotFailWhenNotifiersThrow()
     {
-        var harness = LeaveDecisionHarness.Create(throwOnNotify: true);
+        var harness = PontoDecisionHarness.Create(throwOnNotify: true);
         var result = await harness.Service.ApproveAsync(
             harness.RecordId,
-            new ApproveLeaveRequestDto(null, TriggerWriteBack: false));
+            new ApprovePontoAdjustmentRequestDto(null));
 
         Assert.NotNull(result);
         Assert.Equal("approved", result!.Status);
     }
 
-    private sealed class LeaveDecisionHarness
+    private sealed class PontoDecisionHarness
     {
         public required Guid RecordId { get; init; }
         public required Guid RequesterId { get; init; }
-        public required LeaveService Service { get; init; }
+        public required PontoAdjustmentService Service { get; init; }
         public required TrackingNotificationService Notifications { get; init; }
-        public required TrackingLeaveEmailNotifier Emails { get; init; }
+        public required TrackingPontoEmailNotifier Emails { get; init; }
 
-        public static LeaveDecisionHarness Create(bool throwOnNotify = false)
+        public static PontoDecisionHarness Create(bool throwOnNotify = false)
         {
             var managerId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
             var requesterId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
@@ -237,46 +257,39 @@ public sealed class LeaveServiceDecisionNotifyTests
                 IsActive = true,
             };
 
-            var record = new LeaveRecord
+            var record = new PontoAdjustmentRecord
             {
                 Id = recordId,
                 PersonId = requesterId,
                 Person = requester,
-                ServiceKey = "solicitar-ferias",
-                Title = "Solicitação de férias",
+                Title = "Ajuste de ponto",
                 Status = "pending",
-                StartDate = new DateOnly(2026, 9, 1),
-                EndDate = new DateOnly(2026, 9, 10),
-                Days = 10,
+                Reason = "Esqueci de bater",
+                DayCount = 1,
                 DetailsJson = "{}",
             };
 
-            var leaveRepo = new StubLeaveRepository(record);
+            var pontoRepo = new StubPontoRepository(record);
             var personRepo = new StubPersonRepository(requester);
             var notifications = new TrackingNotificationService(throwOnNotify);
-            var emails = new TrackingLeaveEmailNotifier(throwOnNotify);
-            var resolver = new LeaveNotifyRecipientResolver(
+            var emails = new TrackingPontoEmailNotifier(throwOnNotify);
+            var resolver = new PontoNotifyRecipientResolver(
                 personRepo,
                 new StubLeaveNotifyDirectory(),
                 new StubPermissionService(),
                 new StubSettings());
 
-            var service = new LeaveService(
-                leaveRepo,
-                new StubLeaveSync(),
+            var service = new PontoAdjustmentService(
+                pontoRepo,
                 new StubServiceRequestService(),
                 new StubCurrentUser(managerId),
-                new StubSettings(),
-                new StubTotvsRmConfig(),
                 personRepo,
                 resolver,
                 notifications,
                 emails,
-                new StubLeaveAttachmentStore(),
-                new StubHourBankService(),
-                new StubLeaveRmWriteBack());
+                new StubPontoAttachmentStore());
 
-            return new LeaveDecisionHarness
+            return new PontoDecisionHarness
             {
                 RecordId = recordId,
                 RequesterId = requesterId,
@@ -294,11 +307,10 @@ public sealed class LeaveServiceDecisionNotifyTests
         public bool LastApproved { get; private set; }
         public string? LastReason { get; private set; }
 
-        public Task NotifyLeaveRequestDecisionAsync(
+        public Task NotifyPontoAdjustmentDecisionAsync(
             Guid requesterPersonId,
-            Guid leaveRecordId,
-            string serviceKey,
-            string periodLabel,
+            Guid adjustmentRecordId,
+            string dayLabel,
             bool approved,
             string? reason,
             CancellationToken cancellationToken = default)
@@ -327,8 +339,8 @@ public sealed class LeaveServiceDecisionNotifyTests
         public Task NotifyPollCreatedAsync(FeedPost post, Poll poll, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task NotifyPollClosedAsync(FeedPost post, Poll poll, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task NotifyLeaveRequestCreatedAsync(IReadOnlyList<Guid> recipientPersonIds, Guid leaveRecordId, string summary, CancellationToken cancellationToken = default, string? title = null) => Task.CompletedTask;
+        public Task NotifyLeaveRequestDecisionAsync(Guid requesterPersonId, Guid leaveRecordId, string serviceKey, string periodLabel, bool approved, string? reason, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task NotifyPontoAdjustmentCreatedAsync(IReadOnlyList<Guid> recipientPersonIds, Guid adjustmentRecordId, string summary, CancellationToken cancellationToken = default, string? title = null) => Task.CompletedTask;
-        public Task NotifyPontoAdjustmentDecisionAsync(Guid requesterPersonId, Guid adjustmentRecordId, string dayLabel, bool approved, string? reason, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task NotifyServiceRequestCreatedAsync(IReadOnlyList<Guid> recipientPersonIds, Guid serviceRequestId, string summary, CancellationToken cancellationToken = default, string? title = null) => Task.CompletedTask;
         public Task NotifyServiceRequestDecisionAsync(Guid requesterPersonId, Guid serviceRequestId, string requestType, bool approved, string? reason, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task NotifyServiceRequestMessageAsync(Guid recipientPersonId, Guid serviceRequestId, string requestType, string actorName, bool fromRh, string preview, CancellationToken cancellationToken = default) => Task.CompletedTask;
@@ -354,26 +366,24 @@ public sealed class LeaveServiceDecisionNotifyTests
         public Task NotifyGroupOwnershipTransferDecisionAsync(IReadOnlyList<Guid> recipientPersonIds, Guid groupId, string groupName, bool approved, string? reason, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
-    private sealed class TrackingLeaveEmailNotifier(bool throwOnCall) : ILeaveEmailNotifier
+    private sealed class TrackingPontoEmailNotifier(bool throwOnCall) : IPontoEmailNotifier
     {
         public int DecisionCalls { get; private set; }
         public bool LastApproved { get; private set; }
         public string? LastNote { get; private set; }
 
         public Task NotifyRequestCreatedAsync(
-            LeaveRecord record,
+            PontoAdjustmentRecord record,
             Person requester,
             IReadOnlyList<Person> recipients,
-            string serviceTitle,
             CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
 
         public Task NotifyDecisionAsync(
-            LeaveRecord record,
+            PontoAdjustmentRecord record,
             Person requester,
             bool approved,
             string? decisionNote,
-            string serviceTitle,
             CancellationToken cancellationToken = default)
         {
             if (throwOnCall)
@@ -388,46 +398,28 @@ public sealed class LeaveServiceDecisionNotifyTests
         }
     }
 
-    private sealed class StubLeaveRepository(LeaveRecord record) : ILeaveRepository
+    private sealed class StubPontoRepository(PontoAdjustmentRecord record) : IPontoAdjustmentRepository
     {
-        public Task<LeaveRecord?> GetRecordWithPersonAsync(Guid recordId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<LeaveRecord?>(recordId == record.Id ? record : null);
-
-        public Task UpdateRecordAsync(LeaveRecord entity, CancellationToken cancellationToken = default) =>
+        public Task AddAsync(PontoAdjustmentRecord entity, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
 
-        public Task<EmployeeLeaveBalance?> GetBalanceAsync(Guid personId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<EmployeeLeaveBalance?>(null);
+        public Task<PontoAdjustmentRecord?> GetByIdAsync(Guid recordId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<PontoAdjustmentRecord?>(recordId == record.Id ? record : null);
 
-        public Task<DateTimeOffset?> GetBalanceSyncedAtAsync(Guid personId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<DateTimeOffset?>(null);
+        public Task<PontoAdjustmentRecord?> GetWithPersonAsync(Guid recordId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<PontoAdjustmentRecord?>(recordId == record.Id ? record : null);
 
-        public Task UpsertBalanceAsync(EmployeeLeaveBalance balance, CancellationToken cancellationToken = default) =>
+        public Task UpdateAsync(PontoAdjustmentRecord entity, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
 
-        public Task<IReadOnlyList<LeaveRecord>> ListRecordsAsync(Guid personId, int limit, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<LeaveRecord>>([]);
+        public Task<IReadOnlyList<PontoAdjustmentRecord>> ListByPersonAsync(Guid personId, int limit, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PontoAdjustmentRecord>>([]);
 
-        public Task<IReadOnlyList<LeaveRecord>> ListRequestsAsync(Guid personId, int limit, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<LeaveRecord>>([]);
+        public Task<IReadOnlyList<PontoAdjustmentRecord>> ListManagementAsync(IReadOnlyList<Guid>? personIds, string? status, string? query, int limit, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PontoAdjustmentRecord>>([]);
 
-        public Task<LeaveRecord?> GetRecordByIdAsync(Guid recordId, CancellationToken cancellationToken = default) =>
-            Task.FromResult<LeaveRecord?>(null);
-
-        public Task<IReadOnlyList<LeaveRecord>> ListManagementAsync(IReadOnlyList<Guid>? personIds, string? status, string? query, int limit, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<LeaveRecord>>([]);
-
-        public Task<int> CountPendingAsync(Guid personId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(0);
-
-        public Task AddRecordAsync(LeaveRecord entity, CancellationToken cancellationToken = default) =>
-            Task.CompletedTask;
-
-        public Task<IReadOnlyList<LeaveRecord>> ListPendingWriteBackAsync(int limit, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<LeaveRecord>>([]);
-
-        public Task UpsertRmRecordAsync(LeaveRecord entity, CancellationToken cancellationToken = default) =>
-            Task.CompletedTask;
+        public Task<IReadOnlyList<PontoAdjustmentRecord>> ListPendingWriteBackAsync(int limit, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<PontoAdjustmentRecord>>([]);
     }
 
     private sealed class StubPersonRepository(Person person) : IPersonRepository
@@ -495,7 +487,7 @@ public sealed class LeaveServiceDecisionNotifyTests
             DataScope? requiredScope = null,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(
-                permissionKey is "leave.approve" or "leave.manage"
+                permissionKey is "ponto.approve" or "ponto.manage"
                 && requiredScope is null or DataScope.Global);
 
         public Task EnsurePermissionAsync(
@@ -526,15 +518,6 @@ public sealed class LeaveServiceDecisionNotifyTests
         public string GetConnectionString() => string.Empty;
         public string GetRedisConnection() => string.Empty;
         public void Reload(IReadOnlyDictionary<string, string> values) { }
-    }
-
-    private sealed class StubLeaveSync : ILeaveSyncService
-    {
-        public Task<LeaveSyncResultDto> SyncPersonAsync(Guid personId, CancellationToken cancellationToken = default) =>
-            Task.FromResult(new LeaveSyncResultDto(0, "ok", null, null));
-
-        public Task<int> SyncAllActivePeopleAsync(IWorkerRunContext? context, CancellationToken cancellationToken) =>
-            Task.FromResult(0);
     }
 
     private sealed class StubServiceRequestService : IServiceRequestService
@@ -576,49 +559,11 @@ public sealed class LeaveServiceDecisionNotifyTests
             Task.FromResult<ServiceRequestAttachmentFileDto?>(null);
     }
 
-    private sealed class StubTotvsRmConfig : ITotvsRmConfigurationService
+    private sealed class StubPontoAttachmentStore : IPontoAttachmentStore
     {
-        public Task<TotvsRmConfigurationDto> GetAsync(CancellationToken cancellationToken) =>
-            throw new NotImplementedException();
-
-        public Task<TotvsRmConfigurationDto> SaveAsync(UpsertTotvsRmConfigurationRequest request, CancellationToken cancellationToken) =>
-            throw new NotImplementedException();
-
-        public Task<TotvsRmRuntimeConfiguration> GetRuntimeConfigurationAsync(CancellationToken cancellationToken) =>
-            throw new NotImplementedException();
-
-        public Task<TotvsRmConnectionTestResponse> TestConnectionAsync(UpsertTotvsRmConfigurationRequest request, CancellationToken cancellationToken) =>
-            throw new NotImplementedException();
-
-        public Task EnsureDefaultConfigurationAsync(CancellationToken cancellationToken) =>
-            Task.CompletedTask;
-    }
-
-    private sealed class StubLeaveAttachmentStore : ILeaveAttachmentStore
-    {
-        public Task<LeaveAttachmentMetaDto> SaveAsync(Stream content, string fileName, string? contentType, long sizeBytes, CancellationToken cancellationToken = default) =>
+        public Task<PontoAttachmentMetaDto> SaveAsync(Stream content, string fileName, string? contentType, long sizeBytes, CancellationToken cancellationToken = default) =>
             throw new NotImplementedException();
 
         public string? ResolveAbsolutePath(string storageFileName) => null;
-    }
-
-    private sealed class StubHourBankService : IHourBankService
-    {
-        public Task<LeaveBancoHorasDto> GetMineAsync(CancellationToken cancellationToken = default) =>
-            throw new NotImplementedException();
-
-        public Task<IReadOnlyList<HourBankTeamMemberDto>> GetTeamAsync(string? query = null, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<HourBankTeamMemberDto>>([]);
-
-        public Task<LeaveBancoHorasDto> GetForPersonAsync(Guid personId, CancellationToken cancellationToken = default) =>
-            throw new NotImplementedException();
-    }
-
-    private sealed class StubLeaveRmWriteBack : ILeaveRmWriteBack
-    {
-        public Task<LeaveRmWriteBackResult> SubmitVacationRequestAsync(
-            LeaveRmWriteBackCommand command,
-            CancellationToken cancellationToken = default) =>
-            Task.FromResult(new LeaveRmWriteBackResult(true, "synced", null, "ok"));
     }
 }

@@ -92,6 +92,9 @@ public static class AppSettingKeys
     public const string PontoRmWriteBackAllowProd = "ponto.rm.writeback.allow_prod";
     public const string PontoNotifyEmails = "ponto.notify_emails";
     public const string PontoNotifyRoles = "ponto.notify_roles";
+    public const string PontoEmailEnabled = "ponto.email.enabled";
+    public const string PontoEmailDevOverrideEnabled = "ponto.email.dev_override_enabled";
+    public const string PontoEmailDevOverrideTo = "ponto.email.dev_override_to";
     public const string WorkersPollClosureIntervalMinutes = "workers.poll_closure_interval_minutes";
     public const string WorkersComunicadoScheduleIntervalMinutes = "workers.comunicado_schedule_interval_minutes";
     public const string WorkersNewsScheduleIntervalMinutes = "workers.news_schedule_interval_minutes";

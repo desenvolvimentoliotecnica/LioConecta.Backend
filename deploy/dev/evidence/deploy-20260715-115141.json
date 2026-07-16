@@ -1,0 +1,9 @@
+{
+    "timestamp":  "20260715-115141",
+    "homeStatus":  200,
+    "health":  "Healthy",
+    "frontPr":  142,
+    "note":  "Deploy recovered after transient 502 on post-restart health check; CSS aspect-ratio 1/1 verified in bundle",
+    "frontCommit":  "9f369a5",
+    "url":  "http://10.0.0.79:8092"
+}

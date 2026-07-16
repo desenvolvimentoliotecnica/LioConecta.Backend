@@ -1,0 +1,9 @@
+{
+    "timestamp":  "20260715-120140",
+    "homeStatus":  200,
+    "health":  "Healthy",
+    "frontPr":  143,
+    "note":  "Full-width 1:1 post media; transient 502 recovered; CSS calc(100%-32px) verified",
+    "frontCommit":  "df6d605",
+    "url":  "http://10.0.0.79:8092"
+}

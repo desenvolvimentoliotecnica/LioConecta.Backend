@@ -1,0 +1,14 @@
+﻿{
+    "stamp":  "20260713-133431",
+    "url":  "http://10.0.0.79:8092",
+    "frontendSha":  "a9a4882048081476740bf4c78343fff34a2b9400",
+    "frontendMsg":  "Merge pull request #109 from desenvolvimentoliotecnica/feat/wip-rbac-financeiro-unilio-rh",
+    "backendSha":  "f76b48b17a9a7549fd706af00667d82a98ff2b66",
+    "backendMsg":  "Merge pull request #56 from desenvolvimentoliotecnica/feat/wip-unilio-scorm-and-rbac",
+    "health":  "Healthy",
+    "loginOk":  true,
+    "bundle":  "index-Bi0YrH-n.js",
+    "tarballMb":  207.4,
+    "homeStatus":  200,
+    "note":  "main with PR108 SKU + PR109 build/rbac fixes"
+}

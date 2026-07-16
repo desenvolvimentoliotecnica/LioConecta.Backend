@@ -1,0 +1,25 @@
+---
+description: Sempre alterar e implementar na branch DEV — nunca em HML, PRD ou feature branches.
+alwaysApply: true
+---
+
+# Branch de trabalho — somente DEV
+
+**Toda alteração ou implementação** neste repositório deve ser feita na branch **`DEV`**.
+
+## Obrigatório
+
+1. **Antes de editar código**, confirmar que a branch atual é `DEV` (`git branch --show-current`).
+2. Se estiver em outra branch (`HML`, `PRD`, `main`, feature, etc.), **fazer checkout para `DEV`** e só então alterar arquivos.
+3. **Commits e push** (quando pedidos) vão para `DEV` / `origin/DEV`, salvo pedido explícito do usuário para outro destino.
+4. Deploy remoto (ex.: `.79`) **não** é automático — só quando o usuário pedir.
+
+## Não fazer
+
+- Implementar ou corrigir em `HML`, `PRD`, `main` ou branches de feature como local padrão de trabalho
+- Assumir que “está na HML então ok commitar lá” — sempre voltar para `DEV`
+- Criar branches novas para o trabalho do dia a dia sem pedido explícito do usuário
+
+## Exceção
+
+Só usar outra branch se o usuário **pedir textualmente** (ex.: “commit na HML”, “crie uma feature branch”).

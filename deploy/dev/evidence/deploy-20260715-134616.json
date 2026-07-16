@@ -1,0 +1,8 @@
+﻿{
+    "pr":  75,
+    "homeStatus":  200,
+    "timestamp":  "20260715-134616",
+    "note":  "Deploy PR#75 celebration UTF-8 mojibake fix",
+    "health":  "Healthy",
+    "url":  "http://10.0.0.79:8092"
+}

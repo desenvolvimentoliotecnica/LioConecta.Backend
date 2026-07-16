@@ -1,0 +1,9 @@
+{
+    "timestamp":  "20260715-175237",
+    "homeStatus":  200,
+    "health":  "Healthy",
+    "frontendSha":  "004c796",
+    "note":  "deploy-dev.ps1 failed final health (502 during restart); verified Healthy after wait",
+    "frontendMsg":  "feat(feed): infinite scroll com paginação por cursor",
+    "url":  "http://10.0.0.79:8092"
+}

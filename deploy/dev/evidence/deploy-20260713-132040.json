@@ -1,0 +1,14 @@
+﻿{
+    "stamp":  "20260713-132040",
+    "url":  "http://10.0.0.79:8092",
+    "frontendSha":  "1763b43b8eb80bcd4fec63b51afd11e1da14e2cb",
+    "frontendMsg":  "Merge pull request #107 from desenvolvimentoliotecnica/feat/compass-scenarios-datalake",
+    "frontendNote":  "worktree origin/main + local build fixes page-maturity/compass test",
+    "backendSha":  "bae202d5e8580c46366056bdefc6023a13945326",
+    "backendMsg":  "Merge pull request #55 from desenvolvimentoliotecnica/fix/compass-scenario-sku-description",
+    "health":  "Healthy",
+    "loginOk":  true,
+    "bundle":  "index-B3EDkBdJ.js",
+    "tarballMb":  207.3,
+    "homeStatus":  200
+}

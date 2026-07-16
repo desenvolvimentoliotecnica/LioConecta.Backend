@@ -1,0 +1,9 @@
+{
+    "timestamp":  "20260715-165451",
+    "homeStatus":  "C:\\Users\\leonardo.mendes",
+    "api":  "http://10.0.0.88:8092/api/v1",
+    "health":  "Healthy",
+    "frontend":  "http://10.0.0.88:8092/",
+    "login":  "ok",
+    "url":  "http://10.0.0.88:8092"
+}

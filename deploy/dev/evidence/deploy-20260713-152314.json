@@ -1,0 +1,14 @@
+﻿{
+    "url":  "http://10.0.0.79:8092",
+    "frontendSha":  "a6529f05f1f6aa18119d60578c5f161ea402a2a8",
+    "note":  "Deployed PR#111 FE + PR#58 BE; deploy-dev hung on chmod -R frontend-dist, completed manually",
+    "scenariosApiOk":  true,
+    "frontendMsg":  "Merge pull request #111 from desenvolvimentoliotecnica/feat/compass-scenarios-grid-carousel",
+    "bundle":  "index-BHuWLIR_.js",
+    "backendMsg":  "Merge pull request #58 from desenvolvimentoliotecnica/feat/compass-scenario-rows-sort-filter",
+    "backendSha":  "d6ae0d57ac5013dce057afaeb7660739841fdbcc",
+    "homeStatus":  200,
+    "health":  "Healthy",
+    "stamp":  "20260713-152314",
+    "loginOk":  true
+}

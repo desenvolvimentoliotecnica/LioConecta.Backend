@@ -1,0 +1,14 @@
+﻿{
+    "note":  "PR#62/#116 helpdesk attachments; post-deploy health retried after 502",
+    "stamp":  "20260713-204825",
+    "health":  "Healthy",
+    "loginOk":  true,
+    "url":  "http://10.0.0.79:8092",
+    "ticket254Attachments":  [
+                                 {
+                                     "documentId":  "215",
+                                     "fileName":  "WhatsApp Image 2026-07-13 at 12.55.32.jpeg",
+                                     "contentType":  "image/jpeg"
+                                 }
+                             ]
+}

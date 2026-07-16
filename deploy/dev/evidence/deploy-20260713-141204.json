@@ -1,0 +1,14 @@
+﻿{
+    "stamp":  "20260713-141204",
+    "url":  "http://10.0.0.79:8092",
+    "frontendSha":  "747d280ff8f18b72cc392c158f204f2c49d2a5bc",
+    "frontendMsg":  "Merge pull request #110 from desenvolvimentoliotecnica/fix/compass-scenario-cliente-un-labels",
+    "backendSha":  "e8294d884860755ee1896374b4df6239aec6d73b",
+    "backendMsg":  "Merge pull request #57 from desenvolvimentoliotecnica/fix/compass-scenario-cliente-un-labels",
+    "health":  "Healthy",
+    "loginOk":  true,
+    "bundle":  "index-RPHldFXi.js",
+    "tarballMb":  207.4,
+    "homeStatus":  200,
+    "note":  "main PR110 cliente/UN labels + previous build fixes"
+}

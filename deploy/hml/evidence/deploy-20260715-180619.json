@@ -1,0 +1,12 @@
+{
+    "url":  "http://10.0.0.80:8092",
+    "api":  "http://10.0.0.80:8092/api/v1",
+    "ready":  "Healthy",
+    "frontendSha":  "004c796",
+    "note":  "DEV-\u003eHML promote + deploy; nginx restart fixed stale upstream IP",
+    "backendSha":  "e7fd3b3",
+    "homeStatus":  200,
+    "health":  "Healthy",
+    "frontend":  "http://10.0.0.80:8092/",
+    "timestamp":  "20260715-180619"
+}

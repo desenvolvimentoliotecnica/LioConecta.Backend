@@ -1,0 +1,9 @@
+{
+    "timestamp":  "20260715-161725",
+    "homeStatus":  null,
+    "api":  "http://10.0.0.80:8092/api/v1",
+    "health":  "Healthy",
+    "frontend":  "http://10.0.0.80:8092/",
+    "login":  "ok",
+    "url":  "http://10.0.0.80:8092"
+}

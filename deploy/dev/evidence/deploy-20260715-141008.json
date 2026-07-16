@@ -1,0 +1,9 @@
+{
+    "timestamp":  "20260715-141008",
+    "homeStatus":  200,
+    "health":  "Healthy",
+    "note":  "email attachment filename sanitize",
+    "backendPr":  "https://github.com/desenvolvimentoliotecnica/LioConecta.Backend/pull/77",
+    "url":  "http://10.0.0.79:8092",
+    "frontendPr":  "https://github.com/desenvolvimentoliotecnica/LioConecta-FrontEnd/pull/149"
+}

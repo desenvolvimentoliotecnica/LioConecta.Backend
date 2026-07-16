@@ -1,0 +1,17 @@
+﻿{
+    "homeStatus":  200,
+    "url":  "http://10.0.0.79:8092",
+    "health":  "Healthy",
+    "areasCount":  1,
+    "note":  "Deploy after PR#61/#115 GLPI entities as helpdesk areas; final health retried after 502 during restart",
+    "stamp":  "20260713-202807",
+    "areasSample":  [
+                        {
+                            "id":  "1",
+                            "name":  "TI",
+                            "entityId":  1,
+                            "serviceCount":  123
+                        }
+                    ],
+    "loginOk":  true
+}

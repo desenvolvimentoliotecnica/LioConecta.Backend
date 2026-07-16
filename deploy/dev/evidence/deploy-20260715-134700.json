@@ -1,0 +1,7 @@
+{
+    "timestamp":  "20260715-134700",
+    "url":  "http://10.0.0.79:8092",
+    "health":  "Healthy",
+    "note":  "Final health stabilized after post-restart 502; deploy otherwise OK",
+    "homeStatus":  200
+}

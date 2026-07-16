@@ -1,0 +1,9 @@
+{
+    "timestamp":  "20260714-110335",
+    "homeStatus":  200,
+    "health":  "Healthy",
+    "note":  "deploy-dev.ps1 exited 1 on transient 502; app healthy after wait",
+    "pr":  135,
+    "frontCommit":  "600bfb7c4e103b395fcace4dfa56f9d859187515",
+    "url":  "http://10.0.0.79:8092"
+}

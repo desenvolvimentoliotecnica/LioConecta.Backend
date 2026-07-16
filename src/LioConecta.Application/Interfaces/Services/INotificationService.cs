@@ -52,6 +52,14 @@ public interface INotificationService
         CancellationToken cancellationToken = default,
         string? title = null);
 
+    Task NotifyPontoAdjustmentDecisionAsync(
+        Guid requesterPersonId,
+        Guid adjustmentRecordId,
+        string dayLabel,
+        bool approved,
+        string? reason,
+        CancellationToken cancellationToken = default);
+
     Task NotifyServiceRequestCreatedAsync(
         IReadOnlyList<Guid> recipientPersonIds,
         Guid serviceRequestId,

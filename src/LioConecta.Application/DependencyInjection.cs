@@ -34,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<LeaveNotifyRecipientResolver>();
         services.AddScoped<ILeaveEmailNotifier, LeaveEmailNotifier>();
         services.AddScoped<IPontoAdjustmentService, PontoAdjustmentService>();
+        services.AddScoped<IPontoEmailNotifier, PontoEmailNotifier>();
         services.AddScoped<PontoNotifyRecipientResolver>();
         services.AddScoped<UniLioApprovalRecipientResolver>();
         services.AddScoped<IUniLioEmailNotifier, UniLioEmailNotifier>();

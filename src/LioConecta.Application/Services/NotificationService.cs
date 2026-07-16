@@ -229,8 +229,39 @@ public sealed class NotificationService(
         await BroadcastAsync(
             () => Task.FromResult(recipients),
             NotificationType.ServiceRequest,
-            string.IsNullOrWhiteSpace(title) ? "Nova solicitaÃ§Ã£o de ajuste de ponto" : title.Trim(),
+            string.IsNullOrWhiteSpace(title) ? "Nova solicitação de ajuste de ponto" : title.Trim(),
             summary.Trim(),
+            href,
+            cancellationToken);
+    }
+
+    public async Task NotifyPontoAdjustmentDecisionAsync(
+        Guid requesterPersonId,
+        Guid adjustmentRecordId,
+        string dayLabel,
+        bool approved,
+        string? reason,
+        CancellationToken cancellationToken = default)
+    {
+        var requester = await personRepository.GetByIdAsync(requesterPersonId, cancellationToken);
+        if (requester is null)
+        {
+            return;
+        }
+
+        var days = string.IsNullOrWhiteSpace(dayLabel) ? "ajuste" : dayLabel.Trim();
+        var title = approved ? "Ajuste de ponto aprovado" : "Ajuste de ponto rejeitado";
+        var body = approved
+            ? $"Sua solicitação de ajuste de ponto ({days}) foi aprovada."
+            : $"Sua solicitação de ajuste de ponto ({days}) foi rejeitada."
+              + (string.IsNullOrWhiteSpace(reason) ? "" : $" Motivo: {reason.Trim()}");
+
+        var href = $"/servicos/ponto-eletronico?requestId={adjustmentRecordId}";
+        await BroadcastAsync(
+            () => Task.FromResult<IReadOnlyList<Person>>([requester]),
+            NotificationType.ServiceRequest,
+            title,
+            body,
             href,
             cancellationToken);
     }

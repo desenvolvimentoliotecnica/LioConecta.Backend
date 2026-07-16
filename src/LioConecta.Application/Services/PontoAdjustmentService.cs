@@ -17,6 +17,7 @@ public sealed class PontoAdjustmentService(
     IPersonRepository personRepository,
     PontoNotifyRecipientResolver pontoNotifyRecipientResolver,
     INotificationService notificationService,
+    IPontoEmailNotifier pontoEmailNotifier,
     IPontoAttachmentStore pontoAttachmentStore) : IPontoAdjustmentService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -295,6 +296,12 @@ public sealed class PontoAdjustmentService(
 
         await pontoAdjustmentRepository.UpdateAsync(record, cancellationToken);
 
+        await NotifyDecisionInternalAsync(
+            record,
+            approved: true,
+            decisionNote: string.IsNullOrWhiteSpace(request.Comment) ? null : request.Comment.Trim(),
+            cancellationToken);
+
         return await GetManagementDetailAsync(recordId, cancellationToken);
     }
 
@@ -319,6 +326,12 @@ public sealed class PontoAdjustmentService(
         }
 
         await pontoAdjustmentRepository.UpdateAsync(record, cancellationToken);
+
+        await NotifyDecisionInternalAsync(
+            record,
+            approved: false,
+            decisionNote: string.IsNullOrWhiteSpace(request.Reason) ? null : request.Reason.Trim(),
+            cancellationToken);
 
         return await GetManagementDetailAsync(recordId, cancellationToken);
     }
@@ -394,10 +407,56 @@ public sealed class PontoAdjustmentService(
                 summary,
                 cancellationToken,
                 title);
+
+            if (requester is not null)
+            {
+                await pontoEmailNotifier.NotifyRequestCreatedAsync(
+                    record,
+                    requester,
+                    recipients,
+                    cancellationToken);
+            }
         }
         catch
         {
             // Notifications are best-effort; request creation must not fail.
+        }
+    }
+
+    private async Task NotifyDecisionInternalAsync(
+        PontoAdjustmentRecord record,
+        bool approved,
+        string? decisionNote,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var dayLabel = record.DayCount == 1 ? "1 dia" : $"{record.DayCount} dias";
+            await notificationService.NotifyPontoAdjustmentDecisionAsync(
+                record.PersonId,
+                record.Id,
+                dayLabel,
+                approved,
+                decisionNote,
+                cancellationToken);
+
+            var requester = record.Person
+                ?? await personRepository.GetByIdAsync(record.PersonId, cancellationToken);
+            if (requester is null)
+            {
+                return;
+            }
+
+            await pontoEmailNotifier.NotifyDecisionAsync(
+                record,
+                requester,
+                approved,
+                decisionNote,
+                cancellationToken);
+        }
+        catch
+        {
+            // Notifications are best-effort; approve/reject must not fail.
         }
     }
 

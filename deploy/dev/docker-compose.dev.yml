@@ -29,6 +29,7 @@
     build:
       context: ./api-publish
       dockerfile: ../Dockerfile.api.runtime
+    image: lioconecta-dev-api:latest
     container_name: lioconecta-dev-api
     restart: unless-stopped
     environment:
@@ -47,6 +48,7 @@
     build:
       context: ./workers-publish
       dockerfile: ../Dockerfile.workers.runtime
+    image: lioconecta-dev-workers:latest
     container_name: lioconecta-dev-workers
     restart: unless-stopped
     environment:

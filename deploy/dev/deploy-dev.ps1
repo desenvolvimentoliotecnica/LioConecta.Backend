@@ -26,6 +26,7 @@ Write-Host "Staging: $staging"
 Write-Host "Building frontend..."
 Push-Location $frontRoot
 $env:VITE_API_BASE_URL = "/api/v1"
+$env:VITE_COMPASS_APP_URL = "http://10.0.0.79:8094"
 $env:VITE_USE_MOCK = "false"
 $env:VITE_OBSERVABILITY_ENABLED = "true"
 $env:VITE_AZURE_CLIENT_ID = ""
